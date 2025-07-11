@@ -1,0 +1,54 @@
+{
+  "locais": {
+    "umbraton": {
+      "nome": "Umbraton",
+      "descricao": "Uma cidade sombria envolta em névoa densa, com arquitetura gótica e uma constante sensação de luto.",
+      "ato_aparicao": 1,
+      "gatilhos": {
+        "corvo_na_gargula": {
+          "descricao": "Um corvo de olhos brancos o encara do topo de uma gárgula.",
+          "proximo": "diario_vibra"
+        },
+        "diario_vibra": {
+          "descricao": "Seu diário vibra levemente, como se algo estivesse reagindo a ele.",
+          "proximo": null
+        },
+        "crianca_correndo": {
+          "descricao": "Uma criança corre e deixa cair um papel ensanguentado.",
+          "proximo": "sino_toca"
+        },
+        "sino_toca": {
+          "descricao": "Um sino toca sozinho, embora ninguém esteja na torre.",
+          "proximo": null
+        },
+        "grito_viela": {
+          "descricao": "Você ouve um grito abafado vindo de uma viela próxima.",
+          "proximo": null
+        }
+      }
+    },
+    "taverna_corvo_ferido": {
+      "nome": "Taverna do Corvo Ferido",
+      "descricao": "Um local escuro, com cheiro de madeira velha e cerveja azeda. Frequentado por viajantes cansados e moradores desconfiados.",
+      "ato_aparicao": 1,
+      "gatilhos": {
+        "taverneiro_se_cala": {
+          "descricao": "O taverneiro se cala ao ouvir o nome 'praga'.",
+          "proximo": "figura_encapuzada"
+        },
+        "figura_encapuzada": {
+          "descricao": "Uma figura encapuzada deixa cair uma chave antiga.",
+          "proximo": null
+        },
+        "musica_familiar": {
+          "descricao": "Uma música familiar ecoa, mas não há músicos visíveis.",
+          "proximo": "sussurro_praga"
+        },
+        "sussurro_praga": {
+          "descricao": "Alguém sussurra: 'A praga começou aqui, você sabe.'",
+          "proximo": null
+        }
+      }
+    }
+  }
+}

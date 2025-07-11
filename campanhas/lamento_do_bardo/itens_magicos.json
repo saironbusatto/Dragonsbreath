@@ -1,0 +1,54 @@
+{
+  "itens_magicos": {
+    "anel_do_sussurro": {
+      "nome": "Anel do Sussurro",
+      "descricao": "Um anel de prata enegrecida",
+      "efeito": "Permite ao portador compreender melodias mágicas e resistir a ilusões sonoras (uma vez por descanso longo)",
+      "ato_aparicao": 1,
+      "raridade": "incomum"
+    },
+    "lira_das_mentiras": {
+      "nome": "Lira das Mentiras",
+      "descricao": "Uma pequena lira de madeira escura",
+      "efeito": "Suas notas vibram com dissonância quando alguém próximo está mentindo",
+      "ato_aparicao": 2,
+      "raridade": "incomum"
+    },
+    "cristal_de_memoria": {
+      "nome": "Cristal de Memória",
+      "descricao": "Um fragmento cristalino que brilha suavemente",
+      "efeito": "Registra e permite ao usuário reviver uma lembrança clara (uso único)",
+      "ato_aparicao": 2,
+      "raridade": "raro"
+    },
+    "pergaminho_cancao_invertida": {
+      "nome": "Pergaminho da Canção Invertida",
+      "descricao": "Uma partitura em espelho com símbolos musicais invertidos",
+      "efeito": "Ao ser tocada, silencia todos os efeitos mágicos sonoros em uma área por um curto período",
+      "ato_aparicao": 3,
+      "raridade": "raro"
+    },
+    "simbolo_do_arrependido": {
+      "nome": "Símbolo do Arrependido",
+      "descricao": "Um broche de osso e âmbar",
+      "efeito": "Aquece para alertar sobre feitiços mentais, protegendo o portador contra o encantamento de Kael e seus seguidores",
+      "ato_aparicao": 3,
+      "raridade": "raro"
+    },
+    "melodia_final": {
+      "nome": "Melodia Final",
+      "descricao": "Uma partitura que se completa ao longo da jornada",
+      "efeito": "Permite ao protagonista compor uma canção única com poder de alterar a realidade. O jogador escolhe a intenção (cura, destruição, selamento), mas o resultado final é incerto e perigoso, com uma alta probabilidade de apenas transformar o mal em vez de destruí-lo",
+      "ato_aparicao": 3,
+      "raridade": "lendário"
+    },
+    "diapasao_prata_pura": {
+      "nome": "Diapasão de Prata Pura",
+      "descricao": "Um antigo artefato de proteção escondido nas fundações da Torre do Sino Partido",
+      "efeito": "Vibra em resposta à crescente corrupção mágica, interferindo nos rituais mais poderosos de Kael",
+      "ato_aparicao": 1,
+      "raridade": "raro",
+      "missao_relacionada": "O Toque do Sino Fantasma"
+    }
+  }
+}

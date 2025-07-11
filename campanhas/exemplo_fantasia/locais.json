@@ -1,0 +1,46 @@
+{
+  "locais": {
+    "vila_pedraverde": {
+      "nome": "Vila de Pedraverde",
+      "descricao": "Uma pequena vila cercada por campos verdes e colinas suaves. As casas são de pedra e madeira, com telhados de palha. O ar é fresco e limpo.",
+      "ato_aparicao": 1,
+      "gatilhos": {
+        "criancas_brincando": {
+          "descricao": "Crianças brincam despreocupadamente na praça",
+          "proximo": null
+        },
+        "fazendeiro_nervoso": {
+          "descricao": "Um fazendeiro aponta nervosamente para a floresta",
+          "proximo": "menciona_criaturas"
+        },
+        "menciona_criaturas": {
+          "descricao": "Alguém menciona criaturas sombrias da floresta",
+          "proximo": null
+        }
+      }
+    },
+    "floresta_sombria": {
+      "nome": "Floresta Sombria",
+      "descricao": "Uma floresta densa onde a luz do sol mal consegue penetrar. Árvores antigas se erguem como sentinelas, e sons misteriosos ecoam entre as sombras.",
+      "ato_aparicao": 1,
+      "gatilhos": {
+        "galhos_rangendo": {
+          "descricao": "Galhos rangem ameaçadoramente acima de você",
+          "proximo": "olhos_brilhando"
+        },
+        "olhos_brilhando": {
+          "descricao": "Olhos brilham brevemente na escuridão",
+          "proximo": null
+        },
+        "uivo_distante": {
+          "descricao": "Um uivo distante ecoa entre as árvores",
+          "proximo": "luz_misteriosa"
+        },
+        "luz_misteriosa": {
+          "descricao": "Uma luz misteriosa pisca entre as árvores",
+          "proximo": null
+        }
+      }
+    }
+  }
+}

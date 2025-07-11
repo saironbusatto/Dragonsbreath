@@ -1,0 +1,62 @@
+{
+  "current_campaign": "lamento_do_bardo",
+  "campaigns": {
+    "lamento_do_bardo": {
+      "name": "O Lamento do Bardo",
+      "description": "Uma história sombria sobre peste, memória e um dragão disfarçado",
+      "files": {
+        "npcs": "campanhas/lamento_do_bardo/npcs.json",
+        "itens_magicos": "campanhas/lamento_do_bardo/itens_magicos.json", 
+        "itens_comuns": "campanhas/lamento_do_bardo/itens_comuns.json",
+        "locais": "campanhas/lamento_do_bardo/locais.json",
+        "campanha": "campanhas/lamento_do_bardo/campanha.md"
+      },
+      "player_template": {
+        "class": "Bardo",
+        "starting_hp": 20,
+        "starting_inventory": [
+          "um alaúde de madeira simples",
+          "um diário com anotações sobre a praga"
+        ]
+      },
+      "world_template": {
+        "initial_description": "Você chega aos portões de uma cidade sombria, buscando respostas sobre uma tragédia pessoal.",
+        "initial_quest": "Descobrir a verdade sobre a praga que matou sua esposa",
+        "initial_location": "umbraton",
+        "initial_triggers": {
+          "umbraton": ["corvo_na_gargula", "crianca_correndo", "grito_viela"],
+          "taverna_corvo_ferido": ["taverneiro_se_cala", "musica_familiar"]
+        }
+      }
+    },
+    "exemplo_fantasia": {
+      "name": "A Busca pelo Cristal Perdido",
+      "description": "Uma aventura clássica de fantasia medieval em busca de um artefato perdido",
+      "files": {
+        "npcs": "campanhas/exemplo_fantasia/npcs.json",
+        "itens_magicos": "campanhas/exemplo_fantasia/itens_magicos.json",
+        "itens_comuns": "campanhas/exemplo_fantasia/itens_comuns.json",
+        "locais": "campanhas/exemplo_fantasia/locais.json",
+        "campanha": "campanhas/exemplo_fantasia/campanha.md"
+      },
+      "player_template": {
+        "class": "Aventureiro",
+        "starting_hp": 25,
+        "starting_inventory": [
+          "uma espada de ferro",
+          "uma mochila de couro",
+          "10 moedas de ouro"
+        ]
+      },
+      "world_template": {
+        "initial_description": "Você chega à Vila de Pedraverde, onde os habitantes sussurram sobre criaturas sombrias que emergem da floresta.",
+        "initial_quest": "Encontrar o Cristal Perdido e restaurar a paz na região",
+        "initial_location": "vila_pedraverde",
+        "initial_triggers": {
+          "vila_pedraverde": ["criancas_brincando", "fazendeiro_nervoso"],
+          "floresta_sombria": ["galhos_rangendo", "olhos_brilhando"]
+        }
+      }
+    }
+  }
+}

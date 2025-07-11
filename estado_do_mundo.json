@@ -1,0 +1,46 @@
+{
+    "player_character": {
+        "name": "Edwin",
+        "class": "Bardo",
+        "current_act": 1,
+        "status": {
+            "hp": 19,
+            "max_hp": 20
+        },
+        "inventory": [
+            "um alaúde de madeira simples",
+            "um diário com anotações sobre a praga",
+            "Anel do Sussurro"
+        ],
+        "desejo": "Descobrir a verdade sobre a praga que matou sua esposa"
+    },
+    "world_state": {
+        "current_location_key": "umbraton",
+        "immediate_scene_description": "Você chega aos portões de uma cidade sombria, buscando respostas sobre uma tragédia pessoal.",
+        "active_quests": {
+            "main_quest": "Descobrir a verdade sobre a praga que matou sua esposa"
+        },
+        "important_npcs_in_scene": {},
+        "recent_events_summary": [
+            "Edwin iniciou sua jornada"
+        ],
+        "gatilhos_ativos": {
+            "umbraton": [
+                "crianca_correndo",
+                "grito_viela",
+                "diario_vibra"
+            ],
+            "taverna_corvo_ferido": [
+                "taverneiro_se_cala",
+                "musica_familiar"
+            ]
+        },
+        "gatilhos_usados": {
+            "umbraton": [
+                "corvo_na_gargula"
+            ],
+            "taverna_corvo_ferido": []
+        }
+    },
+    "rodadas_sem_gatilho": 1
+}

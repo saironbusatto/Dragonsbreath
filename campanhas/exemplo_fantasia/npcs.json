@@ -1,0 +1,18 @@
+{
+  "npcs": {
+    "mago_eldrin": {
+      "nome": "Eldrin, o Sábio",
+      "aparencia_facil": "Um mago idoso de barbas longas e olhos brilhantes. Veste túnicas azuis decoradas com estrelas.",
+      "verdade_oculta": "Guarda um segredo sobre a localização de um artefato poderoso.",
+      "tipo": "mentor",
+      "ato_aparicao": 1
+    },
+    "comerciante_gilda": {
+      "nome": "Gilda, a Comerciante",
+      "aparencia_facil": "Uma halfling alegre com uma carroça cheia de mercadorias variadas.",
+      "verdade_oculta": "Faz parte de uma rede de contrabando de itens mágicos.",
+      "tipo": "comerciante",
+      "ato_aparicao": 1
+    }
+  }
+}

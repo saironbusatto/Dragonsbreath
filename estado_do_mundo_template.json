@@ -1,0 +1,26 @@
+{
+    "player_character": {
+        "name": "[NOME_A_SER_PREENCHIDO]",
+        "class": "Bardo",
+        "current_act": 1,
+        "status": {
+            "hp": 20,
+            "max_hp": 20
+        },
+        "inventory": [
+            "um alaúde de madeira simples",
+            "um diário com anotações sobre a praga"
+        ]
+    },
+    "world_state": {
+        "current_location_key": null,
+        "immediate_scene_description": "Você está nos portões de Umbraton, uma cidade sombria envolta em névoa.",
+        "active_quests": {
+            "buscar_respostas": "Descobrir a verdade sobre a praga que matou sua esposa"
+        },
+        "important_npcs_in_scene": {},
+        "recent_events_summary": [
+            "Chegou a Umbraton buscando respostas sobre a praga"
+        ]
+    }
+}

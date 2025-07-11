@@ -1,0 +1,62 @@
+{
+  "npcs": {
+    "kael": {
+      "nome": "Kael, o Guardião do Eco",
+      "aparencia_facil": "Um homem de vestes austeras e olhos que parecem espelhos, impenetráveis. Carrega sempre um instrumento musical diferente. Age como um mentor e confessor, oferecendo sabedoria e consolo.",
+      "verdade_oculta": "Kael é um dragão negro milenar disfarçado. Sua música é o vetor de sua corrupção. Sua presença precede a chegada da praga em cada local. A 'cura' que ele oferece apaga a dor, mas também as memórias que poderiam expô-lo.",
+      "tipo": "antagonista_principal",
+      "dificuldade_descoberta": "difícil",
+      "ato_aparicao": 1
+    },
+    "virella": {
+      "nome": "Virella, a Voz do Culto",
+      "aparencia_facil": "Uma jovem carismática de cabelos prateados e voz hipnótica, vestida em trajes rituais. Como sacerdotisa da 'Nova Harmonia', ela prega que a peste é uma transformação necessária e que [Nome do Protagonista] foi 'escolhido' para liderar o novo mundo.",
+      "verdade_oculta": "Seu carisma não é natural; é alimentado por uma aura mágica concedida por Kael que manipula as emoções. Virella é um peão, e sua devoção fanática é uma ferramenta de controle para o dragão.",
+      "tipo": "cultista",
+      "dificuldade_descoberta": "difícil",
+      "ato_aparicao": 2
+    },
+    "irmao_ellun": {
+      "nome": "Irmão Ellun",
+      "aparencia_facil": "Um homem calvo, de sorriso fácil e amigável. Seus dedos são marcados por queimaduras, que ele atribui a 'rituais de purificação'. Ele se aproxima de [Nome do Protagonista] como um velho amigo.",
+      "verdade_oculta": "Ele é o responsável por selecionar as vítimas a serem sacrificadas em nome da 'harmonia universal'. Acredita sinceramente na causa e vê em [Nome do Protagonista] o potencial para se tornar o próximo arauto da peste.",
+      "tipo": "cultista",
+      "dificuldade_descoberta": "difícil",
+      "ato_aparicao": 2
+    },
+    "lysenn": {
+      "nome": "Lysenn, o Arrependido",
+      "aparencia_facil": "Um ex-bardo, agora cego e com a pele marcada por veios negros. Ele sobreviveu ao culto e agora vaga como um profeta louco, falando em enigmas e metáforas desconexas.",
+      "verdade_oculta": "Foi aprendiz de Kael e conhece fragmentos perigosos da verdade. Sua mente fragmentada é, ao mesmo tempo, uma prisão e uma proteção contra a influência do dragão. Suas profecias são peças cruciais do quebra-cabeça.",
+      "tipo": "aliado_informante",
+      "dificuldade_descoberta": "difícil",
+      "ato_aparicao": 3
+    },
+    "silas": {
+      "nome": "Silas, o Colecionador de Ecos",
+      "aparencia_facil": "Uma figura encapuzada em uma loja escondida e abarrotada nos becos de Umbraton. Fala em sussurros e parece extremamente paranoico. Ele negocia 'objetos perdidos' e informações, exigindo pagamentos estranhos (uma memória feliz, uma canção nunca antes ouvida) em vez de apenas moedas.",
+      "verdade_oculta": "Silas é um 'ecoclasta', um mago que aprisiona e extrai sons e memórias de objetos. Ele vê a música de Kael não como um mal, mas como uma 'poluição sonora' que desvaloriza seus itens colecionáveis. Ele é um recurso perigoso e egoísta, disposto a vender fragmentos da verdade que Kael tentou apagar, mas apenas se o preço for um 'eco' raro o suficiente para sua coleção. Os cultistas o caçam para silenciá-lo.",
+      "tipo": "comerciante_neutro",
+      "dificuldade_descoberta": "difícil",
+      "ato_aparicao": 1
+    },
+    "elian": {
+      "nome": "Elian",
+      "aparencia_facil": "Um historiador idoso e trêmulo que frequenta a Biblioteca dos Ecos.",
+      "verdade_oculta": "Suspeita da verdade sobre o livro silenciado, mas tem medo de falar abertamente.",
+      "tipo": "informante_menor",
+      "dificuldade_descoberta": "fácil",
+      "missao_relacionada": "O Livro Silenciado",
+      "ato_aparicao": 1
+    },
+    "lyra": {
+      "nome": "Lyra",
+      "aparencia_facil": "Uma mulher aflita cujo irmão se refugiou na Igreja dos Silenciosos.",
+      "verdade_oculta": "Não sabe que seu irmão era informante do culto e entregou a própria família.",
+      "tipo": "civil_aflita",
+      "dificuldade_descoberta": "fácil",
+      "missao_relacionada": "A Prece Inaudível",
+      "ato_aparicao": 1
+    }
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "itens_comuns": {
+    "pocao_cura": {
+      "nome": "Poção de Cura",
+      "descricao": "Um frasco com líquido vermelho brilhante",
+      "efeito": {"hp_restore": 10},
+      "consumivel": true,
+      "valor": "10 moedas de ouro"
+    },
+    "corda": {
+      "nome": "Corda Resistente",
+      "descricao": "50 metros de corda de boa qualidade",
+      "efeito": "Útil para escaladas e amarrações",
+      "valor": "2 moedas de ouro"
+    }
+  }
+}

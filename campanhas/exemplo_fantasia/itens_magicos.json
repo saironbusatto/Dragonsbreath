@@ -1,0 +1,18 @@
+{
+  "itens_magicos": {
+    "espada_flamejante": {
+      "nome": "Espada Flamejante",
+      "descricao": "Uma espada que brilha com chamas mágicas",
+      "efeito": "Causa dano de fogo adicional em combate",
+      "ato_obtencao": "Ato 1",
+      "raridade": "raro"
+    },
+    "anel_protecao": {
+      "nome": "Anel de Proteção",
+      "descricao": "Um anel simples que brilha suavemente",
+      "efeito": "Reduz dano recebido",
+      "ato_obtencao": "Ato 1", 
+      "raridade": "incomum"
+    }
+  }
+}

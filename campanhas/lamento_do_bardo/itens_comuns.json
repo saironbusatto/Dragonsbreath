@@ -1,0 +1,46 @@
+{
+  "itens_comuns": {
+    "cha_da_ausencia": {
+      "nome": "Chá da Ausência",
+      "descricao": "Feito com folhas de uma árvore rara, a infusão acalma a dor, mas também embota e apaga memórias",
+      "efeito": "Acalma dor emocional mas apaga memórias. O uso prolongado destrói a identidade",
+      "local_obtencao": "Santuário Harmônico",
+      "perigo": "Alto - viciante e destrutivo para a mente",
+      "relacionado_npc": "kael",
+      "ato_aparicao": 2,
+      "consumivel": true
+    },
+    "livro_acustica_antiga": {
+      "nome": "Livro de Acústica Antiga",
+      "descricao": "Um livro raro sobre dissonância harmônica, magicamente silenciado",
+      "efeito": "Contém conhecimento sobre como neutralizar encantamentos melódicos",
+      "local_obtencao": "Biblioteca dos Ecos",
+      "estado": "Silenciado magicamente - palavras desaparecem ao tentar ler",
+      "missao_relacionada": "O Livro Silenciado",
+      "ato_aparicao": 1
+    },
+    "instrumentos_quebrados": {
+      "nome": "Instrumentos Musicais Quebrados",
+      "descricao": "Liras sem cordas, pianos sem teclas, flautas lacradas encontrados no Santuário Harmônico",
+      "efeito": "Decorativos, simbolizam a corrupção da música por Kael",
+      "local_obtencao": "Santuário Harmônico",
+      "valor": "Apenas simbólico",
+      "ato_aparicao": 2
+    },
+    "folhas_arvore_rara": {
+      "nome": "Folhas da Árvore Rara",
+      "descricao": "Ingrediente principal do Chá da Ausência",
+      "efeito": "Matéria-prima para criar o chá que apaga memórias",
+      "local_obtencao": "Santuário Harmônico",
+      "perigo": "Perigoso se consumido sem preparo adequado",
+      "ato_aparicao": 2
+    },
+    "pocao_de_cura": {
+      "nome": "Poção de Cura",
+      "descricao": "Um frasco com um líquido vermelho que brilha suavemente. Cheira a ervas e mel.",
+      "efeito": { "hp_restore": 10 },
+      "consumivel": true,
+      "ato_aparicao": 1
+    }
+  }
+}
