@@ -8,12 +8,14 @@ Suporta múltiplas campanhas intercambiáveis com eventos dinâmicos e progressi
 ### Instalação Rápida
 1. **Instale as dependências:**
    ```bash
-   pip install google-generativeai
+   pip install -r requirements.txt
    ```
+   Ou execute: `install_audio.bat`
 
-2. **Configure a API:**
-   ```bash
-   set GEMINI_API_KEY=sua_chave_aqui
+2. **Configure as APIs no arquivo .env:**
+   ```
+   GEMINI_API_KEY=sua_chave_gemini
+   ELEVENLABS_API_KEY=sua_chave_elevenlabs
    ```
 
 3. **Execute o jogo:**
@@ -31,6 +33,11 @@ Suporta múltiplas campanhas intercambiáveis com eventos dinâmicos e progressi
 - `inventário` - Ver seus itens
 - `status` - Ver sua saúde e HP
 - `chikito` - Salvar e sair
+
+### Sistema de Áudio 🎵
+- **Narração por voz**: O Mestre fala usando ElevenLabs
+- **Reconhecimento de voz**: Fale suas ações ou digite
+- **Entrada híbrida**: Microfone + teclado sempre disponíveis
 
 ### Comandos Avançados
 - `usar [item]` - Consumir poções ou itens
@@ -214,7 +221,11 @@ Dragons Breath/
 ### Dependências
 - **Python 3.8+**
 - **google-generativeai** - API do Gemini
-- **Bibliotecas padrão**: json, os, re, random
+- **pygame** - Reprodução de áudio
+- **SpeechRecognition** - Reconhecimento de voz
+- **pyaudio** - Captura de áudio do microfone
+- **requests** - Comunicação com ElevenLabs
+- **python-dotenv** - Carregamento de variáveis de ambiente
 
 ### Extensibilidade
 - **Adicione novas campanhas** facilmente

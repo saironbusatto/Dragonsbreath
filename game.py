@@ -3,22 +3,26 @@ import json
 import os
 import re
 import random
+from dotenv import load_dotenv
 from world_state_manager import update_world_state, create_initial_world_state, load_world_state, save_world_state
 from campaign_manager import get_campaign_files, load_campaign_data, get_current_campaign
+import audio_manager
+
+load_dotenv()
 
 MAX_INVENTORY_SLOTS = 5
 QUEST_ITEM_KEYWORDS = ['moeda', 'chave', 'nota', 'mapa', 'pergaminho', 'cristal', 'símbolo', 'anel', 'diapasão']
 
 def get_gm_narrative(world_state: dict, player_action: str, game_context: dict) -> str:
     try:
-        api_key = os.environ.get('GEMINI_API_KEY')
+        api_key = os.getenv('GEMINI_API_KEY')
         if not api_key:
-            print("ERRO: GEMINI_API_KEY não encontrada nas variáveis de ambiente")
-            return "O Mestre do Jogo não consegue se conectar aos planos astrais. (API Key não configurada). O que você faz?"
+            print("ERRO: GEMINI_API_KEY não encontrada")
+            return "O Mestre do Jogo não consegue se conectar aos planos astrais. O que você faz?"
         genai.configure(api_key=api_key)
     except Exception as e:
         print(f"ERRO na configuração da API: {e}")
-        return "O Mestre do Jogo não consegue se conectar aos planos astrais. (API Key não configurada). O que você faz?"
+        return "O Mestre do Jogo não consegue se conectar aos planos astrais. O que você faz?"
 
     campaign = get_current_campaign()
     campaign_name = campaign.get('name', 'RPG de Aventura')
@@ -43,10 +47,10 @@ Gatilhos Narrativos Ativos: {json.dumps(game_context.get('gatilhos', []), indent
 3. Use [INVENTORY_UPDATE] para itens: [INVENTORY_UPDATE] {{"add": ["item"]}}
 4. Sempre gere consequências claras para a ação do jogador.
 5. Se estiver explorando, adicione um novo evento (encontro, som, objeto, pista).
-6. Ofereça pelo menos uma escolha clara para o jogador.
+6. NUNCA ofereça opções múltiplas escolha. O jogador pode fazer QUALQUER coisa.
 7. Considere o desejo ou objetivo do personagem ao narrar eventos.
 8. Nunca se repita — traga algo novo ou surpreendente a cada ação.
-9. Encerre sempre com: "O que você faz?"
+9. Descreva a cena e termine SEM perguntar "O que você faz?"
 
 Mestre:"""
 
@@ -134,48 +138,62 @@ def clean_and_process_ai_response(response_text: str, world_state: dict) -> tupl
     
     return narrative, character
 
-def print_inventory(character: dict):
+def speak_inventory(character: dict):
     inventory = character.get('inventory', [])
-    print(f"\n--- Sua Bolsa ---")
     if not inventory:
-        print("Seu inventário está vazio.")
+        audio_manager.text_to_speech("Seu inventário está vazio.")
     else:
-        for item in inventory:
-            print(f"- {item.capitalize()}")
-    print("-------------------\n")
+        items_text = "Seus itens são: " + ", ".join(inventory)
+        audio_manager.text_to_speech(items_text)
 
-def print_status(character: dict):
+def speak_status(character: dict):
     status = character.get('status', {'hp': 20, 'max_hp': 20})
     hp = status.get('hp', 20)
     max_hp = status.get('max_hp', 20)
-    print(f"\n--- Saúde: {hp}/{max_hp} HP ---")
-    print("---------------------------\n")
+    status_text = f"Sua saúde atual é {hp} de {max_hp} pontos de vida."
+    audio_manager.text_to_speech(status_text)
 
 def handle_local_command(player_action: str, character: dict) -> bool:
     action_lower = player_action.lower()
 
     if any(keyword in action_lower for keyword in ['inventário', 'inventario', 'bolsa', 'itens']):
-        print_inventory(character)
+        speak_inventory(character)
         return True
 
     if any(keyword in action_lower for keyword in ['status', 'saúde', 'vida', 'hp']):
-        print_status(character)
+        speak_status(character)
         return True
 
     return False
+
+# Define command constants
+EXIT_COMMAND = 'chikito'
+
+
+def handle_narrative_triggers(world_state):
+    # Extracted logic for choosing and activating a narrative trigger
+    # Placeholder for actual implementation
+    pass
+
+
+
+
 
 def new_game_loop(world_state: dict, save_filepath: str, game_context: dict):
     # Garante que existe o campo rodadas_sem_gatilho
     if "rodadas_sem_gatilho" not in world_state:
         world_state["rodadas_sem_gatilho"] = 0
-    
+
     while True:
-        player_action = input("> ")
+        # Som de chime já indica que está ouvindo
+        player_action = audio_manager.speech_to_text()
+        if not player_action:
+            continue
         action_lower = player_action.lower()
 
         if action_lower == 'chikito':
             save_world_state(world_state, save_filepath)
-            print("\nJogo salvo. Obrigado por jogar Dragon's Breath!")
+            audio_manager.text_to_speech("Jogo salvo. Obrigado por jogar!")
             break
 
         # Comandos locais
@@ -237,11 +255,36 @@ def new_game_loop(world_state: dict, save_filepath: str, game_context: dict):
         cleaned_response, updated_character = clean_and_process_ai_response(gm_response, world_state)
         world_state['player_character'] = updated_character
         
-        print(f"\n{cleaned_response}\n")
+        # Verifica se o jogador quer tocar música
+        if any(word in player_action.lower() for word in ['tocar', 'toco', 'alaúde', 'música', 'cantar', 'canto']):
+            audio_manager.play_sfx(f"familiar{random.randint(1,3)}")
+        
+        # Adiciona efeitos sonoros baseados no contexto
+        if any(word in cleaned_response.lower() for word in ['taverna', 'bar', 'bebida']):
+            audio_manager.play_sfx("tavern")
+        elif any(word in cleaned_response.lower() for word in ['corvo', 'corvos', 'pássaro']):
+            audio_manager.play_sfx("crow")
+        elif any(word in cleaned_response.lower() for word in ['moeda', 'ouro', 'dinheiro']):
+            audio_manager.play_sfx("coin")
+        elif any(word in cleaned_response.lower() for word in ['fome', 'comé', 'comer']):
+            audio_manager.play_sfx("fome")
+        elif any(word in cleaned_response.lower() for word in ['familiar', 'conhecido', 'reconhece']):
+            audio_manager.play_sfx(f"familiar{random.randint(1,3)}")
+        elif any(word in cleaned_response.lower() for word in ['criança', 'correndo', 'passos']):
+            audio_manager.play_sfx("crianca")
+        elif any(word in cleaned_response.lower() for word in ['grito', 'grita', 'berro', 'terror']):
+            audio_manager.play_sfx("scream")
+        
+        audio_manager.text_to_speech(cleaned_response)
+        
+        # Toca chime após a narração para indicar que pode falar
+        audio_manager.play_chime()
 
-        # Atualização do estado do mundo com gatilho incluído
-        gatilho_para_arquivista = f"(Evento ambiental: {gatilho_escolhido})" if gatilho_escolhido else ""
-        world_state = update_world_state(world_state, f"{player_action} {gatilho_para_arquivista}", gm_response)
+        # Atualização simples do estado (sem IA Arquivista para economizar quota)
+        world_state['world_state']['recent_events_summary'] = [
+            f"Jogador: {player_action}",
+            f"Mestre: {cleaned_response[:100]}..."
+        ][-3:]  # Mantém apenas os 3 últimos eventos
         
         # Salva estado
         save_world_state(world_state, save_filepath)
@@ -264,40 +307,93 @@ def load_game_context_for_act(current_act: int, world_state: dict = None) -> dic
         'gatilhos': gatilhos
     }
 
+def tutorial_introduction():
+    """Introdução narrada com tutorial do jogo"""
+    # Introdução universal do Ressoar
+    audio_manager.play_sfx("logo")  # Som de abertura
+    
+    ressoar_intro = """Existe um som que só você pode emitir.
+
+Um timbre único, uma frequência que é só sua.
+
+Bem-vindo a Ressoar.
+
+Este não é um lugar para seguir caminhos, mas para criar ecos.
+
+Cada passo seu deixará uma marca. Cada feito seu será lembrado.
+
+O mundo é todo ouvidos. O que ele vai escutar de você?"""
+    
+    audio_manager.text_to_speech(ressoar_intro)
+    
+    # Pega informações da campanha atual
+    campaign = get_current_campaign()
+    campaign_name = campaign.get('name', 'Aventura Desconhecida')
+    campaign_desc = campaign.get('description', '')
+    
+    # Introdução específica da campanha
+    campaign_intro = f"""Você tem a história de: {campaign_name}.
+
+{campaign_desc}
+
+Nas brumas sombrias de Umbraton, uma cidade gótica assolada por uma praga misteriosa, você desperta como um bardo em busca da verdade. Sua esposa morreu em circunstâncias estranhas, e sussurros falam de um dragão disfarçado entre os mortais.
+
+Este é um RPG totalmente por voz. Eu, o Mestre, narrarei tudo e você responderá falando suas ações.
+
+Sempre que ouvir um som de sino, significa que o jogo está pronto para ouvir sua ação.
+
+Comandos úteis: diga 'inventário' para seus itens, 'status' para sua saúde, e 'chikito' para salvar e sair.
+
+Agora, me diga seu nome, corajoso bardo."""
+    
+    audio_manager.text_to_speech(campaign_intro)
+    
+    # Pede o nome usando reconhecimento de voz
+    player_name = audio_manager.speech_to_text()
+    while not player_name or len(player_name.strip()) < 2:
+        audio_manager.text_to_speech("Não consegui ouvir seu nome claramente. Pode repetir?")
+        player_name = audio_manager.speech_to_text()
+    
+    return player_name.strip()
+
 def main():
     save_filepath = 'estado_do_mundo.json'
     
-    campaign = get_current_campaign()
-    campaign_name = campaign.get('name', 'RPG Modular com IA')
-    print(f"=== Bem-vindo a {campaign_name} ===")
-    print("... (Diga 'chikito' para salvar e sair)\n")
-
     world_state = load_world_state(save_filepath)
     
     if world_state:
-        print("--- Continuando sua jornada... ---\n")
+        # Descreve a situação atual ao continuar
+        current_scene = world_state.get('world_state', {}).get('immediate_scene_description', 'Você continua sua jornada...')
+        continue_text = f"Continuando sua jornada... {current_scene}"
+        audio_manager.text_to_speech(continue_text)
+        
+        # Toca chime para indicar que pode falar
+        audio_manager.play_chime()
+        
         current_act = world_state.get('player_character', {}).get('current_act', 1)
     else:
-        player_name = input("Qual é o seu nome, viajante? > ").strip()
-        while not player_name:
-            player_name = input("O nome não pode estar em branco. Qual é o seu nome? > ").strip()
+        player_name = tutorial_introduction()
         
         world_state = create_initial_world_state(player_name)
         current_act = 1
         
+        # Cena de abertura personalizada baseada na campanha
         campaign = get_current_campaign()
-        campaign_name = campaign.get('name', 'sua aventura')
-        print(f"\n{player_name}, {campaign_name} começa agora...")
+        initial_desc = campaign.get('world_template', {}).get('initial_description', 'Sua aventura começa...')
         
-        game_context = load_game_context_for_act(current_act, world_state)
-        # Contexto sem gatilhos para cena de abertura (foco na apresentação do cenário)
-        contexto_sem_gatilhos = {**game_context, "gatilhos": []}
-        opening_scene = get_gm_narrative(world_state, "Iniciou a aventura", contexto_sem_gatilhos)
-        cleaned_opening, updated_character = clean_and_process_ai_response(opening_scene, world_state)
-        world_state['player_character'] = updated_character
-        print(f"\n{cleaned_opening}\n")
+        # Toca ambientação de chuva e corvos
+        audio_manager.play_sfx("rain")
+        audio_manager.play_sfx("crow")
         
-        world_state = update_world_state(world_state, "Iniciou a aventura", opening_scene)
+        opening_text = f"Muito bem, {player_name}. {initial_desc} As ruas cobertas de névoa ecoam com lamentos distantes, e você sente o peso do seu alaúde nas costas. A taverna 'O Corvo Solitário' brilha fracamente à sua frente, prometendo respostas... ou mais mistérios. O que você faz?"
+        
+        audio_manager.text_to_speech(opening_text)
+        
+        # Atualiza estado inicial
+        world_state['world_state']['immediate_scene_description'] = opening_text
+        
+        # Salva o estado inicial
+        save_world_state(world_state, save_filepath)
     
     game_context = load_game_context_for_act(current_act, world_state)
     new_game_loop(world_state, save_filepath, game_context)

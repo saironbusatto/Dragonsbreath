@@ -4,30 +4,29 @@
         "class": "Bardo",
         "current_act": 1,
         "status": {
-            "hp": 19,
+            "hp": 20,
             "max_hp": 20
         },
         "inventory": [
             "um alaúde de madeira simples",
-            "um diário com anotações sobre a praga",
-            "Anel do Sussurro"
+            "um diário com anotações sobre a praga"
         ],
         "desejo": "Descobrir a verdade sobre a praga que matou sua esposa"
     },
     "world_state": {
         "current_location_key": "umbraton",
-        "immediate_scene_description": "Você chega aos portões de uma cidade sombria, buscando respostas sobre uma tragédia pessoal.",
+        "immediate_scene_description": "Muito bem, Edwin. Você chega aos portões de uma cidade sombria, buscando respostas sobre uma tragédia pessoal. As ruas cobertas de névoa ecoam com lamentos distantes, e você sente o peso do seu alaúde nas costas. A taverna 'O Corvo Solitário' brilha fracamente à sua frente, prometendo respostas... ou mais mistérios. O que você faz?",
         "active_quests": {
             "main_quest": "Descobrir a verdade sobre a praga que matou sua esposa"
         },
         "important_npcs_in_scene": {},
         "recent_events_summary": [
-            "Edwin iniciou sua jornada"
+            "Jogador: Onde estou",
+            "Mestre: A névoa úmida da cidade de Umbraton envolve você enquanto se aproxima cautelosamente da viela escura..."
         ],
         "gatilhos_ativos": {
             "umbraton": [
-                "crianca_correndo",
-                "grito_viela",
+                "sino_toca",
                 "diario_vibra"
             ],
             "taverna_corvo_ferido": [
@@ -37,7 +36,9 @@
         },
         "gatilhos_usados": {
             "umbraton": [
-                "corvo_na_gargula"
+                "crianca_correndo",
+                "corvo_na_gargula",
+                "grito_viela"
             ],
             "taverna_corvo_ferido": []
         }
