@@ -1,6 +1,9 @@
 # API Keys e configurações sensíveis
 .env
 *.env
+dragonsbreath-*.json
+*-credentials.json
+google-cloud-*.json
 
 # Python
 __pycache__/

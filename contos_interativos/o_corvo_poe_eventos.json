@@ -1,0 +1,220 @@
+{
+  "titulo": "O Corvo",
+  "autor": "Adaptação inspirada em Edgar Allan Poe",
+  "variaveis_iniciais": {
+    "sanidade": 10,
+    "esperanca": 5,
+    "obsessao": 0,
+    "aceitacao": 0
+  },
+  "evento_inicial": "lamento_inicial",
+  "eventos": {
+    "lamento_inicial": {
+      "descricao_para_ia": "O narrador se encontra sozinho em sua biblioteca, consumido pela dor da perda de Lenore. Ele está cercado por livros de filosofia antiga, tentando encontrar consolo, mas as palavras parecem vazias. Use a Cena 1 do texto original para narrar esta situação melancólica.",
+      "opcoes": [
+        {
+          "texto": "(A) Tentar encontrar consolo nos livros de filosofia antiga.",
+          "efeito": {
+            "sanidade": 1,
+            "esperanca": 1
+          },
+          "proximo_evento": "batida_misteriosa"
+        },
+        {
+          "texto": "(B) Render-se à dor, chamando pelo nome de Lenore na escuridão.",
+          "efeito": {
+            "sanidade": -1,
+            "esperanca": -1,
+            "obsessao": 2
+          },
+          "proximo_evento": "batida_misteriosa"
+        },
+        {
+          "texto": "(C) Tentar dormir para escapar da dor.",
+          "efeito": {
+            "sanidade": -1,
+            "obsessao": 1
+          },
+          "proximo_evento": "batida_misteriosa"
+        }
+      ]
+    },
+    "batida_misteriosa": {
+      "descricao_para_ia": "Um som estranho ecoa pela casa - uma batida suave mas persistente. O narrador hesita entre esperança e medo. Use a Cena 2 do texto para narrar esta situação de suspense e incerteza.",
+      "opcoes": [
+        {
+          "texto": "(A) Investigar corajosamente a origem do som.",
+          "efeito": {
+            "sanidade": 1,
+            "esperanca": 2
+          },
+          "proximo_evento": "chegada_corvo"
+        },
+        {
+          "texto": "(B) Ignorar o som, tentando convencer-se de que é apenas o vento.",
+          "efeito": {
+            "sanidade": -1,
+            "obsessao": 1
+          },
+          "proximo_evento": "chegada_corvo"
+        },
+        {
+          "texto": "(C) Aproximar-se com cautela e medo.",
+          "efeito": {
+            "esperanca": -1,
+            "obsessao": 1
+          },
+          "proximo_evento": "chegada_corvo"
+        }
+      ]
+    },
+    "chegada_corvo": {
+      "descricao_para_ia": "A janela se abre e um corvo majestoso irrompe na sala, pousando sobre o busto de Palas Atena. A ave observa o homem com intensidade perturbadora. Use a Cena 3 do texto para narrar esta entrada dramática e sinistra.",
+      "opcoes": [
+        {
+          "texto": "(A) Observar a ave com curiosidade científica.",
+          "efeito": {
+            "sanidade": 1,
+            "esperanca": 1
+          },
+          "proximo_evento": "dialogo_inicial"
+        },
+        {
+          "texto": "(B) Sentir-se perturbado pela presença sinistra da criatura.",
+          "efeito": {
+            "sanidade": -2,
+            "obsessao": 2
+          },
+          "proximo_evento": "dialogo_inicial"
+        },
+        {
+          "texto": "(C) Tentar expulsar imediatamente o intruso.",
+          "efeito": {
+            "sanidade": -1,
+            "esperanca": -2
+          },
+          "proximo_evento": "confronto_precoce"
+        }
+      ]
+    },
+    "dialogo_inicial": {
+      "descricao_para_ia": "O narrador, movido por curiosidade e desespero, começa a questionar o corvo sobre Lenore, esperança e redenção. A ave responde sempre com a mesma palavra sombria. Use a Cena 4 do texto para narrar este diálogo fatídico.",
+      "opcoes": [
+        {
+          "texto": "(A) Perguntar se há esperança de reencontrar Lenore no além.",
+          "efeito": {
+            "esperanca": -3,
+            "obsessao": 3
+          },
+          "proximo_evento": "resposta_definitiva"
+        },
+        {
+          "texto": "(B) Questionar se a dor um dia cessará.",
+          "efeito": {
+            "sanidade": -2,
+            "obsessao": 2
+          },
+          "proximo_evento": "resposta_definitiva"
+        },
+        {
+          "texto": "(C) Tentar entender o significado da presença da ave.",
+          "efeito": {
+            "sanidade": 1,
+            "aceitacao": 2
+          },
+          "proximo_evento": "momento_reflexao"
+        }
+      ]
+    },
+    "confronto_precoce": {
+      "descricao_para_ia": "O narrador tenta expulsar o corvo violentamente, mas a ave permanece impassível. Esta é uma ramificação que leva diretamente ao final de confronto violento.",
+      "opcoes": [
+        {
+          "texto": "(A) Continuar lutando desesperadamente contra a ave.",
+          "efeito": {
+            "sanidade": -5,
+            "esperanca": -5
+          },
+          "proximo_evento": "final_violencia"
+        },
+        {
+          "texto": "(B) Parar e tentar entender por que a ave não se move.",
+          "efeito": {
+            "aceitacao": 3
+          },
+          "proximo_evento": "momento_reflexao"
+        }
+      ]
+    },
+    "resposta_definitiva": {
+      "descricao_para_ia": "A resposta do corvo ecoa pela sala, corroendo gradualmente a sanidade do narrador. A repetição transforma curiosidade em obsessão, e obsessão em desespero.",
+      "opcoes": [
+        {
+          "texto": "(A) Aceitar a resposta como verdade absoluta e render-se ao desespero.",
+          "efeito": {
+            "sanidade": -5,
+            "esperanca": -5,
+            "obsessao": 5
+          },
+          "proximo_evento": "final_desespero"
+        },
+        {
+          "texto": "(B) Enfurecer-se e tentar atacar a ave.",
+          "efeito": {
+            "sanidade": -3,
+            "esperanca": -3
+          },
+          "proximo_evento": "final_violencia"
+        },
+        {
+          "texto": "(C) Questionar se a ave pode estar refletindo seus próprios medos.",
+          "efeito": {
+            "aceitacao": 4
+          },
+          "proximo_evento": "momento_reflexao"
+        }
+      ]
+    },
+    "momento_reflexao": {
+      "descricao_para_ia": "O narrador tem um momento de clareza, questionando se o corvo é real ou uma manifestação de sua mente atormentada. Este é um ponto de virada crucial.",
+      "opcoes": [
+        {
+          "texto": "(A) Reconhecer que a dor faz parte da condição humana e encontrar paz na aceitação.",
+          "efeito": {
+            "aceitacao": 5,
+            "esperanca": 3
+          },
+          "proximo_evento": "final_aceitacao"
+        },
+        {
+          "texto": "(B) Perceber que o corvo representa seus próprios demônios internos.",
+          "efeito": {
+            "sanidade": 5,
+            "aceitacao": 3
+          },
+          "proximo_evento": "final_despertar"
+        },
+        {
+          "texto": "(C) Ainda assim, sucumbir ao peso da perda.",
+          "efeito": {
+            "sanidade": -3,
+            "esperanca": -3
+          },
+          "proximo_evento": "final_desespero"
+        }
+      ]
+    },
+    "final_desespero": {
+      "descricao_para_ia": "Este é um evento final. O narrador sucumbe completamente à mensagem do corvo. Use o Final 1 do texto para narrar como sua alma se torna prisioneira da própria dor, permanecendo para sempre sob a sombra da ave sinistra."
+    },
+    "final_violencia": {
+      "descricao_para_ia": "Este é um evento final. O narrador luta desesperadamente contra o corvo, mas a ave permanece impassível. Use o Final 2 do texto para narrar como ele se exaure em vão, selando seu tormento."
+    },
+    "final_aceitacao": {
+      "descricao_para_ia": "Este é um evento final. O narrador encontra paz na aceitação de sua dor. Use o Final 3 do texto para narrar como ele compreende que Lenore viverá para sempre em suas memórias, e o corvo se torna símbolo de lembrança eterna."
+    },
+    "final_despertar": {
+      "descricao_para_ia": "Este é um evento final. O narrador percebe que o corvo é manifestação de sua mente atormentada. Use o Final 4 do texto para narrar como ele encontra força para seguir em frente, honrando Lenore através da vida."
+    }
+  }
+}

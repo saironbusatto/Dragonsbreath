@@ -14,9 +14,13 @@
       "player_template": {
         "class": "Bardo",
         "starting_hp": 20,
+        "max_slots": 10,
         "starting_inventory": [
-          "um alaúde de madeira simples",
-          "um diário com anotações sobre a praga"
+          "Alaúde de Madeira",
+          "Adaga de Ferro",
+          "Mochila de Couro",
+          "Kit de Viagem",
+          "Kit de Iluminação"
         ]
       },
       "world_template": {
@@ -42,10 +46,15 @@
       "player_template": {
         "class": "Aventureiro",
         "starting_hp": 25,
+        "max_slots": 10,
         "starting_inventory": [
-          "uma espada de ferro",
-          "uma mochila de couro",
-          "10 moedas de ouro"
+          "Espada Longa",
+          "Escudo de Madeira",
+          "Armadura de Couro",
+          "Mochila de Aventureiro",
+          "Corda de Cânhamo",
+          "Kit de Iluminação",
+          "Kit de Sobrevivência"
         ]
       },
       "world_template": {

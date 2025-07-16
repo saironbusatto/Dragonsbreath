@@ -5,13 +5,66 @@
       "descricao": "Um frasco com líquido vermelho brilhante",
       "efeito": {"hp_restore": 10},
       "consumivel": true,
-      "valor": "10 moedas de ouro"
+      "valor": "10 moedas de ouro",
+      "slots": 1
     },
     "corda": {
       "nome": "Corda Resistente",
       "descricao": "50 metros de corda de boa qualidade",
       "efeito": "Útil para escaladas e amarrações",
-      "valor": "2 moedas de ouro"
+      "valor": "2 moedas de ouro",
+      "slots": 1
+    },
+    "espada_longa": {
+      "nome": "Espada Longa",
+      "descricao": "Uma espada de ferro bem equilibrada, com lâmina afiada e cabo confortável.",
+      "efeito": "Arma versátil para combate corpo a corpo",
+      "ato_aparicao": 1,
+      "slots": 1
+    },
+    "escudo_de_madeira": {
+      "nome": "Escudo de Madeira",
+      "descricao": "Um escudo redondo de madeira reforçada com ferro, pintado com símbolos simples.",
+      "efeito": "Oferece proteção contra ataques",
+      "ato_aparicao": 1,
+      "slots": 1
+    },
+    "armadura_de_couro": {
+      "nome": "Armadura de Couro",
+      "descricao": "Uma armadura leve de couro curtido, que oferece proteção sem sacrificar mobilidade.",
+      "efeito": "Proteção básica contra ataques",
+      "ato_aparicao": 1,
+      "slots": 1
+    },
+    "mochila_de_aventureiro": {
+      "nome": "Mochila de Aventureiro",
+      "descricao": "Uma mochila grande e resistente, ideal para longas jornadas e exploração.",
+      "efeito": "Permite carregar equipamentos de aventura",
+      "ato_aparicao": 1,
+      "slots": 1
+    },
+    "corda_de_canhamo": {
+      "nome": "Corda de Cânhamo",
+      "descricao": "15 metros de corda resistente de cânhamo, enrolada e amarrada.",
+      "efeito": "Útil para escalar, amarrar ou criar armadilhas",
+      "ato_aparicao": 1,
+      "slots": 1
+    },
+    "kit_de_iluminacao": {
+      "nome": "Kit de Iluminação",
+      "descricao": "Um pacote com tochas amarradas e material para acendê-las.",
+      "efeito": "Fornece iluminação em locais escuros",
+      "conteudo": ["Tochas (5 unidades)"],
+      "ato_aparicao": 1,
+      "slots": 1
+    },
+    "kit_de_sobrevivencia": {
+      "nome": "Kit de Sobrevivência",
+      "descricao": "Uma bolsa de couro com suprimentos essenciais para sobrevivência.",
+      "efeito": "Contém água, comida e ferramentas básicas",
+      "conteudo": ["Cantil (cheio)", "Rações (3 dias)", "Pederneira e Isqueiro"],
+      "ato_aparicao": 1,
+      "slots": 1
     }
   }
 }

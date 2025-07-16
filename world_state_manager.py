@@ -29,6 +29,16 @@ INSTRUÇÕES DE ATUALIZAÇÃO:
 4. Atualize 'active_quests' se missões foram iniciadas/completadas
 5. Mantenha 'recent_events_summary' com os 3-4 eventos mais recentes
 6. Atualize inventário e status do personagem se necessário
+7. **SISTEMA DE INTERAÇÃO AMBIENTAL**: A partir da resposta do Mestre, identifique TODOS os objetos e elementos interativos mencionados na cena. Crie/atualize uma lista chamada 'interactable_elements_in_scene' dentro do world_state com esses itens.
+
+   EXEMPLOS de elementos para extrair:
+   - Objetos físicos: "cadeira", "mesa", "livro", "caneca", "espada"
+   - Móveis: "balcão", "estante", "cama", "baú"
+   - Elementos arquitetônicos: "porta", "janela", "escada", "lareira"
+   - Elementos naturais: "árvore", "pedra", "poça", "galho"
+   - NPCs mencionados: "taverneiro", "guarda", "comerciante"
+
+   IMPORTANTE: Extraia apenas substantivos específicos mencionados na resposta do Mestre, não invente objetos.
 
 Agora, forneça o novo JSON atualizado:"""
     
@@ -68,6 +78,7 @@ def create_initial_world_state(character_name: str) -> dict:
                 "hp": player_template.get("starting_hp", 20),
                 "max_hp": player_template.get("starting_hp", 20)
             },
+            "max_slots": player_template.get("max_slots", 10),
             "inventory": player_template.get("starting_inventory", []),
             "desejo": world_template.get("initial_quest", "Explorar o mundo")
         },

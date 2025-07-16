@@ -4,70 +4,283 @@ import pygame
 import speech_recognition as sr
 import io
 from dotenv import load_dotenv
+import json
+import base64
+
+# Tenta importar pyttsx3 para TTS gratuito local
+try:
+    import pyttsx3
+    PYTTSX3_AVAILABLE = True
+except ImportError:
+    PYTTSX3_AVAILABLE = False
+
+# Tenta importar Google Cloud TTS para opção mais barata
+try:
+    from google.cloud import texttospeech
+    GOOGLE_TTS_AVAILABLE = True
+except ImportError:
+    GOOGLE_TTS_AVAILABLE = False
 
 load_dotenv()
 
-# Inicializa pygame mixer para áudio
-try:
-    pygame.mixer.init(frequency=22050, size=-16, channels=2, buffer=512)
-except:
-    pass
+# Configurações de custo e qualidade
+TTS_PRIORITY = [
+    "google_cloud",  # Mais barato: $4/1M chars (Standard) vs $22/1M (ElevenLabs)
+    "local_pyttsx3", # Gratuito
+    "elevenlabs"     # Mais caro, mas melhor qualidade
+]
 
-def text_to_speech(text):
-    """Converte texto em áudio usando ElevenLabs"""
+# Cache para evitar chamadas desnecessárias
+_tts_cache = {}
+_last_tts_service = None
+
+# Inicializa pygame mixer para áudio
+_mixer_initialized = False
+
+def _ensure_mixer_initialized():
+    """Garante que o mixer pygame está inicializado apenas quando necessário."""
+    global _mixer_initialized
+    if not _mixer_initialized:
+        try:
+            pygame.mixer.init(frequency=22050, size=-16, channels=2, buffer=512)
+            _mixer_initialized = True
+        except:
+            pass
+
+def text_to_speech_google_cloud(text, voice_type="master"):
+    """TTS usando Google Cloud com arquivo JSON (mais barato: $4/1M chars vs $22/1M ElevenLabs)"""
+    if not GOOGLE_TTS_AVAILABLE:
+        return False
+
+    try:
+        # Configura credenciais usando o arquivo JSON local
+        credentials_path = os.getenv('GOOGLE_APPLICATION_CREDENTIALS')
+
+        # Se não estiver no .env, tenta usar o arquivo JSON local
+        if not credentials_path:
+            json_file = 'dragonsbreath-55a792adeda7.json'
+            if os.path.exists(json_file):
+                os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = json_file
+                print(f"🔑 Usando credenciais do arquivo: {json_file}")
+            else:
+                print("❌ Arquivo de credenciais Google Cloud não encontrado")
+                return False
+
+        client = texttospeech.TextToSpeechClient()
+
+        # Seleciona vozes portuguesas brasileiras otimizadas
+        if voice_type == "narrator":
+            # Voz feminina brasileira para introdução do Ressoar (mais natural)
+            voice = texttospeech.VoiceSelectionParams(
+                language_code="pt-BR",
+                name="pt-BR-Neural2-A",  # Voz neural feminina (mais natural)
+                ssml_gender=texttospeech.SsmlVoiceGender.FEMALE
+            )
+        else:
+            # Voz masculina brasileira para o Mestre (mais natural)
+            voice = texttospeech.VoiceSelectionParams(
+                language_code="pt-BR",
+                name="pt-BR-Neural2-B",  # Voz neural masculina (mais natural)
+                ssml_gender=texttospeech.SsmlVoiceGender.MALE
+            )
+
+        # Configuração de áudio otimizada para português brasileiro
+        audio_config = texttospeech.AudioConfig(
+            audio_encoding=texttospeech.AudioEncoding.MP3,
+            speaking_rate=1.5,  # Velocidade aumentada conforme preferência
+            pitch=0.0,
+            volume_gain_db=0.0,
+            sample_rate_hertz=22050  # Qualidade otimizada
+        )
+
+        synthesis_input = texttospeech.SynthesisInput(text=text)
+
+        print(f"🗣️ Sintetizando com Google Cloud TTS (pt-BR): {voice.name}")
+        response = client.synthesize_speech(
+            input=synthesis_input,
+            voice=voice,
+            audio_config=audio_config
+        )
+
+        # Reproduz o áudio
+        _ensure_mixer_initialized()
+        audio_data = io.BytesIO(response.audio_content)
+        pygame.mixer.music.load(audio_data)
+        pygame.mixer.music.play()
+
+        while pygame.mixer.music.get_busy():
+            try:
+                pygame.time.wait(100)
+            except KeyboardInterrupt:
+                pygame.mixer.music.stop()
+                raise
+
+        print(f"✅ Google Cloud TTS concluído ({len(response.audio_content)} bytes)")
+        return True
+
+    except Exception as e:
+        print(f"⚠️ Google Cloud TTS error: {e}")
+        print("💡 Dica: Verifique se o arquivo dragonsbreath-55a792adeda7.json está presente")
+        return False
+
+def text_to_speech_local(text, voice_type="master"):
+    """TTS gratuito usando pyttsx3 (sistema local)"""
+    if not PYTTSX3_AVAILABLE:
+        return False
+
+    try:
+        engine = pyttsx3.init()
+
+        # Configura velocidade mais rápida (conforme preferência do usuário)
+        rate = engine.getProperty('rate')
+        engine.setProperty('rate', rate + 50)
+
+        # Tenta configurar voz portuguesa se disponível
+        voices = engine.getProperty('voices')
+        for voice in voices:
+            if 'portuguese' in voice.name.lower() or 'brasil' in voice.name.lower():
+                engine.setProperty('voice', voice.id)
+                break
+            # Fallback para vozes femininas/masculinas se português não disponível
+            elif voice_type == "narrator" and 'female' in voice.name.lower():
+                engine.setProperty('voice', voice.id)
+                break
+            elif voice_type == "master" and 'male' in voice.name.lower():
+                engine.setProperty('voice', voice.id)
+                break
+
+        engine.say(text)
+        engine.runAndWait()
+        return True
+    except Exception as e:
+        print(f"⚠️  Local TTS error: {e}")
+        return False
+
+def text_to_speech_elevenlabs(text, voice_type="master"):
+    """TTS usando ElevenLabs (mais caro: $22/1M chars, mas melhor qualidade)"""
+    _ensure_mixer_initialized()
+
     api_key = os.getenv('ELEVENLABS_API_KEY')
     if not api_key:
-        pass
-        return
-    
-    url = "https://api.elevenlabs.io/v1/text-to-speech/nPczCjzI2devNBz1zQrb"
-    
+        return False
+
+    # Seleciona a voz baseada no tipo (usando vozes mais baratas)
+    if voice_type == "narrator":
+        # Voz feminina mais barata para introdução do Ressoar
+        voice_id = "pNInz6obpgDQGcFmaJgB"  # Adam - voz mais barata (pode ser usada para feminino)
+    else:
+        # Voz masculina mais barata para o Mestre
+        voice_id = "pNInz6obpgDQGcFmaJgB"  # Adam - voz mais barata
+
+    url = f"https://api.elevenlabs.io/v1/text-to-speech/{voice_id}"
+
     headers = {
         "Accept": "audio/mpeg",
         "Content-Type": "application/json",
         "xi-api-key": api_key
     }
-    
+
     data = {
         "text": text,
-        "model_id": "eleven_multilingual_v2",
+        "model_id": "eleven_multilingual_v2",  # Mantém multilíngue para português
         "voice_settings": {
-            "stability": 0.7,
-            "similarity_boost": 0.8,
-            "style": 0.3,
-            "use_speaker_boost": True
+            "stability": 0.5,  # Reduzido para economizar processamento
+            "similarity_boost": 0.5,  # Reduzido para economizar processamento
+            "style": 0.0,  # Mínimo para economizar
+            "use_speaker_boost": False,  # Desabilitado para economizar
+            "speed": 1.5
         }
     }
-    
+
     try:
-        # Reduz volume dos efeitos sonoros durante a fala
+        # Reduz volume dos efeitos sonoros durante a fala (30% de redução = 70% do volume)
         pygame.mixer.set_num_channels(8)
         for i in range(8):
             channel = pygame.mixer.Channel(i)
             if channel.get_busy():
-                channel.set_volume(0.4)  # 40% do volume original
-        
+                channel.set_volume(0.7)  # 70% do volume original (30% de redução)
+
         response = requests.post(url, json=data, headers=headers)
+
         if response.status_code == 200:
             audio_data = io.BytesIO(response.content)
             pygame.mixer.music.load(audio_data)
             pygame.mixer.music.play()
-            
+
             while pygame.mixer.music.get_busy():
-                pygame.time.wait(100)
-                
+                try:
+                    pygame.time.wait(100)
+                except KeyboardInterrupt:
+                    pygame.mixer.music.stop()
+                    raise
             # Restaura volume dos efeitos sonoros
             for i in range(8):
                 channel = pygame.mixer.Channel(i)
                 if channel.get_busy():
                     channel.set_volume(1.0)  # Volume normal
+            return True
         else:
-            pass
+            if response.status_code == 401:
+                print("⚠️  ElevenLabs API quota exceeded")
+            else:
+                print(f"⚠️  ElevenLabs API error - Status: {response.status_code}")
+            return False
     except Exception as e:
-        pass
+        print(f"⚠️  ElevenLabs TTS error: {e}")
+        return False
+
+def text_to_speech(text, voice_type="master"):
+    """Sistema inteligente de TTS com fallback por custo-efetividade
+
+    Prioridade:
+    1. Google Cloud TTS (Standard): $4/1M chars (82% mais barato que ElevenLabs)
+    2. Local pyttsx3: GRATUITO
+    3. ElevenLabs: $22/1M chars (melhor qualidade, mas mais caro)
+
+    Args:
+        text: Texto para converter em fala
+        voice_type: "master" para voz do mestre (Brian), "narrator" para narradora (voz feminina)
+    """
+    global _last_tts_service
+
+    # Cache simples para evitar repetições
+    cache_key = f"{text[:50]}_{voice_type}"
+    if cache_key in _tts_cache:
+        print("🔄 Usando áudio em cache")
+        return
+
+    # Tenta cada serviço na ordem de prioridade
+    for service in TTS_PRIORITY:
+        success = False
+
+        if service == "google_cloud":
+            print("🔊 Tentando Google Cloud TTS (mais barato)...")
+            success = text_to_speech_google_cloud(text, voice_type)
+
+        elif service == "local_pyttsx3":
+            print("🔊 Tentando TTS local (gratuito)...")
+            success = text_to_speech_local(text, voice_type)
+
+        elif service == "elevenlabs":
+            print("🔊 Tentando ElevenLabs TTS (premium)...")
+            success = text_to_speech_elevenlabs(text, voice_type)
+
+        if success:
+            _last_tts_service = service
+            _tts_cache[cache_key] = True
+            print(f"✅ TTS bem-sucedido com {service}")
+            return
+        else:
+            print(f"❌ Falha no {service}, tentando próximo...")
+
+    # Se todos falharam
+    print("⚠️  Todos os serviços de TTS falharam - continuando apenas com texto")
+    _last_tts_service = None
 
 def play_sfx(sfx_name):
     """Toca um efeito sonoro específico"""
+    _ensure_mixer_initialized()
+
     sfx_files = {
         "chime": "sons/sistema/chime-2-356833.mp3",
         "coin": "sons/sistema/coin-recieved.mp3",
@@ -90,39 +303,99 @@ def play_sfx(sfx_name):
         sfx_path = sfx_files.get(sfx_name)
         if sfx_path and os.path.exists(sfx_path):
             pygame.mixer.Sound(sfx_path).play()
+        else:
+            print(f"⚠️  Sound file not found: {sfx_path}")
     except Exception as e:
-        pass
+        print(f"⚠️  Sound effect error: {e}")
+
+def narrator_speech(text):
+    """Usa voz feminina para narração (introdução do Ressoar)"""
+    text_to_speech(text, voice_type="narrator")
+
+def master_speech(text):
+    """Usa voz masculina para o Mestre do jogo"""
+    text_to_speech(text, voice_type="master")
 
 def play_chime():
     """Toca o som de chime quando o jogo está ouvindo"""
     play_sfx("chime")
 
+def play_ressoar_opening_sequence():
+    """
+    Sequência especial de abertura da Plataforma Ressoar:
+    1. Som único de abertura (logo)
+    2. Narração sobre o Ressoar
+    3. Pausa antes das opções
+    """
+    print("🎵 Iniciando sequência de abertura do Ressoar...")
+
+    # 1. Som único de abertura - logo do Ressoar
+    print("🎶 Tocando som de abertura...")
+    play_sfx("logo")
+
+    # Aguarda o som terminar
+    import time
+    time.sleep(2)  # Ajuste conforme duração do som do logo
+
+    # 2. Narração especial sobre o Ressoar com voz feminina (TEXTO ORIGINAL)
+    ressoar_intro = """Existe um som que só você pode emitir.
+
+Um timbre único, uma frequência que é só sua.
+
+Bem-vindo a Ressoar.
+
+Este não é um lugar para seguir caminhos, mas para criar ecos.
+
+Cada passo seu deixará uma marca. Cada feito seu será lembrado.
+
+O mundo é todo ouvidos. O que ele vai escutar de você?"""
+
+    print("🗣️ Narrando introdução do Ressoar...")
+    narrator_speech(ressoar_intro)
+
+    # 3. Pausa dramática antes das opções
+    time.sleep(1)
+    print("✨ Sequência de abertura concluída. Apresentando opções...")
+
+def play_mode_selection_audio():
+    """
+    Áudio específico para a seleção de modo de jogo.
+    Toca após a sequência de abertura.
+    """
+    selection_text = """Agora escolha sua jornada:
+    Modo RPG para aventuras com liberdade total,
+    ou Modo Conto Interativo para histórias clássicas com múltiplos destinos."""
+
+    narrator_speech(selection_text)
+    play_chime()  # Indica que pode fazer a escolha
+
 def speech_to_text():
     """Converte fala em texto usando reconhecimento de voz"""
+    _ensure_mixer_initialized()
     play_chime()  # Toca o chime antes de ouvir
     r = sr.Recognizer()
-    
-    with sr.Microphone() as source:
-        try:
-            r.adjust_for_ambient_noise(source, duration=0.3)
-            audio = r.listen(source, timeout=5, phrase_time_limit=10)
-            
-            text = r.recognize_google(audio, language='pt-BR')
-            return text
-            
-        except sr.WaitTimeoutError:
-            text_to_speech("Não consegui ouvir nada. Tente falar novamente.")
-            play_chime()
-            return speech_to_text()
-        except sr.UnknownValueError:
-            text_to_speech("Não consegui entender. Pode repetir?")
-            play_chime()
-            return speech_to_text()
-        except KeyboardInterrupt:
-            text_to_speech("Interrompido. Tente novamente.")
-            play_chime()
-            return speech_to_text()
-        except Exception as e:
-            text_to_speech("Erro no reconhecimento. Tente novamente.")
-            play_chime()
-            return speech_to_text()
+
+    try:
+        with sr.Microphone() as source:
+            try:
+                r.adjust_for_ambient_noise(source, duration=0.5)  # Tempo adequado para calibrar
+                audio = r.listen(source, timeout=10, phrase_time_limit=15)  # Tempo suficiente para falar após narração
+
+                text = r.recognize_google(audio, language='pt-BR')
+                return text
+
+            except sr.WaitTimeoutError:
+                print("⚠️  Tempo limite para fala excedido. Use entrada de texto.")
+                return input("Digite sua ação: > ").strip()
+            except sr.UnknownValueError:
+                print("⚠️  Não consegui entender. Use entrada de texto.")
+                return input("Digite sua ação: > ").strip()
+            except KeyboardInterrupt:
+                print("⚠️  Interrompido. Use entrada de texto.")
+                return input("Digite sua ação: > ").strip()
+            except Exception as e:
+                print(f"⚠️  Erro no reconhecimento de voz: {e}")
+                return input("Digite sua ação: > ").strip()
+    except Exception as e:
+        print(f"⚠️  Microfone não disponível: {e}")
+        return input("Digite sua ação: > ").strip()

@@ -1,10 +1,10 @@
 {
     "player_character": {
-        "name": "Edwin",
+        "name": "chikito",
         "class": "Bardo",
         "current_act": 1,
         "status": {
-            "hp": 20,
+            "hp": 18,
             "max_hp": 20
         },
         "inventory": [
@@ -15,19 +15,18 @@
     },
     "world_state": {
         "current_location_key": "umbraton",
-        "immediate_scene_description": "Muito bem, Edwin. Você chega aos portões de uma cidade sombria, buscando respostas sobre uma tragédia pessoal. As ruas cobertas de névoa ecoam com lamentos distantes, e você sente o peso do seu alaúde nas costas. A taverna 'O Corvo Solitário' brilha fracamente à sua frente, prometendo respostas... ou mais mistérios. O que você faz?",
+        "immediate_scene_description": "Você chega aos portões de uma cidade sombria, buscando respostas sobre uma tragédia pessoal.",
         "active_quests": {
             "main_quest": "Descobrir a verdade sobre a praga que matou sua esposa"
         },
         "important_npcs_in_scene": {},
         "recent_events_summary": [
-            "Jogador: Onde estou",
-            "Mestre: A névoa úmida da cidade de Umbraton envolve você enquanto se aproxima cautelosamente da viela escura..."
+            "chikito iniciou sua jornada"
         ],
         "gatilhos_ativos": {
             "umbraton": [
-                "sino_toca",
-                "diario_vibra"
+                "corvo_na_gargula",
+                "grito_viela"
             ],
             "taverna_corvo_ferido": [
                 "taverneiro_se_cala",
@@ -37,8 +36,7 @@
         "gatilhos_usados": {
             "umbraton": [
                 "crianca_correndo",
-                "corvo_na_gargula",
-                "grito_viela"
+                "sino_toca"
             ],
             "taverna_corvo_ferido": []
         }

@@ -8,7 +8,8 @@
       "perigo": "Alto - viciante e destrutivo para a mente",
       "relacionado_npc": "kael",
       "ato_aparicao": 2,
-      "consumivel": true
+      "consumivel": true,
+      "slots": 1
     },
     "livro_acustica_antiga": {
       "nome": "Livro de Acústica Antiga",
@@ -17,7 +18,8 @@
       "local_obtencao": "Biblioteca dos Ecos",
       "estado": "Silenciado magicamente - palavras desaparecem ao tentar ler",
       "missao_relacionada": "O Livro Silenciado",
-      "ato_aparicao": 1
+      "ato_aparicao": 1,
+      "slots": 1
     },
     "instrumentos_quebrados": {
       "nome": "Instrumentos Musicais Quebrados",
@@ -25,7 +27,8 @@
       "efeito": "Decorativos, simbolizam a corrupção da música por Kael",
       "local_obtencao": "Santuário Harmônico",
       "valor": "Apenas simbólico",
-      "ato_aparicao": 2
+      "ato_aparicao": 2,
+      "slots": 2
     },
     "folhas_arvore_rara": {
       "nome": "Folhas da Árvore Rara",
@@ -33,14 +36,97 @@
       "efeito": "Matéria-prima para criar o chá que apaga memórias",
       "local_obtencao": "Santuário Harmônico",
       "perigo": "Perigoso se consumido sem preparo adequado",
-      "ato_aparicao": 2
+      "ato_aparicao": 2,
+      "slots": 1
     },
     "pocao_de_cura": {
       "nome": "Poção de Cura",
       "descricao": "Um frasco com um líquido vermelho que brilha suavemente. Cheira a ervas e mel.",
       "efeito": { "hp_restore": 10 },
       "consumivel": true,
-      "ato_aparicao": 1
+      "ato_aparicao": 1,
+      "slots": 1
+    },
+    "alaude_de_madeira": {
+      "nome": "Alaúde de Madeira",
+      "descricao": "Um alaúde de madeira simples mas bem cuidado, com cordas afinadas. Seu som é doce e melancólico.",
+      "efeito": "Permite tocar música para inspirar, acalmar ou entreter",
+      "ato_aparicao": 1,
+      "slots": 1
+    },
+    "adaga_de_ferro": {
+      "nome": "Adaga de Ferro",
+      "descricao": "Uma adaga simples mas afiada, com cabo de madeira envolvido em couro.",
+      "efeito": "Arma leve para defesa pessoal",
+      "ato_aparicao": 1,
+      "slots": 1
+    },
+    "mochila_de_couro": {
+      "nome": "Mochila de Couro",
+      "descricao": "Uma mochila resistente de couro marrom, com várias divisões internas.",
+      "efeito": "Permite carregar itens pequenos organizadamente",
+      "conteudo": ["Cantil", "Ração de Viagem (3 dias)", "Pederneira"],
+      "ato_aparicao": 1,
+      "slots": 1
+    },
+    "kit_de_viagem": {
+      "nome": "Kit de Viagem",
+      "descricao": "Uma pequena bolsa com suprimentos básicos para viagem.",
+      "efeito": "Contém itens essenciais para sobrevivência",
+      "conteudo": ["Cantil", "Ração de Viagem (3 dias)", "Pederneira"],
+      "ato_aparicao": 1,
+      "slots": 1
+    },
+    "kit_de_iluminacao": {
+      "nome": "Kit de Iluminação",
+      "descricao": "Um pacote com tochas amarradas e material para acendê-las.",
+      "efeito": "Fornece iluminação em locais escuros",
+      "conteudo": ["Tochas (5 unidades)"],
+      "ato_aparicao": 1,
+      "slots": 1
+    },
+    "espada_longa": {
+      "nome": "Espada Longa",
+      "descricao": "Uma espada de ferro bem equilibrada, com lâmina afiada e cabo confortável.",
+      "efeito": "Arma versátil para combate corpo a corpo",
+      "ato_aparicao": 1,
+      "slots": 1
+    },
+    "escudo_de_madeira": {
+      "nome": "Escudo de Madeira",
+      "descricao": "Um escudo redondo de madeira reforçada com ferro, pintado com símbolos simples.",
+      "efeito": "Oferece proteção contra ataques",
+      "ato_aparicao": 1,
+      "slots": 1
+    },
+    "armadura_de_couro": {
+      "nome": "Armadura de Couro",
+      "descricao": "Uma armadura leve de couro curtido, que oferece proteção sem sacrificar mobilidade.",
+      "efeito": "Proteção básica contra ataques",
+      "ato_aparicao": 1,
+      "slots": 1
+    },
+    "mochila_de_aventureiro": {
+      "nome": "Mochila de Aventureiro",
+      "descricao": "Uma mochila grande e resistente, ideal para longas jornadas e exploração.",
+      "efeito": "Permite carregar equipamentos de aventura",
+      "ato_aparicao": 1,
+      "slots": 1
+    },
+    "corda_de_canhamo": {
+      "nome": "Corda de Cânhamo",
+      "descricao": "15 metros de corda resistente de cânhamo, enrolada e amarrada.",
+      "efeito": "Útil para escalar, amarrar ou criar armadilhas",
+      "ato_aparicao": 1,
+      "slots": 1
+    },
+    "kit_de_sobrevivencia": {
+      "nome": "Kit de Sobrevivência",
+      "descricao": "Uma bolsa de couro com suprimentos essenciais para sobrevivência.",
+      "efeito": "Contém água, comida e ferramentas básicas",
+      "conteudo": ["Cantil (cheio)", "Rações (3 dias)", "Pederneira e Isqueiro"],
+      "ato_aparicao": 1,
+      "slots": 1
     }
   }
 }
