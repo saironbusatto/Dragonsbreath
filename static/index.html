@@ -457,6 +457,7 @@
 
       updateStatus(data.state);
 
+      if (data.sfx) playSFX(data.sfx);
       if (data.audio) {
         await playAudio(data.audio);
       }
@@ -543,6 +544,7 @@
       updateStatus(data.state);
       transcript.textContent = '';
 
+      if (data.sfx) playSFX(data.sfx);
       if (data.audio) {
         await playAudio(data.audio);
       } else {
@@ -555,7 +557,16 @@
     }
   }
 
-  // ── Áudio ─────────────────────────────────────────────────────────────────
+  // ── SFX ───────────────────────────────────────────────────────────────────
+  function playSFX(url) {
+    try {
+      const sfx = new Audio(url);
+      sfx.volume = 0.4;
+      sfx.play().catch(() => {});
+    } catch(e) {}
+  }
+
+  // ── Áudio (narração TTS) ───────────────────────────────────────────────────
   async function playAudio(base64mp3) {
     stopAudio();
     isSpeaking = true;

@@ -37,10 +37,51 @@ app = FastAPI(title="Dragon's Breath RPG")
 sessions: dict[str, dict] = {}
 
 
+# ─── SFX: detecta qual som tocar baseado na narrativa ────────────────────────
+
+SFX_FILES = {
+    "crow":    "sons/sistema/creepy-crow-caw-322991.mp3",
+    "crows":   "sons/sistema/crows-6371.mp3",
+    "scream":  "sons/sistema/scream-of-terror-325532.mp3",
+    "crianca": "sons/sistema/rianca_correndo.mp3",
+    "coin":    "sons/sistema/coin-recieved.mp3",
+    "village": "sons/sistema/medieval_village_atmosphere-79282.mp3",
+    "people":  "sons/sistema/people-talking-in-the-old-town-city-center.mp3",
+    "rain":    "sons/sistema/Rain-on-city-deck.mp3",
+    "tavern":  "sons/sistema/tavern_ambience_inside_laughter-73008.mp3",
+}
+
+SFX_KEYWORDS = {
+    "crow":    ["corvo", "grasnido", "grasnar", "pássaro negro", "ave sombria"],
+    "crows":   ["bando de corvos", "corvos voam", "revoada"],
+    "scream":  ["grito", "grita", "berro", "urro", "gritou", "brado"],
+    "crianca": ["criança", "menino", "menina", "garoto", "garota"],
+    "coin":    ["moeda", "moedas", "dinheiro", "ouro", "prata", "tesouro"],
+    "village": ["cidade", "vila", "umbraton", "portões", "muralhas", "ruas"],
+    "people":  ["pessoas", "multidão", "conversas", "vozes", "sussurros", "murmúrios"],
+    "rain":    ["chuva", "chove", "chovendo", "gotas", "tempestade", "aguaceiro"],
+    "tavern":  ["taverna", "bar", "estalagem", "taverneiro", "corvo ferido"],
+}
+
+def detect_sfx(narrative_text: str) -> str | None:
+    """Retorna URL do SFX adequado para a narrativa, ou None."""
+    text_lower = narrative_text.lower()
+    for sfx_name, keywords in SFX_KEYWORDS.items():
+        for kw in keywords:
+            if kw in text_lower:
+                return f"/sons/sistema/{SFX_FILES[sfx_name].split('/')[-1]}"
+    return None
+
+
 # ─── TTS server-side (retorna bytes MP3) ─────────────────────────────────────
 
 def synthesize_speech(text: str, voice_type: str = "master") -> bytes | None:
     """Chama Google Cloud TTS e retorna os bytes MP3, ou None se indisponível."""
+    creds_path = os.environ.get("GOOGLE_APPLICATION_CREDENTIALS", "")
+    creds_json = os.environ.get("GOOGLE_CREDENTIALS_JSON", "")
+    print(f"[TTS] GOOGLE_APPLICATION_CREDENTIALS={creds_path!r}")
+    print(f"[TTS] GOOGLE_CREDENTIALS_JSON set={bool(creds_json)}")
+
     try:
         from google.cloud import texttospeech
 
@@ -51,6 +92,7 @@ def synthesize_speech(text: str, voice_type: str = "master") -> bytes | None:
             voice_name = os.getenv("GOOGLE_TTS_VOICE_MASTER", "pt-BR-Neural2-B")
             gender = texttospeech.SsmlVoiceGender.MALE
 
+        print(f"[TTS] Sintetizando com voz={voice_name}, texto={text[:60]!r}...")
         client = texttospeech.TextToSpeechClient()
         response = client.synthesize_speech(
             input=texttospeech.SynthesisInput(text=text),
@@ -65,9 +107,10 @@ def synthesize_speech(text: str, voice_type: str = "master") -> bytes | None:
                 pitch=0.0,
             ),
         )
+        print(f"[TTS] OK — {len(response.audio_content)} bytes")
         return response.audio_content
     except Exception as e:
-        print(f"⚠️  TTS error: {e}")
+        print(f"[TTS] ERRO: {e}")
         return None
 
 
@@ -134,11 +177,13 @@ def start_game(req: StartRequest):
     sessions[session_id] = world_state
 
     audio = to_audio_response(opening_clean, "master")
+    sfx = detect_sfx(opening_clean)
 
     return {
         "session_id": session_id,
         "narrative": opening_clean,
         "audio": audio,
+        "sfx": sfx,
         "state": _state_summary(world_state),
     }
 
@@ -195,10 +240,12 @@ def take_action(req: ActionRequest):
     sessions[req.session_id] = world_state
 
     audio = to_audio_response(cleaned_narrative, "master")
+    sfx = detect_sfx(cleaned_narrative)
 
     return {
         "narrative": cleaned_narrative,
         "audio": audio,
+        "sfx": sfx,
         "state": _state_summary(world_state),
         "valid": True,
     }
@@ -214,6 +261,7 @@ def get_state(session_id: str):
 
 # ─── Frontend ─────────────────────────────────────────────────────────────────
 
+app.mount("/sons", StaticFiles(directory="sons"), name="sons")
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
 @app.get("/")
