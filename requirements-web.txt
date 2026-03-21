@@ -1,0 +1,7 @@
+# Dependências da Web API (sem pygame/pyaudio/pyttsx3 — áudio é feito no browser)
+openai
+fastapi
+uvicorn[standard]
+google-cloud-texttospeech
+python-dotenv
+requests
