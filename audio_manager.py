@@ -68,21 +68,19 @@ def text_to_speech_google_cloud(text, voice_type="master"):
 
         client = texttospeech.TextToSpeechClient()
 
-        # Seleciona vozes portuguesas brasileiras otimizadas
+        # Seleciona vozes configuradas no .env (fallback para Neural2)
         if voice_type == "narrator":
-            # Voz feminina brasileira para introdução do Ressoar (mais natural)
-            voice = texttospeech.VoiceSelectionParams(
-                language_code="pt-BR",
-                name="pt-BR-Neural2-A",  # Voz neural feminina (mais natural)
-                ssml_gender=texttospeech.SsmlVoiceGender.FEMALE
-            )
+            voice_name = os.getenv('GOOGLE_TTS_VOICE_NARRATOR', 'pt-BR-Neural2-A')
+            gender = texttospeech.SsmlVoiceGender.FEMALE
         else:
-            # Voz masculina brasileira para o Mestre (mais natural)
-            voice = texttospeech.VoiceSelectionParams(
-                language_code="pt-BR",
-                name="pt-BR-Neural2-B",  # Voz neural masculina (mais natural)
-                ssml_gender=texttospeech.SsmlVoiceGender.MALE
-            )
+            voice_name = os.getenv('GOOGLE_TTS_VOICE_MASTER', 'pt-BR-Neural2-B')
+            gender = texttospeech.SsmlVoiceGender.MALE
+
+        voice = texttospeech.VoiceSelectionParams(
+            language_code="pt-BR",
+            name=voice_name,
+            ssml_gender=gender
+        )
 
         # Configuração de áudio otimizada para português brasileiro
         audio_config = texttospeech.AudioConfig(
@@ -95,7 +93,7 @@ def text_to_speech_google_cloud(text, voice_type="master"):
 
         synthesis_input = texttospeech.SynthesisInput(text=text)
 
-        print(f"🗣️ Sintetizando com Google Cloud TTS (pt-BR): {voice.name}")
+        print(f"🗣️ Sintetizando com Google Cloud TTS (pt-BR): {voice_name}")
         response = client.synthesize_speech(
             input=synthesis_input,
             voice=voice,

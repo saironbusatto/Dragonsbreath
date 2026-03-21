@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dragon's Breath — Ressoar</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;900&family=Crimson+Text:ital,wght@0,400;1,400&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --gold:   #c9a84c;
+      --red:    #8b1a1a;
+      --purple: #2d1b4e;
+      --bg:     #080508;
+    }
+
+    body {
+      font-family: 'Crimson Text', Georgia, serif;
+      background: var(--bg);
+      color: #e8dcc8;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      user-select: none;
+    }
+
+    /* ── Partículas de fundo ── */
+    #bg-canvas {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      opacity: 0.4;
+    }
+
+    /* ── Tela de configuração ── */
+    #setup-screen {
+      position: fixed;
+      inset: 0;
+      background: rgba(8,5,8,0.97);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 50;
+    }
+
+    .setup-card {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 28px;
+      max-width: 420px;
+      width: 90vw;
+    }
+
+    .logo {
+      font-family: 'Cinzel', serif;
+      font-size: clamp(1.4rem, 5vw, 2.2rem);
+      font-weight: 900;
+      color: var(--gold);
+      letter-spacing: 6px;
+      text-align: center;
+      text-shadow: 0 0 40px rgba(201,168,76,0.4);
+    }
+
+    .tagline {
+      font-style: italic;
+      color: #6a5a4a;
+      font-size: 1rem;
+      text-align: center;
+      line-height: 1.6;
+    }
+
+    .field {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .field label {
+      font-family: 'Cinzel', serif;
+      font-size: 0.65rem;
+      letter-spacing: 3px;
+      color: #6a5a4a;
+      text-transform: uppercase;
+    }
+    .field input,
+    .field select {
+      background: #110d11;
+      border: 1px solid #3a2a3a;
+      border-radius: 6px;
+      color: #e8dcc8;
+      padding: 12px 16px;
+      font-family: 'Crimson Text', serif;
+      font-size: 1.1rem;
+      outline: none;
+      width: 100%;
+      transition: border-color 0.2s;
+    }
+    .field input:focus,
+    .field select:focus { border-color: var(--gold); }
+    .field select option { background: #110d11; }
+
+    .campaign-desc {
+      font-size: 0.85rem;
+      color: #5a4a3a;
+      font-style: italic;
+      min-height: 2em;
+      text-align: center;
+    }
+
+    #begin-btn {
+      background: none;
+      border: 1px solid var(--gold);
+      color: var(--gold);
+      padding: 14px 48px;
+      font-family: 'Cinzel', serif;
+      font-size: 0.9rem;
+      letter-spacing: 4px;
+      cursor: pointer;
+      border-radius: 4px;
+      transition: background 0.3s, color 0.3s;
+      margin-top: 8px;
+    }
+    #begin-btn:hover:not(:disabled) {
+      background: var(--gold);
+      color: #080508;
+    }
+    #begin-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+
+    /* ── Tela principal (jogo) ── */
+    #game-screen {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 40px;
+      width: 100%;
+      height: 100%;
+    }
+
+    /* Status bar topo */
+    #status-bar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      padding: 14px 28px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: linear-gradient(to bottom, rgba(8,5,8,0.9), transparent);
+    }
+    #char-info {
+      font-family: 'Cinzel', serif;
+      font-size: 0.8rem;
+      color: var(--gold);
+      letter-spacing: 2px;
+    }
+    .hp-wrap {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .hp-label { font-size: 0.75rem; color: #6a5a4a; font-family: 'Cinzel', serif; letter-spacing: 1px; }
+    .hp-track {
+      width: 120px;
+      height: 4px;
+      background: #2a1a1a;
+      border-radius: 2px;
+      overflow: hidden;
+    }
+    .hp-fill {
+      height: 100%;
+      background: #8b2020;
+      border-radius: 2px;
+      transition: width 0.6s, background 0.6s;
+    }
+    #hp-text { font-size: 0.75rem; color: #6a5a4a; }
+
+    /* Orb central */
+    .orb-wrap {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .orb-ring {
+      position: absolute;
+      border-radius: 50%;
+      border: 1px solid;
+      animation: none;
+    }
+
+    #orb {
+      width: 160px;
+      height: 160px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 38% 38%, #3a2040, #0e0810);
+      border: 1px solid #3a2a3a;
+      cursor: pointer;
+      position: relative;
+      transition: transform 0.2s, box-shadow 0.3s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 40px rgba(45,27,78,0.3), inset 0 0 30px rgba(0,0,0,0.5);
+    }
+    #orb:hover { transform: scale(1.04); }
+    #orb:active { transform: scale(0.97); }
+
+    #orb-icon {
+      font-size: 2.8rem;
+      transition: opacity 0.3s;
+      pointer-events: none;
+    }
+
+    /* Estados do orb */
+    #orb.idle {
+      box-shadow: 0 0 40px rgba(45,27,78,0.3), inset 0 0 30px rgba(0,0,0,0.5);
+    }
+    #orb.listening {
+      border-color: #8b2020;
+      box-shadow: 0 0 60px rgba(139,26,26,0.6), 0 0 20px rgba(139,26,26,0.3), inset 0 0 30px rgba(0,0,0,0.5);
+      animation: pulse-red 1.2s ease-in-out infinite;
+    }
+    #orb.thinking {
+      border-color: #4a3a6a;
+      box-shadow: 0 0 60px rgba(74,58,106,0.6), inset 0 0 30px rgba(0,0,0,0.5);
+      animation: pulse-purple 2s ease-in-out infinite;
+    }
+    #orb.speaking {
+      border-color: var(--gold);
+      box-shadow: 0 0 80px rgba(201,168,76,0.5), 0 0 30px rgba(201,168,76,0.2), inset 0 0 30px rgba(0,0,0,0.5);
+      animation: pulse-gold 0.8s ease-in-out infinite alternate;
+    }
+
+    @keyframes pulse-red {
+      0%, 100% { box-shadow: 0 0 40px rgba(139,26,26,0.4), inset 0 0 30px rgba(0,0,0,0.5); }
+      50%       { box-shadow: 0 0 80px rgba(139,26,26,0.8), inset 0 0 30px rgba(0,0,0,0.5); }
+    }
+    @keyframes pulse-purple {
+      0%, 100% { box-shadow: 0 0 40px rgba(74,58,106,0.3), inset 0 0 30px rgba(0,0,0,0.5); }
+      50%       { box-shadow: 0 0 100px rgba(74,58,106,0.7), inset 0 0 30px rgba(0,0,0,0.5); }
+    }
+    @keyframes pulse-gold {
+      from { box-shadow: 0 0 60px rgba(201,168,76,0.4), inset 0 0 30px rgba(0,0,0,0.5); }
+      to   { box-shadow: 0 0 100px rgba(201,168,76,0.7), inset 0 0 30px rgba(0,0,0,0.5); }
+    }
+
+    /* Legenda do orb */
+    #orb-label {
+      font-family: 'Cinzel', serif;
+      font-size: 0.7rem;
+      letter-spacing: 3px;
+      color: #4a3a4a;
+      text-transform: uppercase;
+      transition: color 0.3s;
+    }
+
+    /* Transcrição (feedback visual opcional) */
+    #transcript {
+      font-style: italic;
+      color: #4a3a4a;
+      font-size: 0.95rem;
+      text-align: center;
+      max-width: 400px;
+      min-height: 1.4em;
+      transition: color 0.3s;
+      padding: 0 20px;
+    }
+
+    /* Dica de comandos de voz */
+    #hint {
+      position: fixed;
+      bottom: 24px;
+      font-size: 0.72rem;
+      color: #3a2a3a;
+      letter-spacing: 1px;
+      text-align: center;
+    }
+
+    /* Toast de erro */
+    #toast {
+      position: fixed;
+      bottom: 60px;
+      background: #2a0f0f;
+      border: 1px solid #8b1a1a;
+      color: #e8a0a0;
+      padding: 10px 20px;
+      border-radius: 6px;
+      font-size: 0.9rem;
+      opacity: 0;
+      transition: opacity 0.3s;
+      pointer-events: none;
+      max-width: 80vw;
+      text-align: center;
+    }
+    #toast.show { opacity: 1; }
+  </style>
+</head>
+<body>
+
+<canvas id="bg-canvas"></canvas>
+
+<!-- Tela de configuração -->
+<div id="setup-screen">
+  <div class="setup-card">
+    <div class="logo">DRAGON'S BREATH</div>
+    <p class="tagline">Existe um som que só você pode emitir.<br>O que o mundo vai escutar de você?</p>
+
+    <div class="field">
+      <label>Campanha</label>
+      <select id="campaign-select"></select>
+    </div>
+    <p id="campaign-desc" class="campaign-desc"></p>
+
+    <div class="field">
+      <label>Seu Nome</label>
+      <input id="player-name" type="text" placeholder="Como te chamam, viajante?" maxlength="40" autocomplete="off" />
+    </div>
+
+    <button id="begin-btn" disabled>ENTRAR</button>
+  </div>
+</div>
+
+<!-- Tela de jogo -->
+<div id="game-screen">
+  <div id="status-bar">
+    <div id="char-info">—</div>
+    <div class="hp-wrap">
+      <span class="hp-label">HP</span>
+      <div class="hp-track"><div class="hp-fill" id="hp-fill" style="width:100%"></div></div>
+      <span id="hp-text">—</span>
+    </div>
+  </div>
+
+  <div class="orb-wrap">
+    <div id="orb" class="idle" title="Clique para falar">
+      <span id="orb-icon">🎙</span>
+    </div>
+  </div>
+
+  <div id="orb-label">toque para falar</div>
+  <div id="transcript"></div>
+</div>
+
+<div id="hint">diga "inventário" ou "status" a qualquer momento</div>
+<div id="toast"></div>
+
+<script>
+  const API = '';
+  let sessionId = null;
+  let recognition = null;
+  let isSpeaking = false;
+  let isListening = false;
+  let currentAudio = null;
+
+  const orb       = document.getElementById('orb');
+  const orbIcon   = document.getElementById('orb-icon');
+  const orbLabel  = document.getElementById('orb-label');
+  const transcript= document.getElementById('transcript');
+
+  // ── Partículas de fundo ────────────────────────────────────────────────────
+  const canvas = document.getElementById('bg-canvas');
+  const ctx = canvas.getContext('2d');
+  let particles = [];
+
+  function resizeCanvas() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+  }
+  resizeCanvas();
+  window.addEventListener('resize', resizeCanvas);
+
+  for (let i = 0; i < 60; i++) {
+    particles.push({
+      x: Math.random() * window.innerWidth,
+      y: Math.random() * window.innerHeight,
+      r: Math.random() * 1.5 + 0.3,
+      vx: (Math.random() - 0.5) * 0.2,
+      vy: -Math.random() * 0.3 - 0.1,
+      alpha: Math.random() * 0.6 + 0.1,
+    });
+  }
+
+  function animateParticles() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    particles.forEach(p => {
+      p.x += p.vx; p.y += p.vy;
+      if (p.y < 0) { p.y = canvas.height; p.x = Math.random() * canvas.width; }
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(201,168,76,${p.alpha})`;
+      ctx.fill();
+    });
+    requestAnimationFrame(animateParticles);
+  }
+  animateParticles();
+
+  // ── Setup campanhas ────────────────────────────────────────────────────────
+  async function loadCampaigns() {
+    try {
+      const res = await fetch(`${API}/api/campaigns`);
+      const data = await res.json();
+      const sel = document.getElementById('campaign-select');
+      data.campaigns.forEach(c => {
+        const opt = document.createElement('option');
+        opt.value = c.id;
+        opt.textContent = c.name;
+        opt.dataset.desc = c.description || '';
+        sel.appendChild(opt);
+      });
+      updateDesc();
+    } catch(e) { showToast('Erro ao carregar campanhas.'); }
+  }
+
+  function updateDesc() {
+    const sel = document.getElementById('campaign-select');
+    const opt = sel.selectedOptions[0];
+    document.getElementById('campaign-desc').textContent = opt?.dataset.desc || '';
+  }
+
+  document.getElementById('campaign-select').addEventListener('change', updateDesc);
+  document.getElementById('player-name').addEventListener('input', () => {
+    document.getElementById('begin-btn').disabled =
+      document.getElementById('player-name').value.trim().length < 2;
+  });
+
+  // ── Iniciar jogo ───────────────────────────────────────────────────────────
+  document.getElementById('begin-btn').addEventListener('click', async () => {
+    const playerName = document.getElementById('player-name').value.trim();
+    const campaignId = document.getElementById('campaign-select').value;
+    if (!playerName) return;
+
+    const btn = document.getElementById('begin-btn');
+    btn.disabled = true;
+    btn.textContent = '...';
+
+    try {
+      const res = await fetch(`${API}/api/start`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ player_name: playerName, campaign_id: campaignId }),
+      });
+      if (!res.ok) throw new Error((await res.json()).detail || 'Erro');
+      const data = await res.json();
+
+      sessionId = data.session_id;
+      document.getElementById('setup-screen').style.display = 'none';
+      document.getElementById('game-screen').style.display = 'flex';
+
+      updateStatus(data.state);
+
+      if (data.audio) {
+        await playAudio(data.audio);
+      }
+    } catch (e) {
+      btn.disabled = false;
+      btn.textContent = 'ENTRAR';
+      showToast('Erro: ' + e.message);
+    }
+  });
+
+  // ── Orb: clique para falar ─────────────────────────────────────────────────
+  orb.addEventListener('click', () => {
+    if (isSpeaking) {
+      stopAudio();
+      return;
+    }
+    if (isListening) return;
+    startListening();
+  });
+
+  function startListening() {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      showToast('Reconhecimento de voz não suportado neste navegador. Use Chrome.');
+      return;
+    }
+
+    recognition = new SpeechRecognition();
+    recognition.lang = 'pt-BR';
+    recognition.interimResults = true;
+    recognition.maxAlternatives = 1;
+
+    recognition.onstart = () => {
+      isListening = true;
+      setOrbState('listening', '🎙', 'ouvindo...');
+      transcript.style.color = '#8b2020';
+      transcript.textContent = '';
+    };
+
+    recognition.onresult = (e) => {
+      const result = e.results[e.results.length - 1];
+      const text = result[0].transcript;
+      transcript.textContent = text;
+      if (result.isFinal) {
+        recognition.stop();
+        sendAction(text);
+      }
+    };
+
+    recognition.onerror = (e) => {
+      isListening = false;
+      if (e.error === 'no-speech') {
+        setOrbState('idle', '🎙', 'toque para falar');
+        transcript.textContent = '';
+      } else {
+        showToast('Erro no microfone: ' + e.error);
+        setOrbState('idle', '🎙', 'toque para falar');
+      }
+    };
+
+    recognition.onend = () => {
+      isListening = false;
+    };
+
+    recognition.start();
+  }
+
+  // ── Enviar ação ────────────────────────────────────────────────────────────
+  async function sendAction(action) {
+    if (!action.trim() || !sessionId) return;
+
+    setOrbState('thinking', '⋯', 'o mestre pensa...');
+    transcript.style.color = '#4a3a6a';
+
+    try {
+      const res = await fetch(`${API}/api/action`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ session_id: sessionId, action }),
+      });
+      if (!res.ok) throw new Error((await res.json()).detail || 'Erro');
+      const data = await res.json();
+
+      updateStatus(data.state);
+      transcript.textContent = '';
+
+      if (data.audio) {
+        await playAudio(data.audio);
+      } else {
+        setOrbState('idle', '🎙', 'toque para falar');
+      }
+    } catch (e) {
+      showToast('Erro: ' + e.message);
+      setOrbState('idle', '🎙', 'toque para falar');
+      transcript.textContent = '';
+    }
+  }
+
+  // ── Áudio ─────────────────────────────────────────────────────────────────
+  async function playAudio(base64mp3) {
+    stopAudio();
+    isSpeaking = true;
+    setOrbState('speaking', '🔊', 'o mestre narra...');
+
+    return new Promise((resolve) => {
+      const audioBlob = base64ToBlob(base64mp3, 'audio/mp3');
+      const url = URL.createObjectURL(audioBlob);
+      currentAudio = new Audio(url);
+
+      currentAudio.onended = () => {
+        isSpeaking = false;
+        currentAudio = null;
+        URL.revokeObjectURL(url);
+        setOrbState('idle', '🎙', 'toque para falar');
+        resolve();
+      };
+
+      currentAudio.onerror = () => {
+        isSpeaking = false;
+        currentAudio = null;
+        setOrbState('idle', '🎙', 'toque para falar');
+        resolve();
+      };
+
+      currentAudio.play().catch(() => {
+        isSpeaking = false;
+        setOrbState('idle', '🎙', 'toque para falar');
+        resolve();
+      });
+    });
+  }
+
+  function stopAudio() {
+    if (currentAudio) {
+      currentAudio.pause();
+      currentAudio = null;
+    }
+    isSpeaking = false;
+  }
+
+  function base64ToBlob(base64, mime) {
+    const bytes = atob(base64);
+    const arr = new Uint8Array(bytes.length);
+    for (let i = 0; i < bytes.length; i++) arr[i] = bytes.charCodeAt(i);
+    return new Blob([arr], { type: mime });
+  }
+
+  // ── UI helpers ─────────────────────────────────────────────────────────────
+  function setOrbState(state, icon, label) {
+    orb.className = state;
+    orbIcon.textContent = icon;
+    orbLabel.textContent = label;
+  }
+
+  function updateStatus(state) {
+    if (!state) return;
+    document.getElementById('char-info').textContent =
+      `${state.name}  ·  ${state.class}`;
+
+    const hp = state.hp ?? 0;
+    const maxHp = state.max_hp ?? 1;
+    document.getElementById('hp-text').textContent = `${hp}/${maxHp}`;
+    const pct = Math.max(0, Math.min(100, (hp / maxHp) * 100));
+    const fill = document.getElementById('hp-fill');
+    fill.style.width = `${pct}%`;
+    fill.style.background =
+      pct > 60 ? '#8b2020' : pct > 30 ? '#c0641a' : '#c0392b';
+  }
+
+  let toastTimer = null;
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => t.classList.remove('show'), 4000);
+  }
+
+  // ── Init ───────────────────────────────────────────────────────────────────
+  loadCampaigns();
+</script>
+</body>
+</html>

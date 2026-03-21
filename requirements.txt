@@ -1,8 +1,21 @@
-google-generativeai
+# IA — LLM
+openai
+
+# Web API
+fastapi
+uvicorn[standard]
+
+# Audio (local CLI)
 google-cloud-texttospeech
 pygame
 SpeechRecognition
 pyaudio
 requests
-python-dotenv
 pyttsx3
+
+# Utilitários
+python-dotenv
+
+# Testes
+pytest
+pytest-cov

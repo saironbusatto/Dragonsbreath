@@ -1,4 +1,4 @@
-import google.generativeai as genai
+from openai import OpenAI
 import json
 import os
 import re
@@ -241,7 +241,7 @@ def validate_impossible_abilities(action_lower: str, character_class: str) -> tu
         'voar', 'voo', 'levitar', 'teletransportar', 'teleporte', 'teletransporto',
         'ficar invisível', 'me torno invisível', 'desaparecer magicamente',
         'controlar mente', 'ler mente', 'telepatia', 'ler a mente',
-        'parar tempo', 'paro o tempo', 'acelerar tempo', 'viajar no tempo'
+        'parar tempo', 'parar o tempo', 'paro o tempo', 'acelerar tempo', 'viajar no tempo'
     ]
 
     for keyword in impossible_keywords:
@@ -307,45 +307,28 @@ def trigger_contextual_sfx(narrative_text: str):
                 return  # Toca apenas um efeito por narrativa para evitar sobreposição
 
 def get_gm_narrative(world_state: dict, player_action: str, game_context: dict) -> str:
-    try:
-        api_key = os.environ.get('GEMINI_API_KEY')
-        if not api_key:
-            print("ERRO: GEMINI_API_KEY não encontrada nas variáveis de ambiente")
-            return "O Mestre do Jogo não consegue se conectar aos planos astrais. (API Key não configurada). O que você faz?"
-        genai.configure(api_key=api_key)
-    except Exception as e:
-        print(f"ERRO na configuração da API: {e}")
+    api_key = os.environ.get('OPENAI_API_KEY')
+    if not api_key:
+        print("ERRO: OPENAI_API_KEY não encontrada nas variáveis de ambiente")
         return "O Mestre do Jogo não consegue se conectar aos planos astrais. (API Key não configurada). O que você faz?"
 
     campaign = get_current_campaign()
     campaign_name = campaign.get('name', 'RPG de Aventura')
-    
-    # Obter informações da classe do personagem
+
     character = world_state.get('player_character', {})
     character_class = character.get('class', 'Aventureiro')
     class_info = CLASS_ABILITIES.get(character_class, CLASS_ABILITIES['Aventureiro'])
 
-    system_prompt = f"""Você é um Mestre de Jogo narrando "{campaign_name}".
+    # SYSTEM: persona estável + regras que nunca mudam
+    system_content = f"""Você é um Mestre de Jogo narrando "{campaign_name}". Narre sempre em segunda pessoa (você), no tempo presente.
 
---- ESTADO ATUAL DO MUNDO ---
-{json.dumps(world_state, indent=2, ensure_ascii=False)}
-
---- CONTEXTO DO JOGO ---
-NPCs: {json.dumps(game_context.get('npcs', {}), indent=2, ensure_ascii=False)}
-Itens: {json.dumps(game_context.get('items', {}), indent=2, ensure_ascii=False)}
-Locais: {json.dumps(game_context.get('locais', {}), indent=2, ensure_ascii=False)}
-Gatilhos Narrativos Ativos: {json.dumps(game_context.get('gatilhos', []), indent=2, ensure_ascii=False)}
-
---- INFORMAÇÕES DO PERSONAGEM ---
+--- PERFIL DO PERSONAGEM ---
 Classe: {character_class}
-Inventário: {calculate_used_slots(character.get('inventory', []))}/{character.get('max_slots', 10)} slots ocupados
 Habilidades Permitidas: {', '.join(class_info['allowed_actions'])}
 Ações Proibidas: {', '.join(class_info['forbidden_actions'])}
 Magia Limitada: {', '.join(class_info['limited_magic']) if class_info['limited_magic'] else 'Nenhuma'}
 Limitações Físicas: {', '.join(class_info['physical_limits'])}
-
---- AÇÃO DO JOGADOR ---
-{player_action}
+Slots de Inventário: {character.get('max_slots', 10)} no total
 
 --- REGRAS FUNDAMENTAIS ---
 1. Narre o resultado da ação baseado no estado do mundo.
@@ -355,53 +338,42 @@ Limitações Físicas: {', '.join(class_info['physical_limits'])}
 5. Se estiver explorando, adicione um novo evento (encontro, som, objeto, pista).
 6. Considere o desejo ou objetivo do personagem ao narrar eventos.
 7. Nunca se repita — traga algo novo ou surpreendente a cada ação.
-8. NUNCA ofereça opções múltipla escolha (A, B, C, etc.). O jogo é completamente aberto.
+8. NUNCA ofereça opções de múltipla escolha (A, B, C). O jogo é completamente aberto.
 9. Apenas descreva a situação narrativamente e deixe o jogador decidir livremente.
 10. Encerre sempre com: "O que você faz?"
 
---- SISTEMA DE INTERAÇÃO AMBIENTAL DINÂMICA (CRÍTICO) ---
-11. **POVOE O CENÁRIO**: Ao descrever uma cena ou o resultado de uma ação, SEMPRE inclua de 2 a 4 objetos, móveis ou elementos específicos com os quais o jogador possa interagir.
+--- SISTEMA DE INTERAÇÃO AMBIENTAL (CRÍTICO) ---
+11. POVOE O CENÁRIO: SEMPRE inclua de 2 a 4 objetos específicos com os quais o jogador possa interagir. Prefira: "uma cadeira de madeira bamba", "uma cortina pesada e empoeirada", "um livro aberto sobre a mesa". EVITE termos vagos como "móveis" ou "objetos".
+12. REALISMO: O jogador só pode interagir com o que você menciona explicitamente na cena.
+13. CONSEQUÊNCIAS: Interprete interações com objetos considerando material, tamanho, estado e ambiente.
+14. INVENTÁRIO CHEIO: Se o personagem tentar pegar um item sem espaço, diga que a bolsa está cheia e peça que ele decida o que abandonar. Nunca force a troca automaticamente."""
 
-    EXEMPLOS CORRETOS:
-    - "uma cadeira de madeira bamba"
-    - "uma cortina pesada e empoeirada"
-    - "um livro aberto sobre a mesa"
-    - "uma poça d'água no chão"
-    - "um candelabro de ferro na parede"
-    - "uma corda pendurada no teto"
+    # USER: contexto dinâmico que muda a cada turno
+    user_content = f"""--- ESTADO ATUAL DO MUNDO ---
+{json.dumps(world_state, indent=2, ensure_ascii=False)}
 
-    EVITE descrições vagas como "móveis" ou "objetos". Seja ESPECÍFICO.
+--- CONTEXTO DO JOGO ---
+NPCs presentes: {json.dumps(game_context.get('npcs', {}), indent=2, ensure_ascii=False)}
+Itens disponíveis: {json.dumps(game_context.get('items', {}), indent=2, ensure_ascii=False)}
+Locais relevantes: {json.dumps(game_context.get('locais', {}), indent=2, ensure_ascii=False)}
+Gatilhos Narrativos Ativos: {json.dumps(game_context.get('gatilhos', []), indent=2, ensure_ascii=False)}
 
-12. **REALISMO ATRAVÉS DO AMBIENTE**: O jogador só pode interagir com o que existe na cena. Se você não mencionou uma "janela", o jogador não pode quebrá-la. Se você não mencionou uma "espada", o jogador não pode pegá-la.
-
-13. **CONSEQUÊNCIAS REALISTAS**: Quando o jogador interagir com objetos que você mencionou, interprete o resultado de forma realista considerando:
-    - Material do objeto (madeira quebra diferente de ferro)
-    - Tamanho e peso (uma mesa é mais difícil de mover que uma cadeira)
-    - Estado atual (algo já danificado quebra mais fácil)
-    - Ambiente ao redor (barulho pode atrair atenção)
-
-14. **CLASSE DO PERSONAGEM**: Um {character_class} tem habilidades humanas normais da sua classe. Use bom senso para interpretar o que é possível.
-
-15. **GERENCIAMENTO DE INVENTÁRIO**: O personagem tem {character.get('max_slots', 10)} slots de inventário. Se tentar pegar um item quando a bolsa estiver cheia, responda:
-    "Você pega o [item], mas sua bolsa está cheia. Para carregá-lo, você precisará abandonar outro item. O que você faz?"
-
-    Deixe o jogador decidir o que abandonar. NÃO force automaticamente a troca de itens.
-
-Mestre:"""
+--- AÇÃO DO JOGADOR ---
+{player_action}"""
 
     try:
-        model = genai.GenerativeModel(
-            model_name="gemini-1.5-flash-latest",
-            generation_config={"temperature": 0.75, "max_output_tokens": 1024},
-            safety_settings=[
-                {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_NONE"},
-                {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_NONE"},
-                {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold": "BLOCK_NONE"},
-                {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_NONE"},
-            ]
+        model = os.environ.get('OPENAI_MODEL_MESTRE') or os.environ.get('OPENAI_MODEL', 'gpt-4o-mini')
+        client = OpenAI(api_key=api_key)
+        response = client.chat.completions.create(
+            model=model,
+            messages=[
+                {"role": "system", "content": system_content},
+                {"role": "user",   "content": user_content},
+            ],
+            temperature=0.75,
+            max_tokens=1024,
         )
-        response = model.generate_content(system_prompt)
-        return response.text.strip()
+        return response.choices[0].message.content.strip()
     except Exception as e:
         return "O Mestre do Jogo sente uma perturbação na Força... Tente novamente. O que você faz?"
 
@@ -471,7 +443,8 @@ def clean_and_process_ai_response(response_text: str, world_state: dict) -> tupl
             pass
         narrative = narrative.replace(status_match.group(0), '').strip()
     
-    return narrative, character
+    world_state['player_character'] = character
+    return narrative, world_state
 
 def get_item_slots(item_name: str) -> int:
     """
@@ -679,8 +652,7 @@ def new_game_loop(world_state: dict, save_filepath: str, game_context: dict):
         gm_response = get_gm_narrative(world_state, action_with_trigger, game_context)
         
         # Processa resposta
-        cleaned_response, updated_character = clean_and_process_ai_response(gm_response, world_state)
-        world_state['player_character'] = updated_character
+        cleaned_response, world_state = clean_and_process_ai_response(gm_response, world_state)
 
         print(f"\n{cleaned_response}\n")
 
@@ -872,8 +844,7 @@ def iniciar_modo_rpg(existing_world_state: dict = None, save_filepath: str = 'es
         # Contexto sem gatilhos para cena de abertura (foco na apresentação do cenário)
         contexto_sem_gatilhos = {**game_context, "gatilhos": []}
         opening_scene = get_gm_narrative(world_state, "Iniciou a aventura", contexto_sem_gatilhos)
-        cleaned_opening, updated_character = clean_and_process_ai_response(opening_scene, world_state)
-        world_state['player_character'] = updated_character
+        cleaned_opening, world_state = clean_and_process_ai_response(opening_scene, world_state)
         print(f"\n{cleaned_opening}\n")
 
         # Efeitos sonoros contextuais para a cena de abertura
@@ -896,37 +867,46 @@ def get_story_master_narrative(texto_completo: str, eventos_json: dict, estado_a
     Função especializada para o Mestre do Conto - narra contos interativos.
     """
     try:
-        api_key = os.environ.get('GEMINI_API_KEY')
+        api_key = os.environ.get('OPENAI_API_KEY')
         if not api_key:
             return "Erro: API key não encontrada."
 
-        genai.configure(api_key=api_key)
-        model = genai.GenerativeModel('gemini-1.5-flash')
-
-        prompt = f"""Você é um "Mestre de Contos", um narrador que adapta obras literárias para uma experiência interativa.
-
---- OBRA ORIGINAL (Fonte de texto e estilo) ---
-{texto_completo}
-
---- MAPA DA HISTÓRIA (Sua lógica de progresso) ---
-{json.dumps(eventos_json, indent=2, ensure_ascii=False)}
-
---- ESTADO ATUAL DO JOGO ---
-{json.dumps(estado_atual, indent=2, ensure_ascii=False)}
+        # SYSTEM: persona e missão estáveis do Mestre do Conto
+        system_content = """Você é um "Mestre de Contos" — um narrador literário que adapta obras clássicas para experiências interativas.
 
 --- SUA MISSÃO ---
-1. Localize o evento_atual "{estado_atual.get('evento_atual', '')}" no "MAPA DA HISTÓRIA".
-2. Narre a cena descrita em `descricao_para_ia`. Use o estilo e trechos da "OBRA ORIGINAL".
-3. Se o evento contiver a palavra "final", use o texto correspondente da Obra Original para narrar o final e termine a história.
-4. Se não for um final, apresente as opções de múltipla escolha (A, B, C) definidas no evento.
-5. Sua resposta deve conter APENAS a narração e as opções (se houver), nada mais.
-6. Use linguagem rica e atmosférica, mantendo o tom melancólico e gótico da obra original.
-7. Termine sempre com uma linha em branco antes das opções (se houver).
+1. Localize o evento_atual no MAPA DA HISTÓRIA fornecido pelo usuário.
+2. Narre a cena descrita em `descricao_para_ia` usando o estilo e trechos da OBRA ORIGINAL.
+3. Se o evento contiver a palavra "final", narre o desfecho com o texto da Obra Original e encerre a história.
+4. Se não for um final, apresente as opções de múltipla escolha (A, B, C) exatamente como definidas no evento.
+5. Sua resposta deve conter APENAS a narração e as opções (se houver). Nenhum texto adicional.
+6. Use linguagem rica e atmosférica, mantendo o tom e vocabulário da obra original.
+7. Separe as opções da narração com uma linha em branco."""
 
-Mestre do Conto:"""
+        # USER: dados dinâmicos — a obra, o mapa e o estado atual
+        user_content = f"""--- OBRA ORIGINAL (fonte de estilo e vocabulário) ---
+{texto_completo}
 
-        response = model.generate_content(prompt)
-        return response.text.strip()
+--- MAPA DA HISTÓRIA ---
+{json.dumps(eventos_json, indent=2, ensure_ascii=False)}
+
+--- ESTADO ATUAL ---
+{json.dumps(estado_atual, indent=2, ensure_ascii=False)}
+
+Narre o evento: "{estado_atual.get('evento_atual', '')}" """
+
+        model_name = os.environ.get('OPENAI_MODEL_CONTO') or os.environ.get('OPENAI_MODEL', 'gpt-4o-mini')
+        client = OpenAI(api_key=api_key)
+        response = client.chat.completions.create(
+            model=model_name,
+            messages=[
+                {"role": "system", "content": system_content},
+                {"role": "user",   "content": user_content},
+            ],
+            temperature=0.75,
+            max_tokens=1024,
+        )
+        return response.choices[0].message.content.strip()
 
     except Exception as e:
         return f"Erro na IA do Mestre do Conto: {str(e)}"
@@ -1256,23 +1236,28 @@ def main():
     save_filepath = 'estado_do_mundo.json'
     world_state = load_world_state(save_filepath)
 
+    # --- BYPASS: entrada direta no RPG (menu comentado para testes) ---
     if world_state and 'game_mode' in world_state:
-        # Jogo existente - continua no modo salvo
-        game_mode = world_state['game_mode']
-        print(f"\n--- Continuando no {game_mode.upper()} ---")
+        print(f"\n--- Continuando jogo salvo ---")
+    iniciar_modo_rpg(world_state if world_state else None, save_filepath)
 
-        if game_mode == 'rpg':
-            iniciar_modo_rpg(world_state, save_filepath)
-        elif game_mode == 'conto':
-            iniciar_modo_conto(world_state)
-    else:
-        # Novo jogo - seleção de modo
-        game_mode = select_game_mode()
-
-        if game_mode == 'rpg':
-            iniciar_modo_rpg(None, save_filepath)
-        elif game_mode == 'conto':
-            iniciar_modo_conto(None)
+    # if world_state and 'game_mode' in world_state:
+    #     # Jogo existente - continua no modo salvo
+    #     game_mode = world_state['game_mode']
+    #     print(f"\n--- Continuando no {game_mode.upper()} ---")
+    #
+    #     if game_mode == 'rpg':
+    #         iniciar_modo_rpg(world_state, save_filepath)
+    #     elif game_mode == 'conto':
+    #         iniciar_modo_conto(world_state)
+    # else:
+    #     # Novo jogo - seleção de modo
+    #     game_mode = select_game_mode()
+    #
+    #     if game_mode == 'rpg':
+    #         iniciar_modo_rpg(None, save_filepath)
+    #     elif game_mode == 'conto':
+    #         iniciar_modo_conto(None)
 
 if __name__ == "__main__":
     main()
