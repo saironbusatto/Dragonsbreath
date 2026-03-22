@@ -4,6 +4,7 @@ Interface de voz: o jogador fala, o Mestre responde em áudio.
 """
 import uuid
 import os
+import re
 import base64
 import random
 import tempfile
@@ -285,6 +286,9 @@ def detect_sfx_list(narrative_text: str) -> list[dict]:
     Cada entrada: {"url": "...", "position": 0.35}
     Position = onde no texto aquela palavra aparece → usada pelo browser
     para agendar o som no momento certo da narração.
+
+    Usa word-boundary regex para evitar falsos matches como
+    "taverna" dentro de "taverneiro".
     """
     text_lower = narrative_text.lower()
     total_chars = max(len(narrative_text), 1)
@@ -294,11 +298,16 @@ def detect_sfx_list(narrative_text: str) -> list[dict]:
     for kw_pt, query_en in _SFX_MAP.items():
         if len(results) >= 3:
             break
-        pos = text_lower.find(kw_pt)
-        if pos == -1:
+        # "dados" é tratado exclusivamente via roll_sfx — nunca via texto
+        if kw_pt == "dados":
             continue
-        # Evita dois sons muito próximos no texto (< 80 chars de distância)
-        if any(abs(pos - used) < 80 for used in used_positions):
+        # Word-boundary: "taverna" não deve casar dentro de "taverneiro"
+        match = re.search(r'\b' + re.escape(kw_pt) + r'\b', text_lower)
+        if not match:
+            continue
+        pos = match.start()
+        # Evita dois sons muito próximos no texto (< 40 chars de distância)
+        if any(abs(pos - used) < 40 for used in used_positions):
             continue
         url = _search_freesound(query_en) or _SFX_LOCAL_FALLBACK.get(kw_pt)
         if url:

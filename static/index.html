@@ -871,10 +871,22 @@
       const blobUrl = URL.createObjectURL(audioBlob);
       currentAudio = new Audio(blobUrl);
 
-      // Assim que soubermos a duração, agendamos os SFX no momento certo
-      currentAudio.onloadedmetadata = () => {
-        scheduleSFX(sfxList, currentAudio.duration);
+      // Agenda SFX somente quando o áudio estiver tocando e a duração for
+      // confiável (isFinite). Para MP3-Blob, onloadedmetadata pode retornar
+      // NaN — setTimeout(fn, NaN) dispara imediatamente e quebra o timing.
+      let sfxScheduled = false;
+      const trySched = () => {
+        if (sfxScheduled) return;
+        const dur = currentAudio && currentAudio.duration;
+        if (dur && isFinite(dur)) {
+          sfxScheduled = true;
+          scheduleSFX(sfxList, dur);
+        }
       };
+      // onplay: áudio realmente começou — melhor ponto de partida para os timers
+      currentAudio.onplay           = trySched;
+      // ondurationchange: fallback para quando o browser atualiza a duração VBR
+      currentAudio.ondurationchange = trySched;
 
       const afterNarration = () => {
         cancelSFX();
