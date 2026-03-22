@@ -5,6 +5,7 @@ Interface de voz: o jogador fala, o Mestre responde em áudio.
 import uuid
 import os
 import base64
+import requests as http_requests
 from fastapi import FastAPI, HTTPException
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
@@ -37,40 +38,110 @@ app = FastAPI(title="Dragon's Breath RPG")
 sessions: dict[str, dict] = {}
 
 
-# ─── SFX: detecta qual som tocar baseado na narrativa ────────────────────────
+# ─── SFX: Freesound.org (gratuito) com fallback local ────────────────────────
 
-SFX_FILES = {
-    "crow":    "sons/sistema/creepy-crow-caw-322991.mp3",
-    "crows":   "sons/sistema/crows-6371.mp3",
-    "scream":  "sons/sistema/scream-of-terror-325532.mp3",
-    "crianca": "sons/sistema/rianca_correndo.mp3",
-    "coin":    "sons/sistema/coin-recieved.mp3",
-    "village": "sons/sistema/medieval_village_atmosphere-79282.mp3",
-    "people":  "sons/sistema/people-talking-in-the-old-town-city-center.mp3",
-    "rain":    "sons/sistema/Rain-on-city-deck.mp3",
-    "tavern":  "sons/sistema/tavern_ambience_inside_laughter-73008.mp3",
+# Mapeamento: keywords PT → query EN para Freesound
+_SFX_MAP = {
+    "corvo":      "raven crow caw dark",
+    "corvos":     "flock crows cawing",
+    "grito":      "scream horror terror",
+    "criança":    "children running footsteps",
+    "moeda":      "coin gold drop",
+    "cidade":     "medieval city ambience",
+    "vila":       "medieval village atmosphere",
+    "umbraton":   "dark city gothic ambience",
+    "pessoas":    "crowd murmur voices",
+    "multidão":   "crowd talking indoor",
+    "chuva":      "rain ambient outdoor",
+    "tempestade": "thunderstorm rain",
+    "taverna":    "medieval tavern inn ambience",
+    "taverneiro": "tavern indoor ambience",
+    "passos":     "footsteps stone floor",
+    "vento":      "wind howling",
+    "fogo":       "fire crackling fireplace",
+    "porta":      "door creak open",
+    "sino":       "bell church toll",
+    "trovão":     "thunder crack storm",
+    "floresta":   "forest ambient birds",
+    "masmorra":   "dungeon dark dripping",
+    "espada":     "sword clash metal",
+    "flecha":     "arrow whoosh",
+    "lobo":       "wolf howl",
+    "água":       "water stream flowing",
+    "mercado":    "market bazaar crowd",
+    "cavalo":     "horse hooves gallop",
+    "sino":       "bell ding small",
 }
 
-SFX_KEYWORDS = {
-    "crow":    ["corvo", "grasnido", "grasnar", "pássaro negro", "ave sombria"],
-    "crows":   ["bando de corvos", "corvos voam", "revoada"],
-    "scream":  ["grito", "grita", "berro", "urro", "gritou", "brado"],
-    "crianca": ["criança", "menino", "menina", "garoto", "garota"],
-    "coin":    ["moeda", "moedas", "dinheiro", "ouro", "prata", "tesouro"],
-    "village": ["cidade", "vila", "umbraton", "portões", "muralhas", "ruas"],
-    "people":  ["pessoas", "multidão", "conversas", "vozes", "sussurros", "murmúrios"],
-    "rain":    ["chuva", "chove", "chovendo", "gotas", "tempestade", "aguaceiro"],
-    "tavern":  ["taverna", "bar", "estalagem", "taverneiro", "corvo ferido"],
+# Fallback local quando Freesound não está disponível
+_SFX_LOCAL_FALLBACK = {
+    "corvo":   "/sons/sistema/creepy-crow-caw-322991.mp3",
+    "corvos":  "/sons/sistema/crows-6371.mp3",
+    "grito":   "/sons/sistema/scream-of-terror-325532.mp3",
+    "criança": "/sons/sistema/rianca_correndo.mp3",
+    "moeda":   "/sons/sistema/coin-recieved.mp3",
+    "cidade":  "/sons/sistema/medieval_village_atmosphere-79282.mp3",
+    "vila":    "/sons/sistema/medieval_village_atmosphere-79282.mp3",
+    "pessoas": "/sons/sistema/people-talking-in-the-old-town-city-center.mp3",
+    "chuva":   "/sons/sistema/Rain-on-city-deck.mp3",
+    "taverna": "/sons/sistema/tavern_ambience_inside_laughter-73008.mp3",
 }
+
+# Cache: query → URL (evita chamadas repetidas ao Freesound)
+_sfx_cache: dict[str, str] = {}
+
+def _keyword_from_narrative(text: str) -> tuple[str, str] | None:
+    """Encontra o primeiro keyword PT e retorna (keyword_pt, query_en)."""
+    text_lower = text.lower()
+    for kw_pt, query_en in _SFX_MAP.items():
+        if kw_pt in text_lower:
+            return kw_pt, query_en
+    return None
+
+def _search_freesound(query_en: str) -> str | None:
+    """Busca no Freesound e retorna URL de preview MP3, ou None."""
+    api_key = os.getenv("FREESOUND_API_KEY")
+    if not api_key:
+        return None
+    if query_en in _sfx_cache:
+        return _sfx_cache[query_en]
+    try:
+        resp = http_requests.get(
+            "https://freesound.org/apiv2/search/text/",
+            params={
+                "query": query_en,
+                "token": api_key,
+                "fields": "id,previews",
+                "filter": "duration:[1 TO 25]",
+                "page_size": 3,
+            },
+            timeout=4,
+        )
+        results = resp.json().get("results", [])
+        if results:
+            url = results[0]["previews"].get("preview-hq-mp3") or results[0]["previews"].get("preview-lq-mp3")
+            if url:
+                _sfx_cache[query_en] = url
+                print(f"[SFX] Freesound: {query_en!r} → {url}")
+                return url
+    except Exception as e:
+        print(f"[SFX] Freesound erro: {e}")
+    return None
 
 def detect_sfx(narrative_text: str) -> str | None:
-    """Retorna URL do SFX adequado para a narrativa, ou None."""
-    text_lower = narrative_text.lower()
-    for sfx_name, keywords in SFX_KEYWORDS.items():
-        for kw in keywords:
-            if kw in text_lower:
-                return f"/sons/sistema/{SFX_FILES[sfx_name].split('/')[-1]}"
-    return None
+    """Retorna URL do SFX: tenta Freesound primeiro, fallback local."""
+    match = _keyword_from_narrative(narrative_text)
+    if not match:
+        return None
+    kw_pt, query_en = match
+
+    # 1. Tenta Freesound
+    url = _search_freesound(query_en)
+    if url:
+        return url
+
+    # 2. Fallback: arquivo local
+    return _SFX_LOCAL_FALLBACK.get(kw_pt)
 
 
 # ─── TTS server-side (retorna bytes MP3) ─────────────────────────────────────
