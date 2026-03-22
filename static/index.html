@@ -346,11 +346,11 @@
     </div>
   </div>
 
-  <div id="orb-label">toque para falar</div>
+  <div id="orb-label">aguardando o mestre...</div>
   <div id="transcript"></div>
 </div>
 
-<div id="hint">diga "inventário" ou "status" a qualquer momento</div>
+<div id="hint">ao ouvir o sino, fale sua ação · diga "inventário" ou "status" a qualquer momento</div>
 <div id="toast"></div>
 
 <script>
@@ -468,13 +468,11 @@
     }
   });
 
-  // ── Orb: clique para falar ─────────────────────────────────────────────────
+  // ── Orb: clique apenas como fallback manual ────────────────────────────────
   orb.addEventListener('click', () => {
-    if (isSpeaking) {
-      stopAudio();
-      return;
-    }
+    if (isSpeaking) { stopAudio(); return; }
     if (isListening) return;
+    // Fallback: permite clique manual caso o auto-listen não tenha iniciado
     startListening();
   });
 
@@ -492,7 +490,7 @@
 
     recognition.onstart = () => {
       isListening = true;
-      setOrbState('listening', '🎙', 'ouvindo...');
+      setOrbState('listening', '🎙', 'ouvindo você...');
       transcript.style.color = '#8b2020';
       transcript.textContent = '';
     };
@@ -557,13 +555,26 @@
     }
   }
 
-  // ── SFX ───────────────────────────────────────────────────────────────────
+  const CHIME_URL = '/sons/sistema/chime-2-356833.mp3';
+
+  // ── SFX ambiente ──────────────────────────────────────────────────────────
   function playSFX(url) {
     try {
       const sfx = new Audio(url);
       sfx.volume = 0.4;
       sfx.play().catch(() => {});
     } catch(e) {}
+  }
+
+  // ── Chime + abre microfone automaticamente ────────────────────────────────
+  async function playChimeThenListen() {
+    return new Promise((resolve) => {
+      const chime = new Audio(CHIME_URL);
+      chime.volume = 0.8;
+      chime.onended = () => { startListening(); resolve(); };
+      chime.onerror  = () => { startListening(); resolve(); };
+      chime.play().catch(() => { startListening(); resolve(); });
+    });
   }
 
   // ── Áudio (narração TTS) ───────────────────────────────────────────────────
@@ -577,26 +588,18 @@
       const url = URL.createObjectURL(audioBlob);
       currentAudio = new Audio(url);
 
-      currentAudio.onended = () => {
+      const afterNarration = () => {
         isSpeaking = false;
         currentAudio = null;
         URL.revokeObjectURL(url);
-        setOrbState('idle', '🎙', 'toque para falar');
+        // Toca o sino e abre o microfone automaticamente
+        playChimeThenListen();
         resolve();
       };
 
-      currentAudio.onerror = () => {
-        isSpeaking = false;
-        currentAudio = null;
-        setOrbState('idle', '🎙', 'toque para falar');
-        resolve();
-      };
-
-      currentAudio.play().catch(() => {
-        isSpeaking = false;
-        setOrbState('idle', '🎙', 'toque para falar');
-        resolve();
-      });
+      currentAudio.onended = afterNarration;
+      currentAudio.onerror = afterNarration;
+      currentAudio.play().catch(afterNarration);
     });
   }
 
