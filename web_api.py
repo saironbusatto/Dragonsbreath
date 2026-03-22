@@ -32,7 +32,7 @@ from game import (
     validate_player_action,
 )
 
-app = FastAPI(title="Dragon's Breath RPG")
+app = FastAPI(title="Ressoar")
 
 # Sessões em memória: { session_id: world_state }
 sessions: dict[str, dict] = {}
