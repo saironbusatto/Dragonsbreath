@@ -6,7 +6,7 @@
       "description": "Uma história sombria sobre peste, memória e um dragão disfarçado",
       "files": {
         "npcs": "campanhas/lamento_do_bardo/npcs.json",
-        "itens_magicos": "campanhas/lamento_do_bardo/itens_magicos.json", 
+        "itens_magicos": "campanhas/lamento_do_bardo/itens_magicos.json",
         "itens_comuns": "campanhas/lamento_do_bardo/itens_comuns.json",
         "locais": "campanhas/lamento_do_bardo/locais.json",
         "campanha": "campanhas/lamento_do_bardo/campanha.md"
@@ -28,8 +28,15 @@
         "initial_quest": "Descobrir a verdade sobre a praga que matou sua esposa",
         "initial_location": "umbraton",
         "initial_triggers": {
-          "umbraton": ["corvo_na_gargula", "crianca_correndo", "grito_viela"],
-          "taverna_corvo_ferido": ["taverneiro_se_cala", "musica_familiar"]
+          "umbraton": [
+            "corvo_na_gargula",
+            "crianca_correndo",
+            "grito_viela"
+          ],
+          "taverna_corvo_ferido": [
+            "taverneiro_se_cala",
+            "musica_familiar"
+          ]
         }
       }
     },
@@ -62,8 +69,14 @@
         "initial_quest": "Encontrar o Cristal Perdido e restaurar a paz na região",
         "initial_location": "vila_pedraverde",
         "initial_triggers": {
-          "vila_pedraverde": ["criancas_brincando", "fazendeiro_nervoso"],
-          "floresta_sombria": ["galhos_rangendo", "olhos_brilhando"]
+          "vila_pedraverde": [
+            "criancas_brincando",
+            "fazendeiro_nervoso"
+          ],
+          "floresta_sombria": [
+            "galhos_rangendo",
+            "olhos_brilhando"
+          ]
         }
       }
     }

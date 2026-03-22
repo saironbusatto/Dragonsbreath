@@ -1,164 +1,163 @@
-# 🎵 Plataforma Ressoar
+# Plataforma Ressoar
 
-**Onde cada som conta uma história única.**
+Plataforma de narrativas interativas com IA generativa, narração por voz neural e efeitos sonoros contextuais. Dois modos de jogo: RPG de mundo aberto e Contos Interativos baseados em literatura clássica.
 
-A Plataforma Ressoar é um sistema revolucionário de narrativas interativas que oferece duas experiências distintas:
+---
 
-- **🗡️ Modo RPG:** Aventuras completas com regras, inventário e liberdade total de ação
-- **📖 Modo Conto Interativo:** Histórias clássicas adaptadas com escolhas e múltiplos finais
-
-## 🚀 Instalação Rápida
-
-1. **Clone o repositório:**
-   ```bash
-   git clone [url-do-repositorio]
-   cd ressoar
-   ```
-
-2. **Instale as dependências:**
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-3. **Configure as APIs:**
-   ```bash
-   cp .env.example .env
-   # Edite .env com suas chaves de API
-   ```
-
-4. **Execute a plataforma:**
-   ```bash
-   python game.py
-   ```
-
-## 🔑 APIs Necessárias
-
-- **Gemini API** (obrigatória): Para IA do jogo
-- **Google Cloud TTS** (recomendada): Para áudio em português brasileiro
-- **ElevenLabs** (opcional): Backup premium para TTS
-
-## 🎮 Experiência de Jogo
-
-### 🗡️ Modo RPG
-- **Sistema de Interação Ambiental Dinâmica:** IA povoa cenários com objetos interativos
-- **Inventário com Slots:** Sistema estratégico de 10 slots com kits iniciais balanceados
-- **Múltiplas Campanhas:** Hub de aventuras com diferentes classes e cenários
-- **Progressão Persistente:** Estado do mundo salvo automaticamente
-
-### 📖 Modo Conto Interativo
-- **Narrativas Clássicas:** Adaptações de obras literárias com IA especializada
-- **Múltiplos Finais:** Escolhas que levam a destinos únicos
-- **Variáveis Narrativas:** Sistema dinâmico de sanidade, esperança, etc.
-- **Experiência Imersiva:** Áudio contextual e narração completa
-
-### 🎵 Sistema de Áudio Completo
-- **TTS Premium:** Google Cloud Neural2 em português brasileiro
-- **SFX Contextuais:** Efeitos sonoros disparados automaticamente
-- **Narração Completa:** Todas as partes da história são narradas
-- **Chimes Indicativos:** Sinais sonoros para orientar interação
-
-## 🎮 Comandos Básicos
+## Modos de Jogo
 
 ### Modo RPG
-- `inventário` - Ver seus itens e slots
-- `status` - Ver sua saúde e HP
-- `usar [item]` - Consumir poções ou itens
-- `descartar [item]` - Remover itens do inventário
-- `chikito` - Salvar e sair
-- **Qualquer outra ação** vai para a IA Mestre do Jogo
 
-### Modo Conto Interativo
-- **A, B, C** - Escolher opções durante a narrativa
-- **Navegação automática** - Sistema guia através da história
+Aventura open-world onde o jogador escreve livremente o que seu personagem faz. Um Mestre com IA (Gemini) responde com narrativas consequentes, respeitando o estado do mundo, o inventário e as limitações da classe escolhida.
 
-## 🏗️ Estrutura do Projeto
+- Sistema de validação semântica — só é possível interagir com objetos presentes na cena atual
+- Inventário com slots (capacidade por peso, não por quantidade)
+- Gatilhos narrativos com probabilidade crescente, garantindo dinamismo
+- Estado persistente salvo automaticamente a cada turno
 
-```
-ressoar/
-├── game.py                          # Motor principal da plataforma
-├── audio_manager.py                 # Sistema de áudio completo
-├── world_state_manager.py           # Gerenciamento de estado RPG
-├── campaign_manager.py              # Sistema de campanhas
-├── config.json                     # Configuração de campanhas
-├── .env                            # Chaves de API (não commitado)
-├── .env.example                    # Exemplo de configuração
-├── campanhas/                      # Campanhas RPG
-│   ├── lamento_do_bardo/
-│   └── exemplo_fantasia/
-├── contos_interativos/             # Contos interativos
-│   ├── o_corvo_poe.txt
-│   └── o_corvo_poe_eventos.json
-├── sons/                           # Arquivos de áudio
-│   └── sistema/
-└── test_plataforma_ressoar.py      # Teste principal
-```
+**Campanhas disponíveis:**
 
-## 🔧 Dependências
+- **O Lamento do Bardo** — narrativa gótica sobre perda, ilusão e o poder da música (classe: Bardo)
+- **A Busca pelo Cristal Perdido** — aventura clássica de fantasia (classe: Aventureiro)
 
-### Principais
-- **Python 3.8+**
-- **google-generativeai** - API do Gemini (obrigatória)
-- **google-cloud-texttospeech** - TTS em português brasileiro
-- **pygame** - Reprodução de áudio
-- **python-dotenv** - Carregamento de variáveis de ambiente
+### Modo Contos Interativos
 
-### Instalação
+Adaptações de obras literárias clássicas com escolhas ramificadas (A/B/C) que influenciam variáveis dinâmicas e determinam o final da história. A IA narra usando o estilo e vocabulário do autor original.
+
+**Contos disponíveis:**
+
+- **O Corvo** (Edgar Allan Poe) — 4 finais possíveis, variáveis: sanidade, esperança, obsessão, aceitação
+
+---
+
+## Instalação
+
 ```bash
+# Instalar dependências
 pip install -r requirements.txt
+
+# Configurar variáveis de ambiente
+cp .env.example .env
+# Editar .env com suas chaves de API
+
+# Executar
+python game.py
 ```
 
-## 🚨 Solução de Problemas
+---
 
-### Erro de API Key
-```
-O Mestre do Jogo não consegue se conectar aos planos astrais.
-```
-**Solução:** Configure `GEMINI_API_KEY` no arquivo `.env`
+## APIs Necessárias
 
-### Erro de Importação
-```
-ModuleNotFoundError: No module named 'google.generativeai'
-```
-**Solução:** Execute `pip install -r requirements.txt`
+| API | Obrigatório | Uso |
+| --- | --- | --- |
+| [Google Gemini](https://ai.google.dev/) | Sim | Narrativa com IA (Mestre, Story Master, Archivista) |
+| [Google Cloud TTS](https://cloud.google.com/text-to-speech) | Recomendado | Voz neural pt-BR (~$4/1M chars) |
+| [ElevenLabs](https://elevenlabs.io/) | Não | TTS premium alternativo (~$22/1M chars) |
 
-### Problemas de Áudio
+```env
+GEMINI_API_KEY=sua_chave_aqui
+GOOGLE_APPLICATION_CREDENTIALS=/caminho/para/service-account.json
+GOOGLE_CLOUD_PROJECT=seu-projeto-id
+ELEVENLABS_API_KEY=sua_chave_aqui  # opcional
 ```
-Erro no sistema TTS
-```
-**Solução:** Verifique configuração do Google Cloud TTS no `.env`
 
-## 🧪 Teste da Plataforma
+Se nenhum TTS estiver configurado, a plataforma funciona normalmente exibindo apenas texto.
+
+---
+
+## Comandos
+
+### Comandos do Modo RPG
+
+| Comando | Ação |
+| --- | --- |
+| `inventário` | Exibe itens e slots usados/total |
+| `status` / `saúde` / `vida` | Exibe HP atual e máximo |
+| `chikito` | Salva e encerra |
+| Qualquer outra entrada | Enviada como ação ao Mestre do Jogo |
+
+### Comandos do Modo Conto
+
+| Comando | Ação |
+| --- | --- |
+| `A`, `B` ou `C` | Escolhe entre as opções narrativas |
+
+---
+
+## Estrutura do Projeto
+
+```text
+Dragonsbreath/
+├── game.py                     # Motor principal — loops de jogo e lógica de negócio
+├── audio_manager.py            # TTS, SFX e reconhecimento de voz
+├── world_state_manager.py      # Estado do mundo RPG e AI Archivista
+├── campaign_manager.py         # Carregamento de dados de campanhas
+├── config.json                 # Configuração declarativa das campanhas
+├── .env.example                # Template de variáveis de ambiente
+├── requirements.txt            # Dependências Python
+├── test_plataforma_ressoar.py  # Testes de verificação da plataforma
+├── estado_do_mundo.json        # Save automático do jogo (gerado em runtime)
+├── campanhas/
+│   ├── lamento_do_bardo/       # NPCs, locais, itens e narrativa da campanha gótica
+│   └── exemplo_fantasia/       # NPCs, locais, itens e narrativa da campanha clássica
+├── contos_interativos/
+│   ├── o_corvo_poe.txt         # Texto original de referência (estilo do autor)
+│   └── o_corvo_poe_eventos.json # Mapa de eventos, escolhas e variáveis dinâmicas
+├── sons/sistema/               # 15 efeitos sonoros MP3 disparados contextualmente
+└── docs/                       # Documentação técnica completa
+```
+
+---
+
+## Stack Tecnológica
+
+- **Python 3.8+**
+- **Google Gemini 1.5-Flash** — narrativa com IA (3 personas: Mestre, Story Master, Archivista)
+- **Google Cloud TTS** — vozes neurais pt-BR (Neural2-A feminina / Neural2-B masculina, 1.5x velocidade)
+- **pygame** — engine de reprodução de áudio
+- **SpeechRecognition + pyaudio** — entrada por voz
+- **pyttsx3** — TTS local offline (fallback automático)
+
+---
+
+## Testes
 
 ```bash
 python test_plataforma_ressoar.py
 ```
 
-Este teste verifica:
-- ✅ Estrutura de arquivos
-- ✅ Configurações de campanhas RPG
-- ✅ Estrutura de contos interativos
-- ✅ Importações de funções
-
-## 🎮 Comece Sua Aventura!
-
-```bash
-# Configuração rápida
-cp .env.example .env
-# Edite .env com suas chaves
-python game.py
-```
-
-### 🎯 Características Únicas
-
-- **🎵 Sequência de Abertura Única:** Som especial + narração poética
-- **🗡️ Modo RPG Completo:** Sistema ambiental dinâmico + inventário com slots
-- **📖 Contos Interativos:** Narrativas clássicas com múltiplos finais
-- **🇧🇷 Áudio Premium:** Google Cloud TTS em português brasileiro
-- **🎶 SFX Contextuais:** Efeitos sonoros automáticos baseados na narrativa
-- **🔔 Chimes Indicativos:** Orientação sonora para interação
-
-**Bem-vindo à Plataforma Ressoar - onde cada som conta uma história única!** 🎵✨
+Verifica estrutura de arquivos, configurações de campanhas, integridade dos contos e importações de funções.
 
 ---
 
-*Plataforma Ressoar - onde cada som conta uma história única.*
+## Documentação Técnica
+
+A pasta [docs/](docs/README.md) contém a documentação completa do sistema:
+
+- [Visão geral da arquitetura](docs/architecture/overview.md)
+- [Fluxo de dados](docs/architecture/data-flow.md)
+- [Diagrama de classes UML](docs/uml/class-diagram.md)
+- [Diagramas de sequência](docs/uml/sequence-diagrams.md)
+- [Diagramas de estado](docs/uml/state-diagrams.md)
+- [Entidades do sistema](docs/entities/entities.md)
+- [Integração com IA](docs/api/ai-integration.md)
+
+---
+
+## Solução de Problemas
+
+**`GEMINI_API_KEY` não configurada**
+Configure a chave no arquivo `.env`. Sem ela a plataforma não consegue gerar narrativas.
+
+**`ModuleNotFoundError`**
+Execute `pip install -r requirements.txt` para instalar todas as dependências.
+
+**Sem áudio / erro de TTS**
+A plataforma funciona sem áudio — verifique o `.env` se quiser ativar TTS. O fallback textual é automático.
+
+**Microfone não reconhecido**
+Instale `pyaudio` e verifique os drivers do dispositivo. Entrada por teclado funciona normalmente sem microfone.
+
+---
+
+*Plataforma Ressoar — onde cada som conta uma história única.*

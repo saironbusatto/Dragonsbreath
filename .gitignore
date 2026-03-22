@@ -31,9 +31,10 @@ wheels/
 estado_do_mundo.json
 *.save
 
-# IDE
+# IDE e ferramentas
 .vscode/
 .idea/
+.trae/
 *.swp
 *.swo
 
