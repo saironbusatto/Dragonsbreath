@@ -1,12 +1,12 @@
-# Integração com IA — Google Gemini
+# Integração com IA — OpenAI GPT-4o-mini
 
 ## Visão Geral
 
-A plataforma usa Google Gemini 1.5-Flash como motor de inteligência artificial com três personas distintas, cada uma otimizada para um papel específico.
+A plataforma usa **OpenAI GPT-4o-mini** como motor de inteligência artificial com **quatro personas distintas**, cada uma otimizada para um papel específico. Todas as chamadas usam o mesmo endpoint (`/v1/chat/completions`), diferenciadas por temperatura e system prompt.
 
 ---
 
-## Três Personas de IA
+## Quatro Personas de IA
 
 ### 1. Mestre do Jogo (RPG)
 **Função:** Gerar narrativa open-world responsiva às ações do jogador.
@@ -15,48 +15,47 @@ A plataforma usa Google Gemini 1.5-Flash como motor de inteligência artificial 
 
 **Temperatura:** 0.75 (criativo mas consistente)
 
-**Prompt padrão:**
+**Parâmetros:**
+```python
+model="gpt-4o-mini", temperature=0.75, max_tokens=1024
 ```
-Você é o Mestre de uma aventura RPG de fantasia gótica.
-O jogador é um [CLASSE] chamado [NOME].
 
-ESTADO ATUAL DO MUNDO:
-- Localização: [LOCAL]
-- Cena: [DESCRIÇÃO]
-- HP: [HP]/[MAX_HP]
-- Inventário ([SLOTS_USADOS]/[MAX_SLOTS] slots): [ITENS]
-- Missão ativa: [MISSÃO]
-- NPCs presentes: [NPCS]
-- Eventos recentes: [RESUMO]
+**System prompt (resumido):**
+```
+Você é Mestre de Jogo narrando "[campanha]". Narre em segunda pessoa, tempo presente.
 
-DADOS DA CAMPANHA:
-[NPCs, locais, itens relevantes]
+--- BREVIDADE (REGRA MAIS IMPORTANTE) ---
+- Ação simples: 1-2 frases + "O que você faz?"
+- Exploração: 2-3 frases
+- Evento importante: 3-4 frases
+NUNCA ultrapasse 4 frases.
 
-REGRAS DA CLASSE [CLASSE]:
-Pode: [lista de capacidades]
-Não pode: [lista de restrições]
+--- REGRAS FUNDAMENTAIS ---
+1. Narre APENAS o resultado imediato da ação.
+2. Use [STATUS_UPDATE] para HP: [STATUS_UPDATE] {"hp_change": -4}
+3. Use [INVENTORY_UPDATE] para itens: [INVENTORY_UPDATE] {"add": ["item"]}
+7. ANTI-REPETIÇÃO: NUNCA redescreva o que já está em "recent_narrations".
+10. Encerre sempre com: "O que você faz?"
 
-[GATILHO NARRATIVO — se houver]
+--- NARRAÇÃO SONORA ---
+15. Inclua o som que os objetos produzem.
+16. Mencione o som ANTES do objeto (isca sonora).
+17. Som ambiente apenas ao entrar em local novo.
+```
 
-AÇÃO DO JOGADOR: "[AÇÃO]"
-
-Instruções:
-1. Narre as consequências da ação de forma imersiva
-2. Use [STATUS_UPDATE: hp_change=X] para alterações de HP
-3. Use [INVENTORY_UPDATE: +Item] ou [-Item] para inventário
-4. Inclua 2-4 objetos ESPECÍFICOS e NOMEADOS na cena
-5. NUNCA ofereça múltipla escolha ao jogador
-6. Termine com "O que você faz?"
-7. Respeite as limitações da classe do personagem
-8. Seja consistente com o tom gótico/melancólico da campanha
+**Injeção Shadowdark (quando há rolagem de dados):**
+```
+[DADOS SHADOWDARK]
+Modificador: Vantagem (2d20 → maior) | Dados: [4, 16] | Usado: 16 | DC: 12
+RESULTADO: SUCESSO (16 vs DC 12) — narre o jogador tendo sucesso.
+REGRA ABSOLUTA: narre ESTRITAMENTE conforme o resultado. Não inverta nem ignore os dados.
 ```
 
 **Output esperado:**
 ```
-[STATUS_UPDATE: hp_change=-3]
+[STATUS_UPDATE] {"hp_change": -3}
 
-A criatura avança sobre você com garras afiadas...
-[narrativa imersiva de 200-400 palavras]
+A criatura recua ferida... [1-4 frases narrativas]
 
 O que você faz?
 ```
@@ -70,173 +69,258 @@ O que você faz?
 
 **Temperatura:** 0.75
 
+**Parâmetros:**
+```python
+model="gpt-4o-mini", temperature=0.75, max_tokens=1024
+```
+
 **Prompt padrão:**
 ```
 Você é o Mestre dos Contos, narrando "[NOME DO CONTO]".
 
-TEXTO ORIGINAL (use como referência de estilo e vocabulário):
-[conteúdo completo do .txt]
+TEXTO ORIGINAL (use como referência de estilo):
+[conteúdo do .txt]
 
 ESTADO DAS VARIÁVEIS DINÂMICAS:
 [variavel]: [valor]
-...
 
-EVENTO ATUAL:
-ID: [evento_id]
-Contexto: [descricao_para_ia]
+EVENTO ATUAL: [id] — [descricao_para_ia]
 
-OPÇÕES DISPONÍVEIS:
-(A) [texto_opcao_a]
-(B) [texto_opcao_b]
-(C) [texto_opcao_c]
+OPÇÕES:
+(A) [texto_a]  (B) [texto_b]  (C) [texto_c]
 
 Instruções:
-1. Narre este evento usando o estilo e vocabulário do texto original
-2. Use as variáveis para colorir emocionalmente a narrativa
-3. Apresente as opções EXATAMENTE como listadas acima, ao final
-4. Não adicione opções, não remova opções
-5. Não quebre a quarta parede nem explique mecânicas
-6. Termine obrigatoriamente com as opções formatadas
-```
-
-**Output esperado:**
-```
-[narrativa de 150-300 palavras no estilo do autor]
-
-(A) Abrir a porta imediatamente
-(B) Hesitar, ouvir o silêncio primeiro
-(C) Mergulhar nos livros para ignorar
+1. Narre no estilo do texto original
+2. Apresente as opções EXATAMENTE como listadas
+3. Não adicione nem remova opções
 ```
 
 ---
 
 ### 3. Archivista (State Manager)
-**Função:** Extrair e atualizar estado do mundo a partir da narrativa gerada.
+**Função:** Extrair e atualizar o estado do mundo em JSON puro após cada narrativa.
 
 **Chamado em:** `update_world_state()` em `world_state_manager.py`
 
-**Temperatura:** 0.2 (baixo — precisão > criatividade)
+**Temperatura:** 0.2 (precisão > criatividade)
 
-**Prompt padrão:**
+**Parâmetros:**
+```python
+model="gpt-4o-mini", temperature=0.2, max_tokens=2048
 ```
-Você é o Archivista — um sistema silencioso de gerenciamento de estado.
-Analise a narrativa e retorne um JSON atualizado do estado do mundo.
 
-ESTADO ATUAL:
-[world_state_json]
+**System prompt:**
+```
+Você é o Arquivista — um sistema silencioso que mantém o estado de um RPG.
+Retorne APENAS o JSON completo e válido. Nenhuma palavra extra.
 
-ÚLTIMA NARRATIVA DO MESTRE:
-[gm_narrative]
-
-Retorne APENAS JSON válido (sem markdown, sem explicação) com estes campos:
-{
-  "interactable_elements_in_scene": [lista de substantivos/objetos mencionados],
-  "important_npcs_in_scene": {nome: breve descrição do NPC na cena},
-  "current_location_key": "mesma localização ou nova se mudou",
-  "recent_events_summary": [últimos 5 eventos, incluindo este]
-}
-
-REGRAS:
-- interactable_elements: apenas substantivos concretos (não verbos, adjetivos)
-- Exemplos válidos: "cadeira", "janela", "espada", "corvo", "taverneiro"
-- Exemplos inválidos: "brilhante", "correr", "noite"
-- recent_events: cada item deve ser 1 frase curta descrevendo o evento
+REGRAS DE ATUALIZAÇÃO:
+1. Atualize 'immediate_scene_description' com a situação atual.
+2. Atualize 'current_location_key' se o jogador mudou de local.
+3. Adicione/remova NPCs em 'important_npcs_in_scene'.
+4. Atualize 'active_quests' se necessário.
+5. Mantenha 'recent_events_summary' com os 3-4 eventos mais recentes.
+6. Atualize inventário e status se necessário.
+7. MAPA SEMÂNTICO DA CENA: Preencha 'interactable_elements_in_scene' como dicionário:
+   - "objetos": lista de objetos standalone
+   - "npcs": personagens presentes
+   - "npc_itens": {npc: [itens visíveis]} — só se explicitamente mencionado
+   - "containers": {container: [conteúdo visível]} — só se mencionado
+   - "saidas": saídas e passagens
+   - "chao": itens abandonados no chão
+   Extraia APENAS o que foi mencionado. Ao mudar de local, limpe o mapa.
 ```
 
 **Output esperado:**
 ```json
 {
-  "interactable_elements_in_scene": ["janela", "corvo", "gárgula", "diário", "figura"],
-  "important_npcs_in_scene": {
-    "Figura Encapuzada": "Observa o personagem da rua com atenção suspeita"
-  },
-  "current_location_key": "umbraton",
-  "recent_events_summary": [
-    "Chegou às portas de Umbraton ao anoitecer",
-    "Conversou com o porteiro desconfiado",
-    "Um corvo pousou na gárgula e o diário vibrou",
-    "Observou a cidade pela janela e avistou figura encapuzada"
-  ]
+  "player_character": { ... },
+  "world_state": {
+    "current_location_key": "taverna_corvo_ferido",
+    "interactable_elements_in_scene": {
+      "objetos": ["balcão", "vela", "lareira"],
+      "npcs": ["taverneiro"],
+      "npc_itens": { "taverneiro": ["caneca", "chave enferrujada"] },
+      "containers": {},
+      "saidas": ["porta norte", "escada"],
+      "chao": []
+    },
+    "important_npcs_in_scene": { "taverneiro": "Olha desconfiado" },
+    "recent_events_summary": ["Entrou na taverna do Corvo Ferido"]
+  }
 }
 ```
 
 ---
 
-## Configuração do Cliente Gemini
+### 4. Olhos do Jogador (HUD Narrativo)
+**Função:** Responder consultas de inspeção do jogador (inventário, saúde, ambiente) de forma imersiva, sem avançar a narrativa. O tempo do jogo não passa.
+
+**Chamado em:** `get_player_eyes_response()` em `game.py`
+
+**Temperatura:** 0.2 (factual, como o Archivista)
+
+**Parâmetros:**
+```python
+model="gpt-4o-mini", temperature=0.2, max_tokens=200
+```
+
+**Detecção de consulta:** `is_inspection_action(action)` → `'inventory'`, `'health'`, `'environment'`, ou `None`
+
+**Keywords de inspeção detectadas:**
+| Tipo | Exemplos |
+|------|---------|
+| `inventory` | "inventário", "bolsa", "meus itens", "o que eu tenho" |
+| `health` | "status", "saúde", "como estou", "meu hp" |
+| `environment` | "o que eu vejo", "ao meu redor", "onde estou", "o que tem aqui" |
+
+**Contexto enviado (mínimo e focado):**
+- `inventory` → `{inventory, slots_usados, max_slots}`
+- `health` → `{status, classe}`
+- `environment` → `{local_atual, descricao_da_cena, cena (mapa semântico), narrações_recentes}`
+
+**System prompt:**
+```
+Você é a consciência interna e os olhos do personagem — uma voz suave e factual
+que traduz dados do jogo em linguagem imersiva.
+
+REGRAS ABSOLUTAS:
+1. Baseie-se EXCLUSIVAMENTE nos dados JSON fornecidos. Nunca invente.
+2. NÃO avance a narrativa, NÃO tome ações, NÃO descreva eventos novos.
+3. Máximo 2-3 frases curtas.
+4. Tom: calmo, factual, levemente poético.
+5. NÃO encerre com "O que você faz?"
+```
+
+**Voz usada:** `pt-BR-Neural2-A` (feminina, Narradora) — distinguível da voz masculina do Mestre.
+
+**Exemplo:**
+```
+Jogador: "O que eu tenho na mochila?"
+→ "Você carrega seu alaúde de madeira e um diário com anotações —
+   dois objetos em dez espaços disponíveis."
+```
+
+---
+
+## Configuração do Cliente OpenAI
 
 ```python
-import google.generativeai as genai
+from openai import OpenAI
 
-genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
+client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
 
-model = genai.GenerativeModel(
-    model_name="gemini-1.5-flash",
-    generation_config={
-        "temperature": 0.75,
-        "max_output_tokens": 1024,
-    },
-    safety_settings=[
-        {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_NONE"},
-        {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_NONE"},
-        {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold": "BLOCK_NONE"},
-        {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_NONE"},
-    ]
+response = client.chat.completions.create(
+    model=os.environ.get("OPENAI_MODEL_MESTRE", "gpt-4o-mini"),
+    messages=[
+        {"role": "system", "content": system_content},
+        {"role": "user",   "content": user_content},
+    ],
+    temperature=0.75,
+    max_tokens=1024,
 )
 ```
 
-**Por que BLOCK_NONE?** A narrativa gótica e dramática da plataforma frequentemente inclui temas de morte, medo, violência fantástica e psicologia sombria — necessários para a autenticidade literária.
+**Variáveis de ambiente:**
+| Variável | Default | Uso |
+|----------|---------|-----|
+| `OPENAI_API_KEY` | — | Obrigatória |
+| `OPENAI_MODEL` | `gpt-4o-mini` | Modelo padrão |
+| `OPENAI_MODEL_MESTRE` | herda `OPENAI_MODEL` | Mestre do Jogo |
+| `OPENAI_MODEL_ARQUIVISTA` | herda `OPENAI_MODEL` | Archivista |
+
+---
+
+## Sistema de Dados Shadowdark
+
+Antes de chamar o Mestre, `resolve_action_roll(action, character)` determina se há risco e rola os dados:
+
+```python
+# Sem rolagem para ações rotineiras
+# Retorna None → GM narra livremente
+
+# Com rolagem para ações arriscadas
+{
+  "roll": 16,           # resultado usado
+  "dice": [4, 16],      # todos os dados rolados
+  "dc": 12,             # classe de dificuldade (9/12/15/18)
+  "modifier": "advantage",  # advantage / disadvantage / normal
+  "success": True,
+  "critical": False,    # natural 20
+  "fumble": False,      # natural 1
+}
+```
+
+**Classes de Dificuldade:**
+| DC | Nome | Uso |
+|----|------|-----|
+| 9  | Fácil | Tarefas simples |
+| 12 | Normal | Maioria dos desafios |
+| 15 | Difícil | Oposição forte, objetos "pesado/reforçado" |
+| 18 | Extremo | "impossível", "invencível" |
+
+**Vantagem por classe:**
+| Classe | Vantagem | Desvantagem |
+|--------|----------|-------------|
+| Bardo | persuasão, música, investigação | força bruta, combate |
+| Aventureiro | combate, atletismo, intimidação | persuasão, furtividade, magia |
 
 ---
 
 ## Tratamento de Erros
 
 ```python
-try:
-    response = model.generate_content(prompt)
-    return response.text
-except Exception as e:
-    # Log silencioso
-    return fallback_narrative
+except Exception:
+    return "{}"  # Archivista: mantém estado anterior
+    return "O Mestre sente uma perturbação... Tente novamente. O que você faz?"
 ```
 
 **Fallbacks:**
-- Gemini indisponível → mensagem padrão pedindo para tentar novamente
-- Archivista falha → manter estado anterior sem atualizar
-- Story Master falha → exibir texto do evento diretamente sem narração IA
+- IA indisponível → mensagem padrão de erro
+- Archivista retorna JSON inválido → mantém `old_state` sem atualizar
+- Olhos do Jogador sem API key → mensagem estática informando indisponibilidade
 
 ---
 
 ## Estimativa de Custo
 
-Baseado em uso típico de 1 hora de jogo:
+Baseado em uso típico de 1 hora de jogo (GPT-4o-mini: ~$0.15/1M input, ~$0.60/1M output):
 
-| Persona       | Tokens por chamada | Chamadas/hora | Total/hora |
-|---------------|-------------------|---------------|------------|
-| Mestre RPG    | ~2.000 in + 500 out| 30            | ~75.000    |
-| Story Master  | ~5.000 in + 400 out| 10            | ~54.000    |
-| Archivista    | ~1.500 in + 200 out| 30            | ~51.000    |
-| **Total**     |                   |               | **~180.000**|
+| Persona | Tokens/chamada | Chamadas/hora | Total/hora |
+|---------|---------------|---------------|------------|
+| Mestre RPG | ~2.000 in + 300 out | 30 | ~69.000 |
+| Story Master | ~4.000 in + 400 out | 10 | ~44.000 |
+| Archivista | ~2.000 in + 500 out | 30 | ~75.000 |
+| Olhos do Jogador | ~400 in + 150 out | 8 | ~4.400 |
+| Whisper STT | ~$0.006/min áudio | 60 min | ~$0.36 |
+| **Total** | | | **~192.400 tokens** |
 
-Gemini 1.5-Flash: ~$0.075/1M input tokens, ~$0.30/1M output tokens
-**Custo estimado: ~$0.02–0.05 por hora de jogo**
+**Custo estimado: ~$0.03–0.07 por hora de jogo** (incluindo Whisper)
 
 ---
 
 ## Estratégias de Prompt Engineering
 
-### 1. Personagem fixo no sistema
-Cada persona tem instruções de sistema que não mudam entre chamadas, economizando tokens de prompt.
+### 1. System vs User split
+System prompt = instruções fixas (persona, regras). User prompt = contexto dinâmico (world_state, ação). Economiza tokens de re-envio.
 
-### 2. Contexto mínimo necessário
-O Archivista recebe apenas o necessário para extrair estado — não recebe dados de campanha completos.
+### 2. Contexto mínimo por persona
+O Olhos do Jogador recebe apenas o fragmento relevante (inventory OU health OU cena), não o `world_state` completo.
 
-### 3. Output estruturado para Archivista
-JSON puro sem markdown reduz erros de parsing e economiza tokens.
+### 3. Output estruturado para o Archivista
+JSON puro sem markdown reduz erros de parsing e tokens desnecessários.
 
-### 4. Temperatura diferenciada por persona
+### 4. Temperatura diferenciada
 
-| Persona       | Temperature | Razão                                      |
-|---------------|-------------|---------------------------------------------|
-| Mestre RPG    | 0.75        | Criativo mas consistente com o mundo         |
-| Story Master  | 0.75        | Fiel ao estilo do autor mas com vida         |
-| Archivista    | 0.20        | Precisão máxima, zero criatividade necessária|
+| Persona | Temp | Razão |
+|---------|------|-------|
+| Mestre RPG | 0.75 | Criativo mas coerente com o mundo |
+| Story Master | 0.75 | Fiel ao estilo do autor mas vivo |
+| Archivista | 0.20 | Precisão máxima, sem invenção |
+| Olhos do Jogador | 0.20 | Factual — nunca alucina itens |
+
+### 5. Trava narrativa via dados
+A injeção `[DADOS SHADOWDARK]` com `REGRA ABSOLUTA` impede o GM de inverter resultados de falha/sucesso por "gentileza narrativa".
+
+### 6. Anti-repetição com `recent_narrations`
+As últimas 2 narrações são armazenadas em `world_state["recent_narrations"]` e enviadas ao GM, ativando a Rule 7 (ANTI-REPETIÇÃO).

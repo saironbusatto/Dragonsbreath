@@ -8,7 +8,7 @@
 ├─────────────────────────────────┤
 │ player_character: PlayerChar    │
 │ world_state: WorldData          │
-│ game_mode: str                  │
+│ recent_narrations: list[str]    │
 │ rodadas_sem_gatilho: int        │
 └────────────┬────────────────────┘
              │ contém
@@ -25,34 +25,39 @@
 │ max_slots    │  │ recent_events []     │
 │ inventory [] │  │ gatilhos_ativos {}   │
 │ desejo: str  │  │ gatilhos_usados {}   │
-└──────────────┘  │ interactable [] │
+└──────────────┘  │ interactable {}     │
                   └──────────────────────┘
 ```
 
 ---
 
 ## Entidade: WorldState
+
 Raiz do estado persistido do jogo.
 
 ```json
 {
   "player_character": { ... },
   "world_state": { ... },
-  "game_mode": "rpg",
+  "recent_narrations": [
+    "Primeiros 300 chars da penúltima narração",
+    "Primeiros 300 chars da última narração"
+  ],
   "rodadas_sem_gatilho": 0
 }
 ```
 
-| Campo                  | Tipo    | Descrição                                          |
-|------------------------|---------|----------------------------------------------------|
-| `player_character`     | Object  | Dados completos do personagem jogador              |
-| `world_state`          | Object  | Estado atual do mundo do jogo                      |
-| `game_mode`            | String  | `"rpg"` ou `"story"`                               |
-| `rodadas_sem_gatilho`  | Integer | Contador para cálculo de probabilidade de gatilhos |
+| Campo                  | Tipo         | Descrição                                                |
+|------------------------|--------------|----------------------------------------------------------|
+| `player_character`     | Object       | Dados completos do personagem jogador                    |
+| `world_state`          | Object       | Estado atual do mundo do jogo                            |
+| `recent_narrations`    | Array[String]| Últimas 2 narrações (max 300 chars cada) para ANTI-REPETIÇÃO |
+| `rodadas_sem_gatilho`  | Integer      | Contador para cálculo de probabilidade de gatilhos       |
 
 ---
 
 ## Entidade: PlayerCharacter
+
 Representa o personagem controlado pelo jogador.
 
 ```json
@@ -70,20 +75,21 @@ Representa o personagem controlado pelo jogador.
 }
 ```
 
-| Campo         | Tipo    | Descrição                                                  |
-|---------------|---------|------------------------------------------------------------|
-| `name`        | String  | Nome do personagem (definido pelo jogador)                 |
-| `class`       | String  | `"Bardo"` ou `"Aventureiro"` (define habilidades e HP)    |
-| `current_act` | Integer | Ato atual da campanha (1, 2, 3...)                         |
-| `status.hp`   | Integer | Pontos de vida atuais                                      |
-| `status.max_hp`| Integer | Pontos de vida máximos                                    |
-| `max_slots`   | Integer | Capacidade máxima do inventário em slots                   |
-| `inventory`   | Array   | Lista de itens carregados (strings)                        |
-| `desejo`      | String  | Motivação/objetivo principal do personagem                 |
+| Campo          | Tipo    | Descrição                                                  |
+|----------------|---------|------------------------------------------------------------|
+| `name`         | String  | Nome do personagem (definido pelo jogador)                 |
+| `class`        | String  | `"Bardo"` ou `"Aventureiro"` (define habilidades e HP)    |
+| `current_act`  | Integer | Ato atual da campanha (1, 2, 3...)                         |
+| `status.hp`    | Integer | Pontos de vida atuais                                      |
+| `status.max_hp`| Integer | Pontos de vida máximos                                     |
+| `max_slots`    | Integer | Capacidade máxima do inventário em slots                   |
+| `inventory`    | Array   | Lista de itens carregados (strings)                        |
+| `desejo`       | String  | Motivação/objetivo principal do personagem                 |
 
 ---
 
 ## Entidade: WorldData
+
 Estado atual do mundo do jogo.
 
 ```json
@@ -106,20 +112,42 @@ Estado atual do mundo do jogo.
   "gatilhos_usados": {
     "umbraton": []
   },
-  "interactable_elements_in_scene": ["portão", "corvo", "gárgula", "lanterna"]
+  "interactable_elements_in_scene": {
+    "objetos":   ["balcão", "vela", "lareira"],
+    "npcs":      ["taverneiro", "figura encapuzada"],
+    "npc_itens": { "taverneiro": ["caneca", "chave enferrujada"] },
+    "containers": { "baú atrás do balcão": [] },
+    "saidas":    ["porta norte", "escada para o andar de cima"],
+    "chao":      ["moeda suja"]
+  }
 }
 ```
 
-| Campo                        | Tipo   | Descrição                                                       |
-|------------------------------|--------|-----------------------------------------------------------------|
-| `current_location_key`       | String | ID da localização atual (chave em `locais.json`)               |
-| `immediate_scene_description`| String | Última descrição gerada pelo Mestre                             |
-| `active_quests`              | Object | Missões em andamento `{id: descrição}`                         |
-| `important_npcs_in_scene`    | Object | NPCs presentes na cena atual `{nome: descrição}`               |
-| `recent_events_summary`      | Array  | Histórico resumido dos últimos eventos                          |
-| `gatilhos_ativos`            | Object | Gatilhos disponíveis por localização `{local_id: [ids]}`       |
-| `gatilhos_usados`            | Object | Gatilhos já disparados `{local_id: [ids]}`                     |
-| `interactable_elements_in_scene` | Array | Objetos com os quais o jogador pode interagir              |
+| Campo                            | Tipo   | Descrição                                                            |
+|----------------------------------|--------|----------------------------------------------------------------------|
+| `current_location_key`           | String | ID da localização atual (chave em `locais.json`)                    |
+| `immediate_scene_description`    | String | Última descrição gerada pelo Mestre                                  |
+| `active_quests`                  | Object | Missões em andamento `{id: descrição}`                              |
+| `important_npcs_in_scene`        | Object | NPCs presentes na cena atual `{nome: descrição}`                    |
+| `recent_events_summary`          | Array  | Histórico resumido dos últimos eventos                               |
+| `gatilhos_ativos`                | Object | Gatilhos disponíveis por localização `{local_id: [ids]}`            |
+| `gatilhos_usados`                | Object | Gatilhos já disparados `{local_id: [ids]}`                          |
+| `interactable_elements_in_scene` | Object | **Mapa semântico** da cena (ver abaixo)                             |
+
+### Mapa Semântico da Cena
+
+`interactable_elements_in_scene` é um dicionário com 6 categorias semânticas gerado pelo Archivista:
+
+| Chave        | Tipo           | Conteúdo                                              |
+|--------------|----------------|-------------------------------------------------------|
+| `objetos`    | Array[String]  | Objetos standalone presentes na cena                  |
+| `npcs`       | Array[String]  | Personagens/criaturas presentes                       |
+| `npc_itens`  | Object         | `{nome_npc: [itens visíveis]}` — só se mencionado     |
+| `containers` | Object         | `{container: [conteúdo visível]}` — só se mencionado  |
+| `saidas`     | Array[String]  | Saídas e passagens                                    |
+| `chao`       | Array[String]  | Itens abandonados ou caídos no chão                   |
+
+**Uso em código:** `_flatten_scene_map(elements)` em `game.py` achata o dicionário em lista de tokens para a validação semântica (`validate_player_action`).
 
 ---
 
@@ -136,8 +164,8 @@ Estado atual do mundo do jogo.
 }
 ```
 
-| Campo           | Tipo   | Descrição                                   |
-|-----------------|--------|---------------------------------------------|
+| Campo            | Tipo   | Descrição                                   |
+|------------------|--------|---------------------------------------------|
 | `aparencia_facil`| String | O que o jogador percebe inicialmente        |
 | `verdade_oculta` | String | A realidade por trás da aparência           |
 | `papel`          | String | Papel narrativo (antagonista, aliado, etc.) |
@@ -164,11 +192,11 @@ Estado atual do mundo do jogo.
 }
 ```
 
-| Campo       | Tipo   | Descrição                                             |
-|-------------|--------|-------------------------------------------------------|
-| `nome`      | String | Nome exibido da localização                           |
-| `descricao` | String | Descrição narrativa base do local                     |
-| `gatilhos`  | Array  | Lista de gatilhos narrativos disponíveis neste local  |
+| Campo      | Tipo   | Descrição                                             |
+|------------|--------|-------------------------------------------------------|
+| `nome`     | String | Nome exibido da localização                           |
+| `descricao`| String | Descrição narrativa base do local                     |
+| `gatilhos` | Array  | Lista de gatilhos narrativos disponíveis neste local  |
 
 ---
 
@@ -177,20 +205,21 @@ Estado atual do mundo do jogo.
 ```json
 {
   "id": "corvo_na_gargula",
-  "descricao": "Um corvo pousa em uma gárgula próxima e emite um grasnido inquietante. Nesse momento, seu diário na mochila vibra levemente.",
+  "descricao": "Um corvo pousa em uma gárgula próxima e emite um grasnido inquietante.",
   "sfx": "corvo",
   "proximo_gatilho": "diario_vibra"
 }
 ```
 
-| Campo            | Tipo   | Descrição                                                |
-|------------------|--------|----------------------------------------------------------|
-| `id`             | String | Identificador único do gatilho                           |
-| `descricao`      | String | Texto narrativo injetado na cena quando ativado          |
-| `sfx`            | String | Keyword de efeito sonoro a disparar                      |
-| `proximo_gatilho`| String | ID do próximo gatilho na cadeia (ou `null`)              |
+| Campo             | Tipo   | Descrição                                                |
+|-------------------|--------|----------------------------------------------------------|
+| `id`              | String | Identificador único do gatilho                           |
+| `descricao`       | String | Texto narrativo injetado na cena quando ativado          |
+| `sfx`             | String | Keyword de efeito sonoro a disparar (via `_SFX_MAP`)     |
+| `proximo_gatilho` | String | ID do próximo gatilho na cadeia (ou `null`)              |
 
 **Probabilidade de ativação:**
+
 ```
 P = min(0.90, 0.30 + (rodadas_sem_gatilho × 0.10))
 ```
@@ -297,12 +326,12 @@ Configuração declarativa em `config.json`:
 }
 ```
 
-| Campo             | Tipo   | Descrição                                                 |
-|-------------------|--------|-----------------------------------------------------------|
+| Campo              | Tipo   | Descrição                                                 |
+|--------------------|--------|-----------------------------------------------------------|
 | `descricao_para_ia`| String | Contexto fornecido à IA para gerar a narrativa da cena   |
-| `opcoes`          | Array  | Lista de escolhas disponíveis (vazio = evento final)      |
-| `opcoes[].texto`  | String | Texto da opção exibido ao jogador                         |
-| `opcoes[].efeito` | Object | Mudanças nas variáveis dinâmicas `{variavel: delta}`      |
+| `opcoes`           | Array  | Lista de escolhas disponíveis (vazio = evento final)      |
+| `opcoes[].texto`   | String | Texto da opção exibido ao jogador                         |
+| `opcoes[].efeito`  | Object | Mudanças nas variáveis dinâmicas `{variavel: delta}`      |
 | `opcoes[].proximo_evento` | String | ID do próximo evento no mapa                   |
 
 ---
@@ -321,6 +350,7 @@ Exemplo para "O Corvo":
 | `aceitacao` | 0-10  | Capacidade de seguir em frente               |
 
 **Mapeamento de finais (exemplo):**
+
 - `obsessao >= 4` + `aceitacao <= 3` → `final_desespero`
 - `esperanca >= 7` + `sanidade >= 6` → `final_aceitacao`
 
@@ -328,13 +358,22 @@ Exemplo para "O Corvo":
 
 ## Entidade: AudioConfig
 
-Não é persistida — configuração em código no `audio_manager.py`.
+Não é persistida — configuração em código no `audio_manager.py` e `web_api.py`.
 
-| Configuração       | Valor                        | Descrição                   |
-|--------------------|------------------------------|-----------------------------|
-| Voz narradora      | `pt-BR-Neural2-A`            | Feminina, para intro/contos |
-| Voz mestre         | `pt-BR-Neural2-B`            | Masculina, para RPG         |
-| Velocidade         | `1.5`                        | 1.5x mais rápido que normal |
-| Taxa de amostragem | `22050 Hz`                   | Qualidade de áudio          |
-| Formato saída      | MP3                          | Compatível com pygame       |
-| SFX base path      | `sons/sistema/`              | Diretório dos efeitos       |
+| Configuração       | Valor                        | Descrição                        |
+|--------------------|------------------------------|----------------------------------|
+| Voz narradora      | `pt-BR-Neural2-A`            | Feminina — Olhos do Jogador/intro|
+| Voz mestre         | `pt-BR-Neural2-B`            | Masculina — narrativa RPG        |
+| Velocidade TTS     | `1.0`                        | Taxa de fala natural             |
+| Taxa de amostragem | `22050 Hz`                   | Qualidade de áudio               |
+| Formato saída      | MP3 (base64)                 | Enviado via API para o browser   |
+| SFX base path      | `sons/sistema/`              | Diretório dos efeitos locais     |
+| SFX Freesound      | API pública                  | Sons buscados dinamicamente      |
+
+### Distinção de Vozes por Contexto
+
+| Voz       | Usada para                                                |
+|-----------|-----------------------------------------------------------|
+| Masculina | Narração do Mestre do Jogo (história avançando)           |
+| Feminina  | Olhos do Jogador (inspeção: inventário, saúde, ambiente)  |
+| Feminina  | Mensagens de sistema, erros de validação                  |

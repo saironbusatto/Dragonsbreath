@@ -7,22 +7,27 @@
       "gatilhos": {
         "corvo_na_gargula": {
           "descricao": "Um corvo de olhos brancos o encara do topo de uma gárgula.",
+          "sfx": "corvo",
           "proximo": "diario_vibra"
         },
         "diario_vibra": {
           "descricao": "Seu diário vibra levemente, como se algo estivesse reagindo a ele.",
+          "sfx": null,
           "proximo": null
         },
         "crianca_correndo": {
           "descricao": "Uma criança corre e deixa cair um papel ensanguentado.",
+          "sfx": "criança",
           "proximo": "sino_toca"
         },
         "sino_toca": {
           "descricao": "Um sino toca sozinho, embora ninguém esteja na torre.",
+          "sfx": "sino",
           "proximo": null
         },
         "grito_viela": {
           "descricao": "Você ouve um grito abafado vindo de uma viela próxima.",
+          "sfx": "grito",
           "proximo": null
         }
       }
@@ -34,18 +39,22 @@
       "gatilhos": {
         "taverneiro_se_cala": {
           "descricao": "O taverneiro se cala ao ouvir o nome 'praga'.",
+          "sfx": "sussurro",
           "proximo": "figura_encapuzada"
         },
         "figura_encapuzada": {
           "descricao": "Uma figura encapuzada deixa cair uma chave antiga.",
+          "sfx": "passos",
           "proximo": null
         },
         "musica_familiar": {
           "descricao": "Uma música familiar ecoa, mas não há músicos visíveis.",
+          "sfx": "musica",
           "proximo": "sussurro_praga"
         },
         "sussurro_praga": {
           "descricao": "Alguém sussurra: 'A praga começou aqui, você sabe.'",
+          "sfx": "sussurro",
           "proximo": null
         }
       }

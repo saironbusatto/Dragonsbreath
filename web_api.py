@@ -5,6 +5,8 @@ Interface de voz: o jogador fala, o Mestre responde em áudio.
 import uuid
 import os
 import base64
+import random
+import tempfile
 import requests as http_requests
 from fastapi import FastAPI, HTTPException
 from fastapi.staticfiles import StaticFiles
@@ -30,6 +32,9 @@ from game import (
     clean_and_process_ai_response,
     load_game_context_for_act,
     validate_player_action,
+    is_inspection_action,
+    get_player_eyes_response,
+    resolve_action_roll,
 )
 
 app = FastAPI(title="Ressoar")
@@ -42,35 +47,72 @@ sessions: dict[str, dict] = {}
 
 # Mapeamento: keywords PT → query EN para Freesound
 _SFX_MAP = {
+    # Animais
     "corvo":      "raven crow caw dark",
     "corvos":     "flock crows cawing",
-    "grito":      "scream horror terror",
-    "criança":    "children running footsteps",
-    "moeda":      "coin gold drop",
+    "lobo":       "wolf howl",
+    "lobos":      "wolves howling pack",
+    "cavalo":     "horse hooves gallop",
+    "cavalos":    "horses hooves gallop",
+    "rato":       "rats scurrying squeaking",
+    "ratos":      "rats scurrying squeaking",
+    "serpente":   "snake hiss",
+    "dragão":     "dragon roar",
+    # Natureza / clima
+    "chuva":      "rain ambient outdoor",
+    "tempestade": "thunderstorm rain",
+    "trovão":     "thunder crack storm",
+    "relâmpago":  "lightning strike thunder",
+    "vento":      "wind howling",
+    "névoa":      "fog mist eerie atmosphere",
+    "neblina":    "fog mist eerie atmosphere",
+    "floresta":   "forest ambient birds",
+    "rio":        "river stream flowing",
+    "água":       "water stream flowing",
+    "mar":        "ocean waves sea",
+    "montanha":   "mountain wind howling",
+    # Locais
+    "taverna":    "medieval tavern inn ambience",
+    "taverneiro": "tavern indoor ambience",
     "cidade":     "medieval city ambience",
     "vila":       "medieval village atmosphere",
     "umbraton":   "dark city gothic ambience",
+    "mercado":    "market bazaar crowd",
+    "castelo":    "castle medieval stone ambience",
+    "masmorra":   "dungeon dark dripping",
+    "calabouço":  "dungeon dark dripping",
+    "caverna":    "cave dripping echo",
+    "cemitério":  "graveyard cemetery dark wind",
+    "pântano":    "swamp bog ambience",
+    # Pessoas / sons humanos
     "pessoas":    "crowd murmur voices",
     "multidão":   "crowd talking indoor",
-    "chuva":      "rain ambient outdoor",
-    "tempestade": "thunderstorm rain",
-    "taverna":    "medieval tavern inn ambience",
-    "taverneiro": "tavern indoor ambience",
+    "criança":    "children running footsteps",
+    "grito":      "scream horror terror",
+    "risada":     "evil laugh maniacal",
+    "choro":      "crying sobbing",
+    "sussurro":   "whisper dark eerie",
     "passos":     "footsteps stone floor",
-    "vento":      "wind howling",
+    "guarda":     "armor footsteps march",
+    # Combate / ação
+    "espada":     "sword clash metal",
+    "batalha":    "battle sword clash metal",
+    "flecha":     "arrow whoosh",
+    "explosão":   "explosion boom",
+    # Objetos / ambiente
+    "moeda":      "coin gold drop",
     "fogo":       "fire crackling fireplace",
     "porta":      "door creak open",
     "sino":       "bell church toll",
-    "trovão":     "thunder crack storm",
-    "floresta":   "forest ambient birds",
-    "masmorra":   "dungeon dark dripping",
-    "espada":     "sword clash metal",
-    "flecha":     "arrow whoosh",
-    "lobo":       "wolf howl",
-    "água":       "water stream flowing",
-    "mercado":    "market bazaar crowd",
-    "cavalo":     "horse hooves gallop",
-    "sino":       "bell ding small",
+    "magia":      "magic spell whoosh sparkle",
+    "feitiço":    "magic spell whoosh sparkle",
+    "fantasma":   "ghost haunting eerie wind",
+    "sombra":     "dark ominous eerie ambient",
+    "musica":     "medieval lute bard music",
+    "alaúde":     "medieval lute bard music",
+    "melodia":    "medieval melody flute ambient",
+    # Sistema
+    "dados":      "dice rolling tabletop wooden",
 }
 
 # Fallback local quando Freesound não está disponível
@@ -90,58 +132,165 @@ _SFX_LOCAL_FALLBACK = {
 # Cache: query → URL (evita chamadas repetidas ao Freesound)
 _sfx_cache: dict[str, str] = {}
 
-def _keyword_from_narrative(text: str) -> tuple[str, str] | None:
-    """Encontra o primeiro keyword PT e retorna (keyword_pt, query_en)."""
-    text_lower = text.lower()
-    for kw_pt, query_en in _SFX_MAP.items():
-        if kw_pt in text_lower:
-            return kw_pt, query_en
-    return None
+# Som de dissonância para ação inválida
+_sfx_error_url: str | None = None
 
-def _search_freesound(query_en: str) -> str | None:
-    """Busca no Freesound e retorna URL de preview MP3, ou None."""
+def _get_error_sfx() -> str | None:
+    """Retorna URL do som de dissonância/erro. Busca no Freesound uma vez, cacheia."""
+    global _sfx_error_url
+    if _sfx_error_url:
+        return _sfx_error_url
+    url = _search_freesound("wrong note lute dissonance medieval")
+    if not url:
+        url = _search_freesound("dissonance sting error sound")
+    _sfx_error_url = url
+    return url
+
+
+# Som de dados rolando (buscado uma vez e cacheado)
+_sfx_dice_url: str | None = None
+
+def _get_dice_sfx() -> str | None:
+    global _sfx_dice_url
+    if _sfx_dice_url:
+        return _sfx_dice_url
+    _sfx_dice_url = _search_freesound("dice rolling tabletop wooden")
+    return _sfx_dice_url
+
+
+# ─── Ambient por ato ──────────────────────────────────────────────────────────
+
+_ACT_AMBIENTS: dict[int, str] = {
+    1: "rain ambience dark",
+    2: "choir medieval ambient",
+    3: "dark dramatic orchestral",
+}
+_ambient_cache: dict[int, str | None] = {}
+
+def _get_ambient_for_act(act: int) -> str | None:
+    """Retorna URL do preview (~30s) para loop ambiente do ato.
+    O browser faz loop desse preview indefinidamente.
+    """
+    if act in _ambient_cache:
+        return _ambient_cache[act]
+    query = _ACT_AMBIENTS.get(act)
+    # Sem filtro de duração: previews Freesound sempre ~30s, perfeitos para loop
+    url = _search_freesound(query, duration_filter=None) if query else None
+    _ambient_cache[act] = url
+    print(f"[AMBIENT] Ato {act}: {url}")
+    return url
+
+
+# ─── Sistema de triggers (portado de game.py) ─────────────────────────────────
+
+def _resolve_sfx_keyword(kw_pt: str | None) -> str | None:
+    """Resolve uma keyword PT para URL de SFX (Freesound → fallback local)."""
+    if not kw_pt:
+        return None
+    query_en = _SFX_MAP.get(kw_pt)
+    if not query_en:
+        return None
+    return _search_freesound(query_en) or _SFX_LOCAL_FALLBACK.get(kw_pt)
+
+def _select_trigger(world_state: dict, game_context: dict) -> tuple[str | None, str | None]:
+    """Seleciona um gatilho narrativo com chance progressiva.
+    Retorna (descricao_para_injetar, url_sfx_do_gatilho).
+    """
+    from campaign_manager import get_current_campaign
+    campaign = get_current_campaign()
+    default_location = campaign.get("world_template", {}).get("initial_location", "local_inicial")
+
+    location_key = world_state["world_state"].get("current_location_key", default_location)
+    gatilhos_ativos = world_state["world_state"].get("gatilhos_ativos", {}).get(location_key, [])
+    locais_definidos = game_context.get("locais", {})
+    gatilhos_definidos = locais_definidos.get(location_key, {}).get("gatilhos", {})
+
+    base_chance = 0.3
+    acumulado = world_state.get("rodadas_sem_gatilho", 0) * 0.1
+    chance_total = min(base_chance + acumulado, 0.9)
+
+    if gatilhos_ativos and random.random() < chance_total:
+        gatilho_id = random.choice(gatilhos_ativos)
+        gatilho = gatilhos_definidos.get(gatilho_id, {})
+        descricao = gatilho.get("descricao")
+        sfx_kw = gatilho.get("sfx")
+
+        world_state["world_state"]["gatilhos_ativos"][location_key].remove(gatilho_id)
+        world_state["world_state"]["gatilhos_usados"].setdefault(location_key, []).append(gatilho_id)
+
+        proximo_id = gatilho.get("proximo")
+        if proximo_id:
+            world_state["world_state"]["gatilhos_ativos"][location_key].append(proximo_id)
+
+        world_state["rodadas_sem_gatilho"] = 0
+        print(f"[TRIGGER] {gatilho_id} → sfx={sfx_kw!r}")
+        return descricao, _resolve_sfx_keyword(sfx_kw)
+    else:
+        world_state["rodadas_sem_gatilho"] = world_state.get("rodadas_sem_gatilho", 0) + 1
+        return None, None
+
+def _search_freesound(query_en: str, duration_filter: str | None = "duration:[1 TO 25]") -> str | None:
+    """Busca no Freesound e retorna URL de preview MP3, ou None.
+    duration_filter=None → sem filtro de duração (para sons longos/ambientes).
+    """
     api_key = os.getenv("FREESOUND_API_KEY")
     if not api_key:
         return None
-    if query_en in _sfx_cache:
-        return _sfx_cache[query_en]
+    cache_key = f"{query_en}|{duration_filter}"
+    if cache_key in _sfx_cache:
+        return _sfx_cache[cache_key]
     try:
+        params: dict = {
+            "query": query_en,
+            "token": api_key,
+            "fields": "id,previews",
+            "page_size": 3,
+        }
+        if duration_filter:
+            params["filter"] = duration_filter
         resp = http_requests.get(
             "https://freesound.org/apiv2/search/text/",
-            params={
-                "query": query_en,
-                "token": api_key,
-                "fields": "id,previews",
-                "filter": "duration:[1 TO 25]",
-                "page_size": 3,
-            },
+            params=params,
             timeout=4,
         )
         results = resp.json().get("results", [])
         if results:
             url = results[0]["previews"].get("preview-hq-mp3") or results[0]["previews"].get("preview-lq-mp3")
             if url:
-                _sfx_cache[query_en] = url
+                _sfx_cache[cache_key] = url
                 print(f"[SFX] Freesound: {query_en!r} → {url}")
                 return url
     except Exception as e:
         print(f"[SFX] Freesound erro: {e}")
     return None
 
-def detect_sfx(narrative_text: str) -> str | None:
-    """Retorna URL do SFX: tenta Freesound primeiro, fallback local."""
-    match = _keyword_from_narrative(narrative_text)
-    if not match:
-        return None
-    kw_pt, query_en = match
+def detect_sfx_list(narrative_text: str) -> list[dict]:
+    """Retorna até 3 SFX com posição relativa no texto (0.0–1.0).
+    Cada entrada: {"url": "...", "position": 0.35}
+    Position = onde no texto aquela palavra aparece → usada pelo browser
+    para agendar o som no momento certo da narração.
+    """
+    text_lower = narrative_text.lower()
+    total_chars = max(len(narrative_text), 1)
+    results: list[dict] = []
+    used_positions: list[int] = []
 
-    # 1. Tenta Freesound
-    url = _search_freesound(query_en)
-    if url:
-        return url
+    for kw_pt, query_en in _SFX_MAP.items():
+        if len(results) >= 3:
+            break
+        pos = text_lower.find(kw_pt)
+        if pos == -1:
+            continue
+        # Evita dois sons muito próximos no texto (< 80 chars de distância)
+        if any(abs(pos - used) < 80 for used in used_positions):
+            continue
+        url = _search_freesound(query_en) or _SFX_LOCAL_FALLBACK.get(kw_pt)
+        if url:
+            results.append({"url": url, "position": round(pos / total_chars, 3)})
+            used_positions.append(pos)
+            print(f"[SFX] '{kw_pt}' pos={pos}/{total_chars} → {url}")
 
-    # 2. Fallback: arquivo local
-    return _SFX_LOCAL_FALLBACK.get(kw_pt)
+    return results
 
 
 # ─── TTS server-side (retorna bytes MP3) ─────────────────────────────────────
@@ -174,7 +323,7 @@ def synthesize_speech(text: str, voice_type: str = "master") -> bytes | None:
             ),
             audio_config=texttospeech.AudioConfig(
                 audio_encoding=texttospeech.AudioEncoding.MP3,
-                speaking_rate=1.4,
+                speaking_rate=1.0,
                 pitch=0.0,
             ),
         )
@@ -194,6 +343,10 @@ def to_audio_response(text: str, voice_type: str = "master") -> str | None:
 
 
 # ─── Modelos de request ───────────────────────────────────────────────────────
+
+class TranscribeRequest(BaseModel):
+    audio: str       # base64 do áudio gravado pelo MediaRecorder
+    mime_type: str = "audio/webm"  # mime type enviado pelo browser
 
 class StartRequest(BaseModel):
     player_name: str
@@ -222,6 +375,58 @@ def _state_summary(world_state: dict) -> dict:
 
 # ─── Endpoints ────────────────────────────────────────────────────────────────
 
+@app.post("/api/transcribe")
+def transcribe_audio(req: TranscribeRequest):
+    """Transcreve áudio via OpenAI Whisper (gpt-4o-mini-transcribe).
+    Recebe base64 de áudio webm/opus gravado pelo MediaRecorder do browser.
+    """
+    api_key = os.environ.get("OPENAI_API_KEY")
+    if not api_key:
+        raise HTTPException(500, "OPENAI_API_KEY não configurada")
+
+    try:
+        audio_bytes = base64.b64decode(req.audio)
+    except Exception:
+        raise HTTPException(400, "Áudio base64 inválido")
+
+    # Determina extensão pelo mime type (webm, mp4, ogg, wav, etc.)
+    _EXT_MAP = {
+        "audio/webm": ".webm", "audio/ogg": ".ogg",
+        "audio/mp4": ".mp4",   "audio/wav": ".wav",
+        "audio/mpeg": ".mp3",  "audio/mp3": ".mp3",
+    }
+    ext = _EXT_MAP.get(req.mime_type.split(";")[0].strip(), ".webm")
+
+    tmp_path = None
+    try:
+        with tempfile.NamedTemporaryFile(suffix=ext, delete=False) as f:
+            f.write(audio_bytes)
+            tmp_path = f.name
+
+        from openai import OpenAI as _OpenAI
+        client = _OpenAI(api_key=api_key)
+        with open(tmp_path, "rb") as f:
+            result = client.audio.transcriptions.create(
+                model="gpt-4o-mini-transcribe",
+                file=f,
+                language="pt",
+                # Prompt ajuda Whisper com vocabulário específico do jogo
+                prompt="Jogo de RPG medieval. Nomes: Umbraton, Bardo, Bardo Viajante, taverna, praga, dragão, santuário.",
+            )
+        text = result.text.strip()
+        print(f"[TRANSCRIBE] {text!r}")
+        return {"text": text}
+    except Exception as e:
+        print(f"[TRANSCRIBE] ERRO: {e}")
+        raise HTTPException(500, f"Erro na transcrição: {e}")
+    finally:
+        if tmp_path:
+            try:
+                os.unlink(tmp_path)
+            except OSError:
+                pass
+
+
 @app.get("/api/campaigns")
 def get_campaigns():
     return {"campaigns": list_available_campaigns()}
@@ -243,18 +448,21 @@ def start_game(req: StartRequest):
     opening_raw = get_gm_narrative(world_state, "Iniciou a aventura", game_context)
     opening_clean, world_state = clean_and_process_ai_response(opening_raw, world_state)
     world_state = update_world_state(world_state, "Iniciou a aventura", opening_raw)
+    world_state["recent_narrations"] = [opening_clean[:300]]
 
     session_id = str(uuid.uuid4())
     sessions[session_id] = world_state
 
     audio = to_audio_response(opening_clean, "master")
-    sfx = detect_sfx(opening_clean)
+    sfx = detect_sfx_list(opening_clean)
+    ambient_url = _get_ambient_for_act(current_act)
 
     return {
         "session_id": session_id,
         "narrative": opening_clean,
         "audio": audio,
         "sfx": sfx,
+        "ambient": {"url": ambient_url, "volume": 0.15} if ambient_url else None,
         "state": _state_summary(world_state),
     }
 
@@ -269,25 +477,17 @@ def take_action(req: ActionRequest):
     if not action:
         raise HTTPException(400, "Ação não pode ser vazia")
 
-    # Comandos de status por voz
-    action_lower = action.lower()
-    if any(w in action_lower for w in ("inventário", "inventario", "bolsa", "meus itens")):
-        pc = world_state["player_character"]
-        inv = pc.get("inventory", [])
-        used = len(inv)
-        total = pc.get("max_slots", 10)
-        narrative = (
-            f"Você carrega {used} de {total} itens: {', '.join(inv)}."
-            if inv else "Sua bolsa está vazia."
-        )
-        return {"narrative": narrative, "audio": to_audio_response(narrative), "state": _state_summary(world_state), "valid": True}
-
-    if any(w in action_lower for w in ("status", "saúde", "saude", "vida", "hp", "quanto hp")):
-        pc = world_state["player_character"]
-        hp = pc.get("status", {}).get("hp", 0)
-        max_hp = pc.get("status", {}).get("max_hp", 0)
-        narrative = f"Você tem {hp} de {max_hp} pontos de vida."
-        return {"narrative": narrative, "audio": to_audio_response(narrative), "state": _state_summary(world_state), "valid": True}
+    # HUD Narrativo — Agente "Olhos do Jogador" (não avança o tempo do jogo)
+    if is_inspection_action(action):
+        narrative = get_player_eyes_response(action, world_state)
+        print(f"[OLHOS] {narrative[:80]!r}...")
+        return {
+            "narrative": narrative,
+            "audio": to_audio_response(narrative, "narrator"),
+            "state": _state_summary(world_state),
+            "inspection": True,
+            "valid": True,
+        }
 
     # Valida ação
     character = world_state.get("player_character", {})
@@ -296,6 +496,7 @@ def take_action(req: ActionRequest):
         return {
             "narrative": validation_msg,
             "audio": to_audio_response(validation_msg),
+            "sfx_error": _get_error_sfx(),
             "state": _state_summary(world_state),
             "valid": False,
         }
@@ -304,19 +505,40 @@ def take_action(req: ActionRequest):
     current_act = character.get("current_act", 1)
     game_context = load_game_context_for_act(current_act, world_state)
 
-    gm_response = get_gm_narrative(world_state, action, game_context)
+    # Sistema de dados Shadowdark
+    roll_result = resolve_action_roll(action, character)
+    if roll_result:
+        mod_pt = {"advantage": "Vantagem", "disadvantage": "Desvantagem", "normal": "Normal"}[roll_result["modifier"]]
+        print(f"[DADOS] {mod_pt} | {roll_result['dice']} → {roll_result['roll']} vs DC {roll_result['dc']} | {'SUCESSO' if roll_result['success'] else 'FALHA'}{'(CRÍTICO)' if roll_result['critical'] else ''}{'(FUMBLE)' if roll_result['fumble'] else ''}")
+
+    # Seleciona gatilho narrativo e injeta na ação
+    trigger_desc, trigger_sfx_url = _select_trigger(world_state, game_context)
+    action_with_trigger = f"{action}\n[Gatilho]: {trigger_desc}" if trigger_desc else action
+    game_context["gatilhos"] = [trigger_desc] if trigger_desc else []
+
+    gm_response = get_gm_narrative(world_state, action_with_trigger, game_context, roll_result)
     cleaned_narrative, world_state = clean_and_process_ai_response(gm_response, world_state)
-    world_state = update_world_state(world_state, action, gm_response)
+    world_state = update_world_state(world_state, action_with_trigger, gm_response)
+
+    recent = world_state.get("recent_narrations", [])
+    recent.append(cleaned_narrative[:300])
+    world_state["recent_narrations"] = recent[-2:]
 
     sessions[req.session_id] = world_state
 
+    new_act = world_state.get("player_character", {}).get("current_act", 1)
+    ambient_url = _get_ambient_for_act(new_act) if new_act != current_act else None
     audio = to_audio_response(cleaned_narrative, "master")
-    sfx = detect_sfx(cleaned_narrative)
+    sfx = detect_sfx_list(cleaned_narrative)
 
     return {
         "narrative": cleaned_narrative,
         "audio": audio,
         "sfx": sfx,
+        "trigger_sfx": trigger_sfx_url,
+        "roll_sfx": _get_dice_sfx() if roll_result else None,
+        "roll": roll_result,
+        "ambient": {"url": ambient_url, "volume": 0.15} if ambient_url else None,
         "state": _state_summary(world_state),
         "valid": True,
     }

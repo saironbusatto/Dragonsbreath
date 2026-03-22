@@ -2,37 +2,169 @@
 
 ## Visão Geral
 
-O Modo RPG é um sistema de narrativa interativa de mundo aberto onde o jogador escreve (ou fala) livremente o que seu personagem faz, e um Mestre de Jogo com IA (Gemini) responde com narrativas ricas e consequentes.
+O Modo RPG é um sistema de narrativa interativa de mundo aberto onde o jogador fala livremente o que seu personagem faz, e um Mestre de Jogo com IA (OpenAI GPT-4o-mini) responde com narrativas imersivas e consequentes.
 
-A característica central é a **Validação Semântica de Ações**: o jogador só pode interagir com objetos explicitamente presentes na cena descrita.
+Características centrais:
+
+- **Validação Semântica de Ações**: o jogador só pode interagir com objetos presentes na cena
+- **HUD Narrativo (Olhos do Jogador)**: consultas de inspeção respondidas por voz feminina sem avançar o tempo
+- **Sistema de Dados Shadowdark**: rolagens automáticas d20 com vantagem/desvantagem por classe
+- **Brevidade Forçada**: narrações de 1-4 frases, nunca repetindo elementos já descritos
+- **STT via Whisper**: OpenAI Whisper (`gpt-4o-mini-transcribe`) para alta acurácia em pt-BR
 
 ---
 
 ## Sistema de Validação Semântica
 
 ### Problema Resolvido
-Em jogos de RPG com IA pura, o jogador pode fazer coisas absurdas como "pego a espada invisível" ou "uso o jetpack" sem que o sistema detecte inconsistências.
 
-### Solução Implementada
-Após cada narrativa do Mestre, o AI Archivista extrai os objetos interativos mencionados. Antes de processar qualquer ação, o sistema verifica se os objetos mencionados pelo jogador realmente existem na cena.
+Em RPGs com IA pura, o jogador pode interagir com objetos que não existem na cena. A validação semântica impede isso.
+
+### Solução: Mapa Semântico da Cena
+
+Após cada narrativa, o Archivista extrai os elementos em um **dicionário estruturado** (não mais lista plana):
 
 ```
-Cena: "Você entra na taverna. Uma mesa de carvalho ocupa o centro,
-       sobre ela um cálice de vinho e uma vela acesa. O taverneiro
-       limpa um copo atrás do balcão."
+Cena narrada: "O taverneiro limpa uma caneca atrás do balcão.
+               Uma vela acesa ilumina a porta ao norte."
 
-Objetos disponíveis: [mesa, cálice, vinho, vela, taverneiro, copo, balcão]
-
-Ação VÁLIDA: "Pego o cálice e olho para o taverneiro"
-Ação INVÁLIDA: "Pego a espada que está no chão"
-→ "Não há espada no chão. Você vê: mesa, cálice, vela, taverneiro..."
+→ interactable_elements_in_scene:
+  objetos:   ["balcão", "vela"]
+  npcs:      ["taverneiro"]
+  npc_itens: { "taverneiro": ["caneca"] }
+  saidas:    ["porta ao norte"]
+  containers: {}
+  chao:      []
 ```
+
+A função `_flatten_scene_map()` achata esse dicionário em tokens para validação:
+`["balcão", "vela", "taverneiro", "caneca", "porta ao norte"]`
+
+```
+Ação VÁLIDA:   "Falo com o taverneiro sobre a caneca"
+Ação INVÁLIDA: "Pego a espada do chão"
+→ "Não há nenhuma 'espada' aqui para você interagir."
+```
+
+### Retrocompatibilidade
+
+`_flatten_scene_map()` aceita tanto o formato novo (dict) quanto o antigo (list), garantindo que saves existentes continuem funcionando.
+
+---
+
+## HUD Narrativo — Olhos do Jogador
+
+### Conceito
+
+Consultas de inspeção são interceptadas **antes** de chegar ao Mestre do Jogo. O tempo do jogo não avança, o Archivista não é chamado, os gatilhos não progridem.
+
+```
+Jogador:  "O que eu tenho na mochila?"
+Sistema:  detecta → is_inspection_action() → "inventory"
+          → get_player_eyes_response() com contexto {inventory, slots}
+          → voz FEMININA (pt-BR-Neural2-A)
+          → retorna { inspection: true }
+
+Jogador:  "Como estou de saúde?"
+Sistema:  detecta → "health"
+          → contexto {status, classe}
+          → voz feminina
+
+Jogador:  "O que tem ao meu redor?"
+Sistema:  detecta → "environment"
+          → contexto {local, descrição, mapa semântico completo}
+          → "Você está na taverna do Corvo Ferido. O taverneiro
+             carrega uma caneca e uma chave enferrujada.
+             Há uma porta ao norte e uma escada ao fundo."
+```
+
+### Keywords de Inspeção Detectadas
+
+| Tipo | Exemplos |
+|------|---------|
+| `inventory` | "inventário", "bolsa", "meus itens", "o que eu tenho", "meu equipamento" |
+| `health` | "status", "saúde", "como estou", "meu hp", "estou ferido" |
+| `environment` | "ao meu redor", "onde estou", "o que tem aqui", "o que eu vejo" |
+
+### Distinção Auditiva
+
+| Voz | Quando | Significado percebido |
+|-----|--------|-----------------------|
+| Masculina (Neural2-B) | Mestre narra | "O mundo está acontecendo" |
+| Feminina (Neural2-A) | Olhos do Jogador | "Minha consciência / interface" |
+
+---
+
+## Sistema de Dados Shadowdark
+
+### Filosofia
+
+Inspirado no Shadowdark RPG: **só role quando há risco real e a falha seria interessante**. Ações rotineiras têm sucesso automático — o Mestre narra livremente.
+
+### Classes de Dificuldade (DC)
+
+| DC | Nome | Quando usar |
+|----|------|-------------|
+| 9 | Fácil | Tarefas simples |
+| 12 | Normal | Maioria dos desafios (padrão) |
+| 15 | Difícil | Ação menciona "pesado", "reforçado", "ferrenho", "habilidoso" |
+| 18 | Extremo | Ação menciona "impossível", "invencível", "extremamente" |
+
+### Vantagem e Desvantagem por Classe
+
+| Classe | Vantagem (2d20 → maior) | Desvantagem (2d20 → menor) |
+|--------|--------------------------|---------------------------|
+| Bardo | persuasão, mentira, música, investigação | força bruta, combate físico |
+| Aventureiro | combate, atletismo, intimidação | persuasão, furtividade, magia |
+
+### Verbos que Disparam Rolagem
+
+Exemplos: `convencer`, `mentir`, `enganar`, `escalar`, `arrombar`, `atacar`, `esquivar`, `roubar`, `decifrar`, `desarmar`.
+
+Ações sem risco (sem rolagem): `caminhar`, `entrar em`, `sentar`, `olhar para`, `pegar o` (objeto acessível).
+
+### Fluxo de uma Rolagem
+
+```
+1. Jogador: "Tento convencer o guarda de que sou um enviado do Santuário"
+
+2. resolve_action_roll():
+   - "convencer" → rolagem necessária
+   - "habilidoso" ausente → DC 12
+   - Bardo + "convencer" → Vantagem
+   - Rola 2d20: [4, 16] → usa 16
+   - 16 ≥ 12 → success: true
+
+3. Frontend:
+   transcript: "🎲 4 / 16 → 16  ·  DC 12  ·  Vantagem  ·  Sucesso"  (verde)
+   som de dados rolando (awaitable)
+
+4. Mestre recebe no prompt:
+   [DADOS SHADOWDARK]
+   Modificador: Vantagem | Dados: [4, 16] | Usado: 16 | DC: 12
+   RESULTADO: SUCESSO — narre o jogador tendo sucesso.
+   REGRA ABSOLUTA: narre ESTRITAMENTE conforme o resultado.
+
+5. Mestre (voz masculina): "Silas estreita os olhos por um momento,
+   mas sua lábia é perfeita. Ele suspira e desliza a chave pelo
+   balcão. O que você faz?"
+```
+
+### Resultados Especiais
+
+| Resultado | Condição | Instrução ao Mestre |
+|-----------|----------|---------------------|
+| Sucesso Crítico | roll == 20 | Narre resultado excepcional, além do esperado |
+| Sucesso | roll ≥ DC | Narre o jogador tendo sucesso |
+| Falha | roll < DC | Narre fracasso com complicação interessante |
+| Falha Crítica | roll == 1 | Narre consequência grave ou reviravolta perigosa |
 
 ---
 
 ## Sistema de Inventário
 
 ### Capacidade por Slots
+
 Cada personagem tem `max_slots` (padrão: 10). Cada item ocupa 1-2 slots.
 
 ```
@@ -55,6 +187,7 @@ Total: 10/10 slots usados
 ```
 
 ### Lógica de Adição de Item
+
 1. Calcular slots necessários para o novo item
 2. Calcular slots usados atualmente
 3. Se `usados + necessários > max_slots` → inventário cheio
@@ -66,172 +199,137 @@ Total: 10/10 slots usados
 ## Sistema de Gatilhos Narrativos
 
 ### Conceito
-Gatilhos são eventos narrativos pré-escritos que injetam cenas dramáticas no jogo sem depender da ação do jogador. Garantem dinamismo mesmo em períodos de exploração passiva.
+
+Gatilhos são eventos narrativos pré-escritos que injetam cenas dramáticas no jogo sem depender da ação do jogador. Garantem dinamismo mesmo em exploração passiva.
+
+Cada gatilho em `locais.json` possui um campo `sfx` (keyword) que resolve para um URL de som via `_SFX_MAP` no servidor.
 
 ### Cadeia de Gatilhos
-Gatilhos podem encadear uns nos outros, criando arcos narrativos progressivos:
 
 ```
 [Ato 1 — Umbraton]
 
-corvo_na_gargula
+corvo_na_gargula  (sfx: "corvo")
 "Um corvo pousa em uma gárgula e grasna. Seu diário vibra."
     │ proximo_gatilho
     ▼
 diario_vibra
-"O diário vibra com mais intensidade. Parece querer ser aberto."
+"O diário vibra com mais intensidade."
     │ proximo_gatilho
     ▼
 (null — cadeia encerrada)
 ```
 
 ### Probabilidade Crescente
-```
-Rodada 1: P = 30%  (pode ou não disparar)
-Rodada 2: P = 40%  (sem gatilho na rodada anterior)
-Rodada 3: P = 50%  (sem gatilho nas 2 anteriores)
-...
-Rodada 7: P = 90%  (máximo — quase garantido)
 
+```
+Rodada 1: P = 30%
+Rodada 2: P = 40%  (sem gatilho na rodada anterior)
+...
+Rodada 7: P = 90%  (máximo)
 Quando dispara → P resetada para 30%
 ```
-
-### Localização dos Gatilhos
-Cada localização tem sua própria lista de gatilhos. Ao mudar de localização, os gatilhos da nova área ficam disponíveis.
 
 ---
 
 ## Classes de Personagem
 
 ### Bardo
-**Filosofia:** Personagem de suporte, investigação e interação social.
 
-| Aspecto        | Detalhe                                     |
-|----------------|---------------------------------------------|
-| HP Inicial     | 20                                          |
-| Slots Iniciais | 6/10 usados                                 |
-| Estilo de jogo | Resolução criativa, persuasão, arte         |
-| Fraquezas      | Combate direto, força bruta                 |
+| Aspecto | Detalhe |
+|---------|---------|
+| HP Inicial | 20 |
+| Slots Iniciais | 6/10 usados |
+| Estilo de jogo | Investigação, persuasão, música |
+| Vantagem nos dados | Persuasão, música, engano, investigação |
+| Desvantagem nos dados | Força bruta, combate físico |
 
-**Pode:**
-- Tocar instrumentos musicais de formas criativas
-- Persuadir, enganar e convencer NPCs
-- Investigar e deduzir pistas
-- Contar histórias que distraem ou inspiram
+**Pode:** tocar instrumentos, persuadir, investigar, contar histórias, pequenos truques musicais.
 
-**Não pode:**
-- Usar magia diretamente
-- Voar ou movimentar-se sobrenaturalmente
-- Ressuscitar mortos
-- Usar força bruta em situações que exigem poder físico excepcional
+**Não pode:** magia direta, voar, ressuscitar, força bruta excepcional.
 
 ### Aventureiro
-**Filosofia:** Personagem robusto de exploração e combate.
 
-| Aspecto        | Detalhe                                     |
-|----------------|---------------------------------------------|
-| HP Inicial     | 25                                          |
-| Slots Iniciais | 10/10 usados (inventário cheio no início)   |
-| Estilo de jogo | Combate, exploração, força                  |
-| Fraquezas      | Situações sociais sutis, magia              |
+| Aspecto | Detalhe |
+|---------|---------|
+| HP Inicial | 25 |
+| Slots Iniciais | 10/10 usados |
+| Estilo de jogo | Combate, exploração, força |
+| Vantagem nos dados | Combate, atletismo, intimidação, sobrevivência |
+| Desvantagem nos dados | Persuasão sutil, magia, furtividade |
 
-**Pode:**
-- Combater com armas e escudo
-- Explorar terrenos perigosos
-- Usar ferramentas e sobreviver ao ar livre
-- Intimidar fisicamente
+**Pode:** combater, explorar terrenos perigosos, intimidar, sobreviver ao ar livre.
 
-**Não pode:**
-- Usar magia
-- Voar
-- Habilidades sobrenaturais
+**Não pode:** magia, voar, habilidades sobrenaturais.
 
 ---
 
-## Sistema de HP e Combate
+## Anti-Repetição Narrativa
 
-O sistema de HP é controlado via tags na narrativa do Mestre:
+O campo `recent_narrations` em `world_state` armazena os primeiros 300 caracteres das últimas 2 narrações. O Mestre do Jogo recebe esses dados no prompt e a **Rule 7 (ANTI-REPETIÇÃO)** instrui a IA a nunca redescrever o que já foi mencionado.
 
+```python
+# Atualizado a cada turno em web_api.py:
+recent = world_state.get("recent_narrations", [])
+recent.append(cleaned_narrative[:300])
+world_state["recent_narrations"] = recent[-2:]
 ```
-Mestre narra: "A criatura ataca você causando [STATUS_UPDATE: hp_change=-5]..."
-game.py parseia: world_state["player_character"]["status"]["hp"] -= 5
-
-Bardo usa poção: "Você bebe a poção [STATUS_UPDATE: hp_change=+10]..."
-game.py parseia: world_state["player_character"]["status"]["hp"] += 10
-```
-
-O HP nunca ultrapassa `max_hp` e nunca cai abaixo de 0 (morte = fim de jogo).
-
----
-
-## Progressão de Atos
-
-O `current_act` avança quando o Mestre narra uma transição de ato. O sistema detecta isso e carrega o contexto do novo ato.
-
-```
-Ato 1 → Ato 2: após completar a missão principal do Ato 1
-Ato 2 → Ato 3: após completar a missão principal do Ato 2
-```
-
-Cada ato tem:
-- Novas localizações disponíveis
-- Novos gatilhos ativos
-- NPCs diferentes ou em situações diferentes
-- Missões atualizadas
-
----
-
-## Comandos Disponíveis (RPG)
-
-| Comando           | Efeito                                          |
-|-------------------|-------------------------------------------------|
-| `inventário`      | Lista todos os itens com slots usados/total     |
-| `inventario`      | (sem acento) mesmo efeito                       |
-| `status`          | Exibe HP atual / HP máximo + classe             |
-| `saúde`           | Mesmo que status                                |
-| `vida`            | Mesmo que status                                |
-| `chikito`         | Salva o jogo e encerra                          |
-| Qualquer outra coisa | Processada como ação narrativa pelo Mestre |
 
 ---
 
 ## Fluxo de um Turno Completo
 
 ```
-1. [CHIME] — sistema sinaliza que está pronto
+[CHIME] — sistema pronto para ouvir
 
-2. Jogador: "Vou até a janela e olho para a rua lá embaixo"
+Jogador fala → MediaRecorder grava → POST /api/transcribe (Whisper)
+→ texto transcrito → feedback de confirmação (voz feminina lê o que ouviu)
+→ jogador confirma (silêncio 4s ou "sim") ou cancela
 
-3. Sistema extrai objetos: ["janela", "rua"]
+POST /api/action:
 
-4. Sistema verifica: "janela" ∈ cena atual? SIM → OK
+  ┌─ is_inspection_action()? ─────────────────────────────┐
+  │  SIM → get_player_eyes_response()                      │
+  │        voz feminina, inspection: true                  │
+  │        tempo NÃO avança                                │
+  └────────────────────────────────────────────────────────┘
 
-5. Sistema calcula: P_gatilho = 0.5, random() = 0.3 → DISPARA!
-   → Adiciona ao prompt: "Um corvo pousa na gárgula e grasna"
+  ┌─ validate_player_action()? ───────────────────────────┐
+  │  INVÁLIDO → mensagem de erro + som de dissonância      │
+  │             voz feminina, valid: false                 │
+  └────────────────────────────────────────────────────────┘
 
-6. Gemini gera:
-   "Você se aproxima da janela envelhecida, cujos vidros refletem
-   a luz amarelada das lanternas. Lá embaixo, Umbraton respira
-   pesadamente — carroças passam, figuras encurvadas caminham.
+  ┌─ resolve_action_roll()? ──────────────────────────────┐
+  │  RISCO DETECTADO → rola d20 (±vantagem por classe)     │
+  │  resultado injetado no prompt do Mestre               │
+  └────────────────────────────────────────────────────────┘
 
-   De repente, um corvo pousa na gárgula ao lado da janela e
-   emite um grasnido agudo. Ao mesmo tempo, seu diário na mochila
-   vibra — uma vez, duas vezes.
+  _select_trigger() → injeta gatilho se P disparar
 
-   Na rua abaixo, você avista uma figura encapuzada que para e
-   olha diretamente para cima, na sua direção.
+  get_gm_narrative() → narrativa (1-4 frases)
 
-   O que você faz?"
+  Frontend:
+  1. 🎲 HUD do dado (se houver rolagem) — verde/vermelho
+  2. som de dados rolando (awaitable)
+  3. som do gatilho (se houver)
+  4. narração TTS voz masculina
+  5. SFX sincronizados com posição no texto
 
-7. SFX: "corvo" detectado → toca creepy-crow-caw.mp3
+  update_world_state() → Archivista atualiza mapa semântico
 
-8. TTS: narra o texto em voz pt-BR Neural2-B
-
-9. Archivista extrai: interactable = ["janela", "vidros", "lanternas",
-                                       "carroças", "corvo", "gárgula",
-                                       "diário", "figura encapuzada"]
-
-10. Estado salvo em estado_do_mundo.json
-
-11. [CHIME] — pronto para próxima ação
+[CHIME] → microfone abre
 ```
+
+---
+
+## Comandos de Inspeção (via Olhos do Jogador)
+
+Qualquer frase contendo as keywords abaixo é roteada para o agente Olhos do Jogador — não chega ao Mestre, não conta como turno:
+
+| Consulta | Dados retornados |
+|---------|-----------------|
+| "inventário", "minha mochila", "o que eu tenho" | inventory + slots usados/total |
+| "status", "saúde", "como estou", "meu hp" | hp atual / máximo + classe |
+| "ao meu redor", "onde estou", "o que tem aqui" | mapa semântico completo da cena |
+
+**Comando de save (CLI):** `chikito` — salva e encerra.

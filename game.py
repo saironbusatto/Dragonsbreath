@@ -165,6 +165,28 @@ def get_realistic_alternative(impossible_action: str, character_class: str) -> s
 
     return f"Como {character_class}, você poderia tentar uma abordagem mais mundana e realista para alcançar seu objetivo."
 
+def _flatten_scene_map(elements) -> list[str]:
+    """
+    Achata o mapa semântico da cena em uma lista de tokens lowercase.
+    Aceita tanto o formato antigo (lista plana) quanto o novo (dicionário).
+    """
+    if isinstance(elements, list):
+        return [e.lower() for e in elements]
+    if not isinstance(elements, dict):
+        return []
+    flat: list[str] = []
+    for key, value in elements.items():
+        if isinstance(value, list):
+            flat.extend(v.lower() for v in value if isinstance(v, str))
+        elif isinstance(value, dict):
+            # npc_itens / containers: {"taverneiro": ["caneca"], "baú": ["moedas"]}
+            for sub_key, sub_val in value.items():
+                flat.append(sub_key.lower())
+                if isinstance(sub_val, list):
+                    flat.extend(v.lower() for v in sub_val if isinstance(v, str))
+    return flat
+
+
 def validate_player_action(action: str, character: dict, world_state: dict = None) -> tuple[bool, str]:
     """
     SISTEMA DE INTERAÇÃO AMBIENTAL DINÂMICA
@@ -197,10 +219,8 @@ def validate_player_action(action: str, character: dict, world_state: dict = Non
 
     # Se temos world_state, verifica se os objetos existem na cena
     if world_state:
-        scene_elements = world_state.get('world_state', {}).get('interactable_elements_in_scene', [])
-
-        # Converte elementos da cena para lowercase para comparação
-        scene_elements_lower = [elem.lower() for elem in scene_elements]
+        raw = world_state.get('world_state', {}).get('interactable_elements_in_scene', [])
+        scene_elements_lower = _flatten_scene_map(raw)
 
         # Verifica cada objeto mencionado pelo jogador
         missing_objects = []
@@ -306,7 +326,7 @@ def trigger_contextual_sfx(narrative_text: str):
                 play_sfx(sfx_name)
                 return  # Toca apenas um efeito por narrativa para evitar sobreposição
 
-def get_gm_narrative(world_state: dict, player_action: str, game_context: dict) -> str:
+def get_gm_narrative(world_state: dict, player_action: str, game_context: dict, roll_result: dict | None = None) -> str:
     api_key = os.environ.get('OPENAI_API_KEY')
     if not api_key:
         print("ERRO: OPENAI_API_KEY não encontrada nas variáveis de ambiente")
@@ -330,23 +350,60 @@ Magia Limitada: {', '.join(class_info['limited_magic']) if class_info['limited_m
 Limitações Físicas: {', '.join(class_info['physical_limits'])}
 Slots de Inventário: {character.get('max_slots', 10)} no total
 
+--- BREVIDADE (REGRA MAIS IMPORTANTE) ---
+TAMANHO DA RESPOSTA é proporcional à ação:
+- Ação simples (pegar, falar, observar objeto): 1-2 frases + "O que você faz?"
+- Ação de exploração ou movimento: 2-3 frases + "O que você faz?"
+- Evento importante (combate, descoberta, mudança de local): 3-4 frases + "O que você faz?"
+NUNCA ultrapasse 4 frases de narração. Menos é mais.
+
 --- REGRAS FUNDAMENTAIS ---
-1. Narre o resultado da ação baseado no estado do mundo.
+1. Narre APENAS o resultado imediato da ação do jogador. Não redescreva o cenário já conhecido.
 2. Use [STATUS_UPDATE] para mudanças de HP: [STATUS_UPDATE] {{"hp_change": -4}}
 3. Use [INVENTORY_UPDATE] para itens: [INVENTORY_UPDATE] {{"add": ["item"]}}
-4. Sempre gere consequências claras para a ação do jogador.
-5. Se estiver explorando, adicione um novo evento (encontro, som, objeto, pista).
+4. Sempre gere consequências claras e diretas para a ação do jogador.
+5. Ao explorar um LOCAL NOVO, adicione UM único elemento novo (objeto, som ou evento). Em locais já visitados, só adicione novos elementos se o jogador pedir explicitamente.
 6. Considere o desejo ou objetivo do personagem ao narrar eventos.
-7. Nunca se repita — traga algo novo ou surpreendente a cada ação.
+7. ANTI-REPETIÇÃO: NUNCA redescreva objetos, personagens ou elementos já mencionados em narrações anteriores (veja "recent_narrations" no estado). Se já foi descrito, é memória do jogador — não repita.
 8. NUNCA ofereça opções de múltipla escolha (A, B, C). O jogo é completamente aberto.
-9. Apenas descreva a situação narrativamente e deixe o jogador decidir livremente.
+9. Apenas descreva o resultado da ação e deixe o jogador decidir livremente.
 10. Encerre sempre com: "O que você faz?"
 
---- SISTEMA DE INTERAÇÃO AMBIENTAL (CRÍTICO) ---
-11. POVOE O CENÁRIO: SEMPRE inclua de 2 a 4 objetos específicos com os quais o jogador possa interagir. Prefira: "uma cadeira de madeira bamba", "uma cortina pesada e empoeirada", "um livro aberto sobre a mesa". EVITE termos vagos como "móveis" ou "objetos".
+--- SISTEMA DE INTERAÇÃO AMBIENTAL ---
+11. OBJETOS INTERATIVOS: Mencione 2-3 objetos específicos APENAS ao entrar em um local pela PRIMEIRA VEZ, ou quando o jogador explorar explicitamente. Nas ações seguintes no mesmo local, mencione APENAS objetos diretamente relevantes para a ação atual. Nunca recite a lista de objetos a cada turno.
 12. REALISMO: O jogador só pode interagir com o que você menciona explicitamente na cena.
 13. CONSEQUÊNCIAS: Interprete interações com objetos considerando material, tamanho, estado e ambiente.
-14. INVENTÁRIO CHEIO: Se o personagem tentar pegar um item sem espaço, diga que a bolsa está cheia e peça que ele decida o que abandonar. Nunca force a troca automaticamente."""
+14. INVENTÁRIO CHEIO: Se o personagem tentar pegar um item sem espaço, diga que a bolsa está cheia e peça que ele decida o que abandonar. Nunca force a troca automaticamente.
+
+--- NARRAÇÃO SONORA (o jogo é totalmente por áudio) ---
+15. SONS DOS OBJETOS: Ao mencionar um objeto interativo, inclua o som que ele produz. Use palavras sonoras: ranger, chiar, murmurar, estalar, gotejar, uivar, sussurrar.
+16. ISCAS SONORAS: Para guiar o jogador, mencione o som ANTES do objeto. Ex: "Você ouve um gotejo perto da estante" — não descreva tudo de imediato.
+17. SONS DE AMBIENTE: Mencione som de fundo apenas ao entrar em local novo ou quando mudar a atmosfera da cena. Não repita o ambiente a cada turno."""
+
+    # Bloco de dados Shadowdark (injetado quando há rolagem)
+    dice_block = ""
+    if roll_result:
+        mod_labels = {
+            "advantage":    "Vantagem (2d20 → maior)",
+            "disadvantage": "Desvantagem (2d20 → menor)",
+            "normal":       "Normal (1d20)",
+        }
+        dice_str = ", ".join(str(d) for d in roll_result["dice"])
+        if roll_result["fumble"]:
+            outcome = "FALHA CRÍTICA (1 natural) — narre uma consequência grave, complicação séria ou reviravolta perigosa."
+        elif not roll_result["success"]:
+            outcome = f"FALHA ({roll_result['roll']} vs DC {roll_result['dc']}) — narre o fracasso com uma complicação narrativa interessante."
+        elif roll_result["critical"]:
+            outcome = "SUCESSO CRÍTICO (20 natural) — narre um resultado excepcional, além do esperado."
+        else:
+            outcome = f"SUCESSO ({roll_result['roll']} vs DC {roll_result['dc']}) — narre o jogador tendo sucesso."
+        dice_block = (
+            f"\n[DADOS SHADOWDARK]\n"
+            f"Modificador: {mod_labels[roll_result['modifier']]} | "
+            f"Dados: [{dice_str}] | Usado: {roll_result['roll']} | DC: {roll_result['dc']}\n"
+            f"RESULTADO: {outcome}\n"
+            f"REGRA ABSOLUTA: narre ESTRITAMENTE conforme o resultado. Não inverta nem ignore os dados.\n"
+        )
 
     # USER: contexto dinâmico que muda a cada turno
     user_content = f"""--- ESTADO ATUAL DO MUNDO ---
@@ -358,7 +415,7 @@ Itens disponíveis: {json.dumps(game_context.get('items', {}), indent=2, ensure_
 Locais relevantes: {json.dumps(game_context.get('locais', {}), indent=2, ensure_ascii=False)}
 Gatilhos Narrativos Ativos: {json.dumps(game_context.get('gatilhos', []), indent=2, ensure_ascii=False)}
 
---- AÇÃO DO JOGADOR ---
+--- AÇÃO DO JOGADOR ---{dice_block}
 {player_action}"""
 
     try:
@@ -556,6 +613,122 @@ def print_status(character: dict):
     print(f"\n--- Saúde: {hp}/{max_hp} HP ---")
     print("---------------------------\n")
 
+
+# ─── SISTEMA DE DADOS SHADOWDARK ──────────────────────────────────────────────
+
+# Verbos de ação que implicam risco e possível falha interessante.
+# Usa stems (prefixos) para cobrir conjugações: "escal" → escalar/escalo/escalando
+_ROLL_VERB_PATTERNS = [
+    # Persuasão / Engano
+    "convenc", "persuad", "mentir", "minto", "enganar", "engano",
+    "seduzir", "seduzo", "blefar", "blefando", "disfarç", "negociar",
+    "negocio", "intimidar", "intimido", "ameaçar", "ameaço", "chantage",
+    # Físico desafiador
+    "empurrar", "empurro", "arromb", "forçar a", "forço a",
+    "escal", "nadar ", "nado ", "esquivar", "esquivo",
+    "escapar de", "lutando", "atacar", "ataco", "golpear", "golpeio",
+    "derrubar", "derrub", "arremessar", "arremess", "trepar",
+    "saltar sobre", "salto sobre",
+    # Furtividade
+    "me esconder", "esgueirar", "esgueiro", "infiltrar", "infiltro",
+    "roubar", "roubando", "furtar", "furtando",
+    # Perícia / Investigação
+    "decifrar", "decifrando", "traduzir", "traduzindo",
+    "detectar armadilha", "desarmar",
+]
+
+# Modificadores que elevam a DC
+_DC_HARD_KEYWORDS = [
+    "pesado", "reforçado", "trancado", "resistente", "ferrenho",
+    "íngreme", "turbulento", "embravecido", "furioso", "formidável",
+    "difícil", "suspeito", "alerta", "experiente", "habilidoso",
+    "enorme", "colossal",
+]
+_DC_EXTREME_KEYWORDS = [
+    "impossível", "absolutamente", "invencível", "lisa e", "liso e",
+    "extremamente", "incrivelmente",
+]
+
+# Vantagem e Desvantagem por classe (mesmos stems de _ROLL_VERB_PATTERNS)
+_CLASS_ROLL_PROFILE: dict[str, dict[str, list[str]]] = {
+    "Bardo": {
+        "advantage": [
+            "convenc", "persuad", "mentir", "minto", "enganar", "engano",
+            "seduz", "blef", "disfarç", "negoci", "tocar", "toco",
+            "cantar", "canto", "músic", "melodia", "inspirar", "acalmar",
+            "investigar", "investigo", "decifrar", "traduz",
+        ],
+        "disadvantage": [
+            "empurrar", "empurro", "arromb", "escal",
+            "lutando", "atacar", "ataco", "golpe", "derrub", "arremess", "trepar",
+        ],
+    },
+    "Aventureiro": {
+        "advantage": [
+            "empurrar", "empurro", "arromb", "escal",
+            "lutando", "atacar", "ataco", "golpe", "derrub", "arremess", "trepar",
+            "intimidar", "intimido", "sobreviv", "rastrear", "caçar",
+        ],
+        "disadvantage": [
+            "convenc", "persuad", "mentir", "minto", "enganar", "engano",
+            "seduz", "blef", "disfarç", "músic", "tocar", "cantar",
+            "decifrar", "traduz", "furtand", "esgueirar",
+        ],
+    },
+}
+
+
+def resolve_action_roll(action: str, character: dict) -> dict | None:
+    """
+    Sistema de dados Shadowdark — só rola quando há risco real.
+    Retorna None para ações rotineiras (sucesso automático pelo Mestre).
+    Retorna dict completo com resultado quando a ação tem risco.
+    """
+    action_lower = action.lower()
+
+    # Sem rolagem se nenhum verbo de risco detectado
+    if not any(p in action_lower for p in _ROLL_VERB_PATTERNS):
+        return None
+
+    # Determina DC
+    if any(kw in action_lower for kw in _DC_EXTREME_KEYWORDS):
+        dc = 18
+    elif any(kw in action_lower for kw in _DC_HARD_KEYWORDS):
+        dc = 15
+    else:
+        dc = 12
+
+    # Vantagem / Desvantagem pela classe
+    character_class = character.get("class", "Aventureiro")
+    profile = _CLASS_ROLL_PROFILE.get(character_class, {})
+    if any(kw in action_lower for kw in profile.get("advantage", [])):
+        modifier = "advantage"
+    elif any(kw in action_lower for kw in profile.get("disadvantage", [])):
+        modifier = "disadvantage"
+    else:
+        modifier = "normal"
+
+    # Rola os dados
+    if modifier == "advantage":
+        dice = [random.randint(1, 20), random.randint(1, 20)]
+        roll = max(dice)
+    elif modifier == "disadvantage":
+        dice = [random.randint(1, 20), random.randint(1, 20)]
+        roll = min(dice)
+    else:
+        dice = [random.randint(1, 20)]
+        roll = dice[0]
+
+    return {
+        "roll": roll,
+        "dice": dice,
+        "dc": dc,
+        "modifier": modifier,
+        "success": roll >= dc,
+        "critical": roll == 20,
+        "fumble": roll == 1,
+    }
+
 def handle_local_command(player_action: str, character: dict) -> bool:
     action_lower = player_action.lower()
 
@@ -568,6 +741,119 @@ def handle_local_command(player_action: str, character: dict) -> bool:
         return True
 
     return False
+
+
+# ─── AGENTE "OLHOS DO JOGADOR" (HUD Narrativo — 4º agente) ───────────────────
+
+_INSPECTION_PATTERNS = {
+    "inventory": [
+        "inventário", "inventario", "bolsa", "minha mochila", "minha bolsa",
+        "meus itens", "o que eu tenho", "o que carrego", "meu equipamento",
+        "que itens", "que items",
+    ],
+    "health": [
+        "status", "saúde", "saude", "minha vida", "meu hp", "quanto hp",
+        "quantos hp", "como estou", "meu estado", "como está minha saúde",
+        "estou ferido", "minha saúde",
+    ],
+    "environment": [
+        "o que eu vejo", "ao meu redor", "meu redor", "o que tem aqui",
+        "onde estou", "que lugar", "o que está aqui", "o que esta aqui",
+        "checar o ambiente", "examinar o ambiente", "olhar ao redor",
+        "o que há aqui", "o que ha aqui", "o que vejo", "olho ao redor",
+        "que tem por aqui", "me olho ao redor", "procuro ao redor",
+    ],
+}
+
+
+def is_inspection_action(action: str) -> str | None:
+    """
+    Detecta se a ação é uma consulta de inspeção (não avança o tempo do jogo).
+    Retorna o tipo: 'inventory', 'health', 'environment', ou None.
+    """
+    action_lower = action.lower().strip()
+    for inspect_type, keywords in _INSPECTION_PATTERNS.items():
+        if any(kw in action_lower for kw in keywords):
+            return inspect_type
+    return None
+
+
+def get_player_eyes_response(player_action: str, world_state: dict) -> str:
+    """
+    Agente 'Olhos do Jogador' — lê o estado do jogo e responde consultas de
+    inspeção de forma imersiva, sem avançar a narrativa.
+    Temperatura 0.2 (factual, igual ao Archivista).
+    """
+    api_key = os.environ.get('OPENAI_API_KEY')
+    if not api_key:
+        return "Não consigo processar sua consulta no momento."
+
+    pc = world_state.get("player_character", {})
+    ws = world_state.get("world_state", {})
+    inspect_type = is_inspection_action(player_action)
+
+    if inspect_type == "inventory":
+        inv = pc.get("inventory", [])
+        context = {
+            "inventory": inv,
+            "slots_usados": calculate_used_slots(inv),
+            "max_slots": pc.get("max_slots", 10),
+        }
+    elif inspect_type == "health":
+        context = {
+            "status": pc.get("status", {"hp": 20, "max_hp": 20}),
+            "classe": pc.get("class", "Aventureiro"),
+        }
+    elif inspect_type == "environment":
+        context = {
+            "local_atual": ws.get("current_location_key", "local desconhecido"),
+            "descricao_da_cena": ws.get("immediate_scene_description", ""),
+            "cena": ws.get("interactable_elements_in_scene", {}),
+            "narrações_recentes": world_state.get("recent_narrations", []),
+        }
+    else:
+        inv = pc.get("inventory", [])
+        context = {
+            "inventory": inv,
+            "slots_usados": calculate_used_slots(inv),
+            "max_slots": pc.get("max_slots", 10),
+            "status": pc.get("status", {"hp": 20, "max_hp": 20}),
+            "local_atual": ws.get("current_location_key", "local desconhecido"),
+            "cena": ws.get("interactable_elements_in_scene", {}),
+        }
+
+    system_prompt = (
+        "Você é a consciência interna e os olhos do personagem — uma voz suave e factual "
+        "que traduz dados do jogo em linguagem imersiva. Responda em pt-BR, na segunda pessoa "
+        "(você), tempo presente.\n\n"
+        "REGRAS ABSOLUTAS:\n"
+        "1. Baseie-se EXCLUSIVAMENTE nos dados JSON fornecidos. Nunca invente itens, "
+        "locais ou informações ausentes.\n"
+        "2. NÃO avance a narrativa, NÃO tome ações, NÃO descreva eventos novos.\n"
+        "3. Seja conciso: máximo 2-3 frases curtas.\n"
+        "4. Tom: calmo, factual, levemente poético — como uma consciência falando consigo mesma.\n"
+        "5. NÃO encerre com 'O que você faz?' — isso é papel do Mestre, não seu."
+    )
+
+    user_prompt = (
+        f'O personagem perguntou: "{player_action}"\n\n'
+        f"Dados do estado (use APENAS estes):\n"
+        f"{json.dumps(context, indent=2, ensure_ascii=False)}\n\n"
+        "Responda de forma imersiva e estritamente factual."
+    )
+
+    client = OpenAI(api_key=api_key)
+    response = client.chat.completions.create(
+        model="gpt-4o-mini",
+        temperature=0.2,
+        max_tokens=200,
+        messages=[
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_prompt},
+        ],
+    )
+    return response.choices[0].message.content.strip()
+
 
 def new_game_loop(world_state: dict, save_filepath: str, game_context: dict):
     # Garante que existe o campo rodadas_sem_gatilho

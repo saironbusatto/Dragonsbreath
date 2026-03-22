@@ -360,6 +360,8 @@
   let isSpeaking = false;
   let isListening = false;
   let currentAudio = null;
+  let ambientAudio = null;
+  let currentAmbientUrl = null;
 
   const orb       = document.getElementById('orb');
   const orbIcon   = document.getElementById('orb-icon');
@@ -457,9 +459,11 @@
 
       updateStatus(data.state);
 
-      if (data.sfx) playSFX(data.sfx);
+      // Inicia loop de ambiente do ato 1
+      if (data.ambient) setAmbient(data.ambient.url, data.ambient.volume);
+
       if (data.audio) {
-        await playAudio(data.audio);
+        await playAudio(data.audio, data.sfx || []);
       }
     } catch (e) {
       btn.disabled = false;
@@ -472,55 +476,231 @@
   orb.addEventListener('click', () => {
     if (isSpeaking) { stopAudio(); return; }
     if (isListening) return;
-    // Fallback: permite clique manual caso o auto-listen não tenha iniciado
-    startListening();
+    startRecording();
   });
 
-  function startListening() {
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SpeechRecognition) {
-      showToast('Reconhecimento de voz não suportado neste navegador. Use Chrome.');
+  // ── Gravação via MediaRecorder + detecção de silêncio ─────────────────────
+  let mediaRecorder = null;
+  let audioChunks = [];
+  let silenceTimer = null;
+  let audioContext = null;
+  let analyser = null;
+  let silenceStream = null;
+
+  async function startRecording() {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      showToast('Microfone não disponível neste navegador.');
       return;
     }
 
-    recognition = new SpeechRecognition();
-    recognition.lang = 'pt-BR';
-    recognition.interimResults = true;
-    recognition.maxAlternatives = 1;
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      silenceStream = stream;
 
-    recognition.onstart = () => {
       isListening = true;
       setOrbState('listening', '🎙', 'ouvindo você...');
       transcript.style.color = '#8b2020';
-      transcript.textContent = '';
-    };
+      transcript.textContent = '...';
 
-    recognition.onresult = (e) => {
-      const result = e.results[e.results.length - 1];
-      const text = result[0].transcript;
-      transcript.textContent = text;
-      if (result.isFinal) {
-        recognition.stop();
-        sendAction(text);
-      }
-    };
+      // MediaRecorder para capturar áudio
+      const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
+        ? 'audio/webm;codecs=opus'
+        : 'audio/webm';
+      mediaRecorder = new MediaRecorder(stream, { mimeType });
+      audioChunks = [];
 
-    recognition.onerror = (e) => {
+      mediaRecorder.ondataavailable = (e) => {
+        if (e.data.size > 0) audioChunks.push(e.data);
+      };
+
+      mediaRecorder.onstop = async () => {
+        isListening = false;
+        stopSilenceDetection();
+        stream.getTracks().forEach(t => t.stop());
+
+        if (audioChunks.length === 0) {
+          setOrbState('idle', '🎙', 'toque para falar');
+          return;
+        }
+
+        setOrbState('thinking', '⋯', 'transcrevendo...');
+
+        try {
+          const blob = new Blob(audioChunks, { type: mimeType });
+          const base64 = await blobToBase64(blob);
+          const res = await fetch(`${API}/api/transcribe`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ audio: base64, mime_type: mimeType }),
+          });
+          const data = await res.json();
+          const text = data.text || '';
+          transcript.textContent = text;
+
+          if (!text.trim()) {
+            setOrbState('idle', '🎙', 'toque para falar');
+            return;
+          }
+
+          // Lê de volta o que foi entendido (SpeechSynthesis nativo — sem custo)
+          await speakBack(`Você disse: ${text}`);
+
+          // Sino suave de confirmação
+          await playConfirmChime();
+
+          // Aguarda confirmação (ou auto-confirma após silêncio)
+          const confirmed = await waitForConfirmation();
+          if (confirmed) {
+            sendAction(text);
+          } else {
+            // Cancelado — reinicia gravação
+            transcript.textContent = '';
+            await playChimeThenListen();
+          }
+        } catch (e) {
+          showToast('Erro na transcrição: ' + e.message);
+          setOrbState('idle', '🎙', 'toque para falar');
+        }
+      };
+
+      mediaRecorder.start(100); // chunks a cada 100ms
+
+      // Detecção de silêncio via AnalyserNode
+      audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      const source = audioContext.createMediaStreamSource(stream);
+      analyser = audioContext.createAnalyser();
+      analyser.fftSize = 512;
+      source.connect(analyser);
+      startSilenceDetection();
+
+    } catch (e) {
       isListening = false;
-      if (e.error === 'no-speech') {
-        setOrbState('idle', '🎙', 'toque para falar');
-        transcript.textContent = '';
-      } else {
-        showToast('Erro no microfone: ' + e.error);
-        setOrbState('idle', '🎙', 'toque para falar');
+      showToast('Erro ao acessar microfone: ' + e.message);
+      setOrbState('idle', '🎙', 'toque para falar');
+    }
+  }
+
+  function startSilenceDetection() {
+    const data = new Uint8Array(analyser.fftSize);
+    let speechDetected = false;
+    const SILENCE_THRESHOLD = 8;    // volume mínimo para considerar fala
+    const SILENCE_AFTER_SPEECH = 1500; // ms de silêncio após fala para parar
+    const MAX_DURATION = 15000;     // segurança: para após 15s
+
+    const maxTimer = setTimeout(() => stopRecording(), MAX_DURATION);
+
+    function check() {
+      if (!mediaRecorder || mediaRecorder.state !== 'recording') {
+        clearTimeout(maxTimer);
+        return;
       }
-    };
+      analyser.getByteTimeDomainData(data);
+      let sum = 0;
+      for (let i = 0; i < data.length; i++) sum += Math.abs(data[i] - 128);
+      const avg = sum / data.length;
 
-    recognition.onend = () => {
-      isListening = false;
-    };
+      if (avg > SILENCE_THRESHOLD) {
+        speechDetected = true;
+        clearTimeout(silenceTimer);
+        silenceTimer = null;
+        transcript.textContent = '🎙';
+      } else if (speechDetected && !silenceTimer) {
+        silenceTimer = setTimeout(() => {
+          clearTimeout(maxTimer);
+          stopRecording();
+        }, SILENCE_AFTER_SPEECH);
+      }
+      requestAnimationFrame(check);
+    }
+    requestAnimationFrame(check);
+  }
 
-    recognition.start();
+  function stopSilenceDetection() {
+    clearTimeout(silenceTimer);
+    silenceTimer = null;
+    if (audioContext) { audioContext.close().catch(() => {}); audioContext = null; }
+  }
+
+  function stopRecording() {
+    if (mediaRecorder && mediaRecorder.state === 'recording') {
+      mediaRecorder.stop();
+    }
+  }
+
+  function blobToBase64(blob) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result.split(',')[1]);
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+  }
+
+  // ── Leitura de volta (SpeechSynthesis nativo — pt-BR, sem API) ─────────────
+  function speakBack(text) {
+    return new Promise((resolve) => {
+      if (!window.speechSynthesis) { resolve(); return; }
+      window.speechSynthesis.cancel();
+      const utt = new SpeechSynthesisUtterance(text);
+      utt.lang = 'pt-BR';
+      utt.rate = 1.15;
+      utt.volume = 0.85;
+      utt.onend = resolve;
+      utt.onerror = resolve;
+      window.speechSynthesis.speak(utt);
+    });
+  }
+
+  // Sino mais suave como sinal de "pode confirmar"
+  function playConfirmChime() {
+    return new Promise((resolve) => {
+      const chime = new Audio(CHIME_URL);
+      chime.volume = 0.4;
+      chime.onended = resolve;
+      chime.onerror = resolve;
+      chime.play().catch(resolve);
+    });
+  }
+
+  // ── Aguarda confirmação verbal (auto-confirma após silêncio) ──────────────
+  const _CANCEL_KW = ['não','nao','cancela','cancelar','repete','repetir','errado','volta','voltar','desfaz'];
+  const _CONFIRM_KW = ['sim','pode','ok','isso','confirmar','confirma','certo','exato','vai','manda','pronto'];
+
+  async function waitForConfirmation() {
+    setOrbState('listening', '✔', 'confirma ou cancela...');
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      return await new Promise((resolve) => {
+        const mime = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
+          ? 'audio/webm;codecs=opus' : 'audio/webm';
+        const rec = new MediaRecorder(stream, { mimeType: mime });
+        const chunks = [];
+        rec.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
+        rec.onstop = async () => {
+          stream.getTracks().forEach(t => t.stop());
+          if (chunks.length === 0) { resolve(true); return; } // silêncio = confirma
+          try {
+            const blob = new Blob(chunks, { type: mime });
+            const b64 = await blobToBase64(blob);
+            const res = await fetch(`${API}/api/transcribe`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ audio: b64, mime_type: mime }),
+            });
+            const data = await res.json();
+            const word = (data.text || '').toLowerCase().trim();
+            console.log('[CONFIRM] ouvido:', word);
+            const cancelled = _CANCEL_KW.some(k => word.includes(k));
+            resolve(!cancelled); // não cancelado = confirmado
+          } catch { resolve(true); } // erro = confirma por segurança
+        };
+        rec.start(100);
+        // Para após 4s (auto-confirma por silêncio)
+        setTimeout(() => { if (rec.state === 'recording') rec.stop(); }, 4000);
+      });
+    } catch {
+      return true; // sem microfone = confirma
+    }
   }
 
   // ── Enviar ação ────────────────────────────────────────────────────────────
@@ -542,11 +722,34 @@
       updateStatus(data.state);
       transcript.textContent = '';
 
-      if (data.sfx) playSFX(data.sfx);
-      if (data.audio) {
-        await playAudio(data.audio);
+      if (data.inspection) {
+        // Resposta do agente "Olhos do Jogador" — sem SFX, sem trigger, sem ambient
+        if (data.audio) {
+          await playAudio(data.audio, [], 'consultando consciência...');
+        } else {
+          setOrbState('idle', '🎙', 'toque para falar');
+        }
       } else {
-        setOrbState('idle', '🎙', 'toque para falar');
+        // Mudança de ato: troca o loop ambiente com crossfade
+        if (data.ambient) setAmbient(data.ambient.url, data.ambient.volume);
+
+        // Ação inválida: dissonância imediata antes da narração do erro
+        if (!data.valid && data.sfx_error) playSFX(data.sfx_error);
+
+        // Dados Shadowdark: SFX de dado + HUD de resultado antes da narração
+        if (data.roll) {
+          showRollResult(data.roll);
+          if (data.roll_sfx) await playSFXAwaitable(data.roll_sfx, 0.55);
+        }
+
+        // Gatilho narrativo: toca o SFX do trigger antes da narração
+        if (data.trigger_sfx) playSFX(data.trigger_sfx);
+
+        if (data.audio) {
+          await playAudio(data.audio, data.sfx || []);
+        } else {
+          setOrbState('idle', '🎙', 'toque para falar');
+        }
       }
     } catch (e) {
       showToast('Erro: ' + e.message);
@@ -561,9 +764,84 @@
   function playSFX(url) {
     try {
       const sfx = new Audio(url);
-      sfx.volume = 0.4;
+      sfx.volume = 0.38;
       sfx.play().catch(() => {});
     } catch(e) {}
+  }
+
+  // ── Dados Shadowdark ──────────────────────────────────────────────────────
+  function showRollResult(roll) {
+    const mod = { advantage: 'Vantagem', disadvantage: 'Desvantagem', normal: 'Normal' }[roll.modifier];
+    const diceStr = roll.dice.join(' / ');
+    let outcome;
+    if (roll.fumble)        outcome = 'Falha Crítica';
+    else if (roll.critical) outcome = 'Sucesso Crítico';
+    else if (roll.success)  outcome = 'Sucesso';
+    else                    outcome = 'Falha';
+    transcript.textContent = `🎲 ${diceStr} → ${roll.roll}  ·  DC ${roll.dc}  ·  ${mod}  ·  ${outcome}`;
+    transcript.style.color = roll.success ? '#8fd4a0' : '#e07070';
+  }
+
+  // Versão awaitable do playSFX — aguarda o áudio terminar antes de continuar.
+  function playSFXAwaitable(url, volume = 0.38) {
+    return new Promise((resolve) => {
+      try {
+        const sfx = new Audio(url);
+        sfx.volume = volume;
+        sfx.onended = resolve;
+        sfx.onerror = resolve;
+        sfx.play().catch(resolve);
+      } catch (e) { resolve(); }
+    });
+  }
+
+  // Agenda até 3 SFX sincronizados com a narração em andamento.
+  // Cada sfx: {url, position} onde position ∈ [0,1] = char_pos/total_chars.
+  // O som entra 1s antes de o narrador chegar naquela parte do texto.
+  let _sfxTimers = [];
+  function scheduleSFX(sfxList, audioDuration) {
+    _sfxTimers.forEach(clearTimeout);
+    _sfxTimers = [];
+    if (!sfxList || !sfxList.length) return;
+    sfxList.forEach(sfx => {
+      const targetSec = sfx.position * audioDuration;
+      const delaySec  = Math.max(0, targetSec - 1.0);
+      console.log(`[SFX] agendado em ${delaySec.toFixed(1)}s (pos=${sfx.position}, dur=${audioDuration.toFixed(1)}s): ${sfx.url}`);
+      const t = setTimeout(() => playSFX(sfx.url), delaySec * 1000);
+      _sfxTimers.push(t);
+    });
+  }
+
+  function cancelSFX() {
+    _sfxTimers.forEach(clearTimeout);
+    _sfxTimers = [];
+  }
+
+  // ── Loop de ambiente por ato ───────────────────────────────────────────────
+  function setAmbient(url, targetVol) {
+    if (!url || url === currentAmbientUrl) return;
+    currentAmbientUrl = url;
+
+    // Fade out loop antigo
+    if (ambientAudio) {
+      const old = ambientAudio;
+      const fadeOut = setInterval(() => {
+        if (old.volume > 0.01) { old.volume = Math.max(0, old.volume - 0.015); }
+        else { clearInterval(fadeOut); old.pause(); }
+      }, 60);
+    }
+
+    // Fade in novo loop
+    const a = new Audio(url);
+    a.loop = true;
+    a.volume = 0;
+    a.play().catch(() => {});
+    ambientAudio = a;
+    const vol = targetVol || 0.15;
+    const fadeIn = setInterval(() => {
+      if (a.volume < vol - 0.005) { a.volume = Math.min(vol, a.volume + 0.008); }
+      else { a.volume = vol; clearInterval(fadeIn); }
+    }, 60);
   }
 
   // ── Chime + abre microfone automaticamente ────────────────────────────────
@@ -571,28 +849,33 @@
     return new Promise((resolve) => {
       const chime = new Audio(CHIME_URL);
       chime.volume = 0.8;
-      chime.onended = () => { startListening(); resolve(); };
-      chime.onerror  = () => { startListening(); resolve(); };
-      chime.play().catch(() => { startListening(); resolve(); });
+      chime.onended = () => { startRecording(); resolve(); };
+      chime.onerror  = () => { startRecording(); resolve(); };
+      chime.play().catch(() => { startRecording(); resolve(); });
     });
   }
 
   // ── Áudio (narração TTS) ───────────────────────────────────────────────────
-  async function playAudio(base64mp3) {
+  async function playAudio(base64mp3, sfxList, speakingLabel = 'o mestre narra...') {
     stopAudio();
     isSpeaking = true;
-    setOrbState('speaking', '🔊', 'o mestre narra...');
+    setOrbState('speaking', '🔊', speakingLabel);
 
     return new Promise((resolve) => {
       const audioBlob = base64ToBlob(base64mp3, 'audio/mp3');
-      const url = URL.createObjectURL(audioBlob);
-      currentAudio = new Audio(url);
+      const blobUrl = URL.createObjectURL(audioBlob);
+      currentAudio = new Audio(blobUrl);
+
+      // Assim que soubermos a duração, agendamos os SFX no momento certo
+      currentAudio.onloadedmetadata = () => {
+        scheduleSFX(sfxList, currentAudio.duration);
+      };
 
       const afterNarration = () => {
+        cancelSFX();
         isSpeaking = false;
         currentAudio = null;
-        URL.revokeObjectURL(url);
-        // Toca o sino e abre o microfone automaticamente
+        URL.revokeObjectURL(blobUrl);
         playChimeThenListen();
         resolve();
       };
@@ -604,6 +887,7 @@
   }
 
   function stopAudio() {
+    cancelSFX();
     if (currentAudio) {
       currentAudio.pause();
       currentAudio = null;

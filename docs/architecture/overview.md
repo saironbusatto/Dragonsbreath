@@ -3,7 +3,7 @@
 ## Conceito
 
 A Plataforma Ressoar é uma plataforma de narrativa interativa que combina:
-- **IA Generativa** (Gemini) como narrador/mestre inteligente
+- **IA Generativa** (OpenAI GPT-4o-mini) como narrador/mestre inteligente
 - **Text-to-Speech** neural em Português Brasileiro
 - **Efeitos sonoros contextuais** disparados automaticamente pela narrativa
 - **Dois modos de jogo** com lógicas distintas mas mesma infraestrutura
@@ -58,12 +58,13 @@ A Plataforma Ressoar é uma plataforma de narrativa interativa que combina:
           │                                │
           ▼                                ▼
 ┌──────────────────┐            ┌──────────────────────┐
-│   Google Gemini  │            │  Google Cloud TTS    │
-│   1.5-Flash API  │            │  (pt-BR Neural)      │
+│   OpenAI API     │            │  Google Cloud TTS    │
+│  GPT-4o-mini     │            │  (pt-BR Neural)      │
 │                  │            │                      │
-│  - Game Master   │            │  ElevenLabs (opt.)   │
+│  - Game Master   │            │  Whisper STT         │
 │  - Story Master  │            │  pyttsx3 (fallback)  │
 │  - Archivista    │            └──────────────────────┘
+│  - Olhos do Jog. │
 └──────────────────┘
 ```
 
@@ -132,10 +133,11 @@ Todo o estado do jogo RPG vive em um único dicionário (`world_state`) serializ
 ### 2. AI como Serviço de Narrativa
 A IA não controla a lógica — ela só gera texto narrativo. A lógica de validação, inventário, e triggers fica no Python, garantindo consistência.
 
-### 3. Três Personas de IA Especializadas
-- **Mestre** (`get_gm_narrative`): Narrador open-world do RPG
+### 3. Quatro Personas de IA Especializadas
+- **Mestre** (`get_gm_narrative`): Narrador open-world do RPG — voz masculina
 - **Mestre dos Contos** (`get_story_master_narrative`): Adaptador literário estruturado
 - **Archivista** (`update_world_state`): Extrator silencioso de estado — nunca fala com o jogador
+- **Olhos do Jogador** (`get_player_eyes_response`): HUD narrativo para consultas de inspeção — voz feminina, tempo do jogo não avança
 
 ### 4. Sistema de Gatilhos Progressivo
 Narrativa dinâmica via gatilhos com probabilidade crescente (30% base + 10%/rodada), evitando longos períodos sem eventos dramáticos.

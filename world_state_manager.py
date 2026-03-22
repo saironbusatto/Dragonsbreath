@@ -21,7 +21,14 @@ REGRAS DE ATUALIZAÇÃO:
 4. Atualize 'active_quests' se missões foram iniciadas ou completadas.
 5. Mantenha 'recent_events_summary' com os 3-4 eventos mais recentes.
 6. Atualize inventário e status do personagem se necessário.
-7. INTERAÇÃO AMBIENTAL: extraia da resposta do Mestre TODOS os objetos e elementos mencionados na cena e preencha 'interactable_elements_in_scene' dentro de world_state. Exemplos: "cadeira", "porta", "balcão", "lanterna", "taverneiro". Extraia apenas o que foi explicitamente mencionado."""
+7. MAPA SEMÂNTICO DA CENA: Preencha 'interactable_elements_in_scene' dentro de 'world_state' como um dicionário com estas chaves exatas:
+   - "objetos": lista de objetos standalone presentes (ex: ["vela", "balcão", "livro"])
+   - "npcs": lista de personagens/criaturas presentes (ex: ["taverneiro", "figura encapuzada"])
+   - "npc_itens": dicionário {nome_npc: [itens visíveis]} — SOMENTE se o Mestre mencionou explicitamente (ex: {"taverneiro": ["caneca", "chave"]})
+   - "containers": dicionário {container: [conteúdo visível]} — SOMENTE se o Mestre mencionou conteúdo (ex: {"baú": ["moedas"]})
+   - "saidas": lista de saídas e passagens (ex: ["porta norte", "escada", "beco lateral"])
+   - "chao": itens abandonados ou caídos no chão (ex: ["moeda suja", "papel amassado"])
+   REGRAS: Use [] para categorias sem elementos. Extraia APENAS o que foi explicitamente mencionado pelo Mestre neste turno. Ao mudar de local, limpe o mapa e recomece."""
 
     # USER: o estado atual + o que acabou de acontecer
     archivista_user = f"""JSON DO ESTADO ATUAL:
@@ -87,6 +94,10 @@ def create_initial_world_state(character_name: str) -> dict:
                 "main_quest": world_template.get("initial_quest", "Explorar o mundo")
             },
             "important_npcs_in_scene": {},
+            "interactable_elements_in_scene": {
+                "objetos": [], "npcs": [], "npc_itens": {},
+                "containers": {}, "saidas": [], "chao": []
+            },
             "recent_events_summary": [
                 f"{character_name} iniciou sua jornada"
             ],
