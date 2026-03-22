@@ -147,8 +147,10 @@ def _get_error_sfx() -> str | None:
     return url
 
 
-# Som de dados rolando (buscado uma vez e cacheado)
-_sfx_dice_url: str | None = None
+# Sons de dados (buscados uma vez e cacheados)
+_sfx_dice_url:     str | None = None
+_sfx_critical_url: str | None = None
+_sfx_fumble_url:   str | None = None
 
 def _get_dice_sfx() -> str | None:
     global _sfx_dice_url
@@ -156,6 +158,20 @@ def _get_dice_sfx() -> str | None:
         return _sfx_dice_url
     _sfx_dice_url = _search_freesound("dice rolling tabletop wooden")
     return _sfx_dice_url
+
+def _get_critical_sfx() -> str | None:
+    global _sfx_critical_url
+    if _sfx_critical_url:
+        return _sfx_critical_url
+    _sfx_critical_url = _search_freesound("fanfare triumph short brass")
+    return _sfx_critical_url
+
+def _get_fumble_sfx() -> str | None:
+    global _sfx_fumble_url
+    if _sfx_fumble_url:
+        return _sfx_fumble_url
+    _sfx_fumble_url = _search_freesound("dark sting dissonant low bass")
+    return _sfx_fumble_url
 
 
 # ─── Ambient por ato ──────────────────────────────────────────────────────────
@@ -536,7 +552,9 @@ def take_action(req: ActionRequest):
         "audio": audio,
         "sfx": sfx,
         "trigger_sfx": trigger_sfx_url,
-        "roll_sfx": _get_dice_sfx() if roll_result else None,
+        "roll_sfx":      _get_dice_sfx()    if roll_result else None,
+        "critical_sfx":  _get_critical_sfx() if roll_result and roll_result["critical"] else None,
+        "fumble_sfx":    _get_fumble_sfx()   if roll_result and roll_result["fumble"]   else None,
         "roll": roll_result,
         "ambient": {"url": ambient_url, "volume": 0.15} if ambient_url else None,
         "state": _state_summary(world_state),

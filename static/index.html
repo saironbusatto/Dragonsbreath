@@ -739,7 +739,9 @@
         // Dados Shadowdark: SFX de dado + HUD de resultado antes da narração
         if (data.roll) {
           showRollResult(data.roll);
-          if (data.roll_sfx) await playSFXAwaitable(data.roll_sfx, 0.55);
+          if (data.roll_sfx)     await playSFXAwaitable(data.roll_sfx, 0.55);
+          if (data.critical_sfx) await playSFXAwaitable(data.critical_sfx, 0.70);
+          if (data.fumble_sfx)   await playSFXAwaitable(data.fumble_sfx,   0.60);
         }
 
         // Gatilho narrativo: toca o SFX do trigger antes da narração
@@ -779,7 +781,10 @@
     else if (roll.success)  outcome = 'Sucesso';
     else                    outcome = 'Falha';
     transcript.textContent = `🎲 ${diceStr} → ${roll.roll}  ·  DC ${roll.dc}  ·  ${mod}  ·  ${outcome}`;
-    transcript.style.color = roll.success ? '#8fd4a0' : '#e07070';
+    if (roll.critical)     transcript.style.color = '#ffd700'; // dourado — Natural 20
+    else if (roll.fumble)  transcript.style.color = '#a03030'; // vermelho escuro — Natural 1
+    else if (roll.success) transcript.style.color = '#8fd4a0'; // verde — sucesso
+    else                   transcript.style.color = '#e07070'; // vermelho — falha
   }
 
   // Versão awaitable do playSFX — aguarda o áudio terminar antes de continuar.
