@@ -585,5 +585,9 @@ app.mount("/sons", StaticFiles(directory="sons"), name="sons")
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
 @app.get("/")
-def serve_index():
+def serve_landing():
+    return FileResponse("static/landing.html")
+
+@app.get("/jogo")
+def serve_game():
     return FileResponse("static/index.html")

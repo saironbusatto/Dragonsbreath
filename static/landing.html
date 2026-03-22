@@ -1,0 +1,1254 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ressoar — RPG por Voz para Deficientes Visuais</title>
+  <meta name="description" content="Plataforma de RPG narrativo por voz. Fale, o Mestre responde. Construída para deficientes visuais." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;900&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --gold:    #c9a84c;
+      --gold-dim:#7a6030;
+      --red:     #8b1a1a;
+      --purple:  #2d1b4e;
+      --bg:      #080508;
+      --surface: #0f0b10;
+      --text:    #e8dcc8;
+      --muted:   #7a6a58;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Crimson Text', Georgia, serif;
+      background: var(--bg);
+      color: var(--text);
+      overflow-x: hidden;
+    }
+
+    /* ── partículas ── */
+    #bg-canvas {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      opacity: 0.35;
+      z-index: 0;
+    }
+
+    /* ── utilitários ── */
+    section { position: relative; z-index: 1; }
+
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+
+    .gold { color: var(--gold); }
+    .italic { font-style: italic; }
+
+    /* ══════════════════════════════════════════
+       HERO
+    ══════════════════════════════════════════ */
+    #hero {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 60px 24px;
+      position: relative;
+    }
+
+    #hero::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0; right: 0;
+      height: 200px;
+      background: linear-gradient(transparent, var(--bg));
+      pointer-events: none;
+    }
+
+    .hero-eyebrow {
+      font-family: 'Cinzel', serif;
+      font-size: 0.75rem;
+      letter-spacing: 6px;
+      color: var(--gold-dim);
+      text-transform: uppercase;
+      margin-bottom: 28px;
+    }
+
+    .hero-logo {
+      font-family: 'Cinzel', serif;
+      font-size: clamp(3.5rem, 14vw, 8rem);
+      font-weight: 900;
+      color: var(--gold);
+      letter-spacing: 12px;
+      line-height: 1;
+      text-shadow:
+        0 0 60px rgba(201,168,76,0.5),
+        0 0 120px rgba(201,168,76,0.2);
+      margin-bottom: 8px;
+    }
+
+    .hero-sub {
+      font-family: 'Cinzel', serif;
+      font-size: clamp(0.75rem, 2.5vw, 1rem);
+      letter-spacing: 5px;
+      color: var(--muted);
+      text-transform: uppercase;
+      margin-bottom: 48px;
+    }
+
+    .hero-tagline {
+      font-size: clamp(1.4rem, 4vw, 2rem);
+      font-style: italic;
+      color: var(--text);
+      max-width: 620px;
+      line-height: 1.5;
+      margin-bottom: 16px;
+    }
+
+    .hero-tagline-2 {
+      font-size: clamp(1rem, 2.5vw, 1.25rem);
+      color: var(--muted);
+      max-width: 520px;
+      line-height: 1.6;
+      margin-bottom: 64px;
+    }
+
+    .btn-primary {
+      font-family: 'Cinzel', serif;
+      font-size: 1rem;
+      font-weight: 600;
+      letter-spacing: 4px;
+      text-transform: uppercase;
+      text-decoration: none;
+      color: var(--bg);
+      background: var(--gold);
+      padding: 18px 52px;
+      border-radius: 2px;
+      transition: all 0.3s;
+      box-shadow: 0 0 40px rgba(201,168,76,0.3);
+      display: inline-block;
+    }
+
+    .btn-primary:hover {
+      background: #e0bc5c;
+      box-shadow: 0 0 60px rgba(201,168,76,0.6);
+      transform: translateY(-2px);
+    }
+
+    .btn-primary:focus {
+      outline: 3px solid var(--gold);
+      outline-offset: 4px;
+    }
+
+    .hero-scroll {
+      margin-top: 80px;
+      color: var(--gold-dim);
+      font-size: 0.8rem;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      opacity: 0.6;
+      animation: pulse-opacity 2.5s ease-in-out infinite;
+    }
+
+    @keyframes pulse-opacity {
+      0%, 100% { opacity: 0.4; }
+      50%       { opacity: 0.9; }
+    }
+
+    /* ══════════════════════════════════════════
+       ACESSIBILIDADE — seção de destaque
+    ══════════════════════════════════════════ */
+    #acessibilidade {
+      padding: 120px 24px;
+      background: linear-gradient(180deg, var(--bg) 0%, #0c0710 50%, var(--bg) 100%);
+    }
+
+    .access-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 64px;
+      align-items: center;
+    }
+
+    @media (max-width: 680px) {
+      .access-grid { grid-template-columns: 1fr; gap: 40px; }
+    }
+
+    .access-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      background: rgba(201,168,76,0.08);
+      border: 1px solid rgba(201,168,76,0.2);
+      border-radius: 100px;
+      padding: 8px 20px;
+      font-family: 'Cinzel', serif;
+      font-size: 0.7rem;
+      letter-spacing: 3px;
+      color: var(--gold);
+      text-transform: uppercase;
+      margin-bottom: 24px;
+    }
+
+    .access-title {
+      font-family: 'Cinzel', serif;
+      font-size: clamp(1.6rem, 4vw, 2.4rem);
+      font-weight: 600;
+      line-height: 1.25;
+      margin-bottom: 24px;
+    }
+
+    .access-text {
+      font-size: 1.2rem;
+      line-height: 1.8;
+      color: #b0a090;
+      margin-bottom: 16px;
+    }
+
+    .access-voice-demo {
+      background: rgba(201,168,76,0.05);
+      border-left: 3px solid var(--gold);
+      padding: 24px 28px;
+      border-radius: 0 4px 4px 0;
+      margin-top: 32px;
+    }
+
+    .voice-line {
+      font-style: italic;
+      font-size: 1.15rem;
+      line-height: 1.7;
+      color: #d4c4a8;
+    }
+
+    .voice-attr {
+      font-size: 0.85rem;
+      color: var(--gold-dim);
+      margin-top: 12px;
+      letter-spacing: 1px;
+    }
+
+    /* ícone acessibilidade */
+    .access-visual {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 24px;
+    }
+
+    .big-icon {
+      font-size: 7rem;
+      line-height: 1;
+      filter: drop-shadow(0 0 30px rgba(201,168,76,0.4));
+    }
+
+    .flow-steps {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      width: 100%;
+      max-width: 260px;
+    }
+
+    .flow-step {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 16px 0;
+      border-bottom: 1px solid rgba(201,168,76,0.1);
+    }
+
+    .flow-step:last-child { border-bottom: none; }
+
+    .step-icon {
+      font-size: 1.6rem;
+      width: 40px;
+      text-align: center;
+      flex-shrink: 0;
+    }
+
+    .step-text {
+      font-size: 1rem;
+      color: var(--muted);
+      line-height: 1.4;
+    }
+
+    .step-text strong {
+      display: block;
+      color: var(--text);
+      font-weight: 600;
+    }
+
+    /* ══════════════════════════════════════════
+       COMO FUNCIONA
+    ══════════════════════════════════════════ */
+    #como-funciona {
+      padding: 120px 24px;
+    }
+
+    .section-eyebrow {
+      font-family: 'Cinzel', serif;
+      font-size: 0.7rem;
+      letter-spacing: 5px;
+      color: var(--gold-dim);
+      text-transform: uppercase;
+      text-align: center;
+      margin-bottom: 16px;
+    }
+
+    .section-title {
+      font-family: 'Cinzel', serif;
+      font-size: clamp(1.6rem, 4vw, 2.4rem);
+      font-weight: 600;
+      text-align: center;
+      margin-bottom: 16px;
+    }
+
+    .section-sub {
+      font-size: 1.15rem;
+      color: var(--muted);
+      text-align: center;
+      max-width: 560px;
+      margin: 0 auto 72px;
+      line-height: 1.7;
+    }
+
+    .steps-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 2px;
+      margin-bottom: 80px;
+    }
+
+    @media (max-width: 680px) {
+      .steps-row { grid-template-columns: 1fr; gap: 2px; }
+    }
+
+    .step-card {
+      background: var(--surface);
+      padding: 40px 32px;
+      text-align: center;
+      position: relative;
+    }
+
+    .step-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, var(--gold), transparent);
+      opacity: 0.4;
+    }
+
+    .step-num {
+      font-family: 'Cinzel', serif;
+      font-size: 2.5rem;
+      font-weight: 900;
+      color: rgba(201,168,76,0.15);
+      margin-bottom: 16px;
+    }
+
+    .step-card-icon {
+      font-size: 2.4rem;
+      margin-bottom: 16px;
+    }
+
+    .step-card-title {
+      font-family: 'Cinzel', serif;
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--gold);
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      margin-bottom: 12px;
+    }
+
+    .step-card-text {
+      font-size: 1.05rem;
+      color: var(--muted);
+      line-height: 1.7;
+    }
+
+    /* ══════════════════════════════════════════
+       SHADOWDARK
+    ══════════════════════════════════════════ */
+    #shadowdark {
+      padding: 120px 24px;
+      background: linear-gradient(180deg, var(--bg) 0%, #0a0612 50%, var(--bg) 100%);
+    }
+
+    .sdark-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 64px;
+      align-items: start;
+    }
+
+    @media (max-width: 680px) {
+      .sdark-grid { grid-template-columns: 1fr; }
+    }
+
+    .sdark-title {
+      font-family: 'Cinzel', serif;
+      font-size: clamp(1.6rem, 4vw, 2.4rem);
+      font-weight: 600;
+      margin-bottom: 24px;
+    }
+
+    .sdark-text {
+      font-size: 1.15rem;
+      line-height: 1.8;
+      color: #b0a090;
+      margin-bottom: 20px;
+    }
+
+    .rule-list {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      margin-top: 8px;
+    }
+
+    .rule-item {
+      display: flex;
+      gap: 16px;
+      align-items: flex-start;
+    }
+
+    .rule-icon {
+      font-size: 1.3rem;
+      margin-top: 2px;
+      flex-shrink: 0;
+    }
+
+    .rule-text {
+      font-size: 1.05rem;
+      color: #b0a090;
+      line-height: 1.6;
+    }
+
+    .rule-text strong { color: var(--text); }
+
+    .dice-showcase {
+      background: var(--surface);
+      border: 1px solid rgba(201,168,76,0.1);
+      border-radius: 4px;
+      padding: 36px;
+    }
+
+    .dice-title {
+      font-family: 'Cinzel', serif;
+      font-size: 0.8rem;
+      letter-spacing: 4px;
+      color: var(--gold-dim);
+      text-transform: uppercase;
+      margin-bottom: 28px;
+    }
+
+    .dice-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .dice-table th {
+      font-family: 'Cinzel', serif;
+      font-size: 0.7rem;
+      letter-spacing: 2px;
+      color: var(--gold-dim);
+      text-align: left;
+      padding-bottom: 12px;
+      border-bottom: 1px solid rgba(201,168,76,0.15);
+      text-transform: uppercase;
+    }
+
+    .dice-table td {
+      padding: 10px 0;
+      font-size: 1rem;
+      color: #b0a090;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+    }
+
+    .dice-table td:first-child {
+      font-family: 'Cinzel', serif;
+      color: var(--gold);
+      font-size: 1.1rem;
+      font-weight: 600;
+      padding-right: 16px;
+    }
+
+    .result-crit  { color: #ffd700 !important; }
+    .result-suc   { color: #8fd4a0 !important; }
+    .result-fail  { color: #e07070 !important; }
+    .result-fumble{ color: #a03030 !important; }
+
+    .example-roll {
+      margin-top: 28px;
+      background: rgba(201,168,76,0.05);
+      border-left: 2px solid var(--gold);
+      padding: 16px 20px;
+      border-radius: 0 4px 4px 0;
+    }
+
+    .example-hud {
+      font-family: 'Cinzel', serif;
+      font-size: 0.9rem;
+      color: #ffd700;
+      margin-bottom: 8px;
+    }
+
+    .example-narr {
+      font-style: italic;
+      font-size: 1rem;
+      color: #c4b49a;
+      line-height: 1.6;
+    }
+
+    /* ══════════════════════════════════════════
+       TECNOLOGIA
+    ══════════════════════════════════════════ */
+    #tecnologia {
+      padding: 120px 24px;
+    }
+
+    .tech-cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 2px;
+      margin-top: 56px;
+    }
+
+    .tech-card {
+      background: var(--surface);
+      padding: 36px 28px;
+      text-align: center;
+      transition: background 0.25s;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .tech-card::after {
+      content: '';
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, var(--gold), transparent);
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+
+    .tech-card:hover::after { opacity: 0.5; }
+    .tech-card:hover { background: #130e18; }
+
+    .tech-logo {
+      font-size: 2.2rem;
+      margin-bottom: 16px;
+    }
+
+    .tech-name {
+      font-family: 'Cinzel', serif;
+      font-size: 0.8rem;
+      letter-spacing: 3px;
+      color: var(--gold);
+      text-transform: uppercase;
+      margin-bottom: 10px;
+    }
+
+    .tech-desc {
+      font-size: 0.98rem;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+
+    /* ══════════════════════════════════════════
+       CAMPANHAS
+    ══════════════════════════════════════════ */
+    #campanhas {
+      padding: 120px 24px;
+      background: linear-gradient(180deg, var(--bg) 0%, #0c0710 60%, var(--bg) 100%);
+    }
+
+    .camp-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 3px;
+      margin-top: 56px;
+    }
+
+    @media (max-width: 600px) {
+      .camp-grid { grid-template-columns: 1fr; }
+    }
+
+    .camp-card {
+      background: var(--surface);
+      padding: 48px 40px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .camp-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0;
+      width: 3px;
+      height: 100%;
+      background: linear-gradient(180deg, var(--gold), transparent);
+      opacity: 0.5;
+    }
+
+    .camp-label {
+      font-family: 'Cinzel', serif;
+      font-size: 0.65rem;
+      letter-spacing: 4px;
+      color: var(--gold-dim);
+      text-transform: uppercase;
+      margin-bottom: 12px;
+    }
+
+    .camp-name {
+      font-family: 'Cinzel', serif;
+      font-size: 1.4rem;
+      font-weight: 600;
+      margin-bottom: 16px;
+      line-height: 1.3;
+    }
+
+    .camp-desc {
+      font-size: 1.05rem;
+      color: #a09080;
+      line-height: 1.7;
+      margin-bottom: 20px;
+    }
+
+    .camp-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .tag {
+      font-family: 'Cinzel', serif;
+      font-size: 0.65rem;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--gold-dim);
+      border: 1px solid rgba(201,168,76,0.2);
+      border-radius: 2px;
+      padding: 4px 10px;
+    }
+
+    /* ══════════════════════════════════════════
+       CTA FINAL
+    ══════════════════════════════════════════ */
+    #cta {
+      padding: 160px 24px;
+      text-align: center;
+      position: relative;
+    }
+
+    #cta::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 60% 50% at 50% 50%, rgba(45,27,78,0.4) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .cta-title {
+      font-family: 'Cinzel', serif;
+      font-size: clamp(2rem, 6vw, 4rem);
+      font-weight: 900;
+      color: var(--gold);
+      text-shadow: 0 0 60px rgba(201,168,76,0.4);
+      margin-bottom: 24px;
+      line-height: 1.1;
+    }
+
+    .cta-sub {
+      font-size: clamp(1.1rem, 2.5vw, 1.4rem);
+      font-style: italic;
+      color: var(--muted);
+      max-width: 500px;
+      margin: 0 auto 52px;
+      line-height: 1.6;
+    }
+
+    /* ══════════════════════════════════════════
+       FOOTER
+    ══════════════════════════════════════════ */
+    footer {
+      padding: 40px 24px;
+      text-align: center;
+      border-top: 1px solid rgba(201,168,76,0.08);
+    }
+
+    footer p {
+      font-size: 0.85rem;
+      color: var(--muted);
+      line-height: 1.8;
+    }
+
+    footer a {
+      color: var(--gold-dim);
+      text-decoration: none;
+    }
+
+    footer a:hover { color: var(--gold); }
+
+    /* ══════════════════════════════════════════
+       SEPARADOR
+    ══════════════════════════════════════════ */
+    .divider {
+      width: 80px;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--gold), transparent);
+      margin: 0 auto 64px;
+      opacity: 0.4;
+    }
+
+    /* ══════════════════════════════════════════
+       ANIM DE ENTRADA
+    ══════════════════════════════════════════ */
+    .fade-in {
+      opacity: 0;
+      transform: translateY(30px);
+      transition: opacity 0.8s ease, transform 0.8s ease;
+    }
+
+    .fade-in.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  </style>
+</head>
+<body>
+
+<canvas id="bg-canvas" aria-hidden="true"></canvas>
+
+<!-- ══════════════════════════════════════
+     HERO
+══════════════════════════════════════ -->
+<section id="hero" aria-label="Apresentação">
+  <p class="hero-eyebrow" aria-hidden="true">✦ plataforma narrativa por voz ✦</p>
+
+  <h1 class="hero-logo" aria-label="Ressoar">RESSOAR</h1>
+  <p class="hero-sub" aria-hidden="true">RPG — Contos Interativos</p>
+
+  <p class="hero-tagline">
+    Fale. O Mestre responde.<br>
+    O mundo ganha vida pela sua voz.
+  </p>
+  <p class="hero-tagline-2">
+    Uma plataforma de RPG e contos interativos inteiramente por voz —
+    construída do zero para que deficientes visuais joguem sem nenhuma barreira.
+  </p>
+
+  <a href="/jogo" class="btn-primary" aria-label="Entrar no jogo Ressoar">
+    Entrar no Jogo
+  </a>
+
+  <p class="hero-scroll" aria-hidden="true">↓ &nbsp; conheça a plataforma &nbsp; ↓</p>
+</section>
+
+<!-- ══════════════════════════════════════
+     ACESSIBILIDADE
+══════════════════════════════════════ -->
+<section id="acessibilidade" aria-label="Acessibilidade">
+  <div class="container">
+    <div class="access-grid">
+
+      <div class="fade-in">
+        <div class="access-badge" aria-hidden="true">
+          ♿ &nbsp; acessibilidade total
+        </div>
+        <h2 class="access-title">
+          Feito para quem<br>
+          <span class="gold">ouve o mundo.</span>
+        </h2>
+        <p class="access-text">
+          Ressoar nasceu com um propósito específico: ser o RPG mais
+          acessível que existe. Toda a interface opera exclusivamente por voz.
+          Não há nada para clicar, ler ou ver.
+        </p>
+        <p class="access-text">
+          Você fala o que faz. O Mestre do Jogo — uma IA treinada para narrar —
+          responde em voz alta, com sonorização em tempo real. Efeitos sonoros
+          surgem conforme a narrativa avança.
+        </p>
+        <div class="access-voice-demo" aria-label="Exemplo de interação">
+          <p class="voice-line">
+            "Entro na taverna e procuro alguém que saiba sobre a praga."
+          </p>
+          <p class="voice-line" style="margin-top: 12px; color: #c9a84c;">
+            "A porta range ao ceder. Fumaça e risadas veladas enchem o
+            ambiente. O taverneiro estreita os olhos quando você se aproxima
+            do balcão. O que você faz?"
+          </p>
+          <p class="voice-attr">↑ narrado em voz masculina neural, pt-BR</p>
+        </div>
+      </div>
+
+      <div class="access-visual fade-in">
+        <div class="big-icon" aria-hidden="true">🎙</div>
+        <div class="flow-steps" role="list" aria-label="Fluxo de jogo">
+          <div class="flow-step" role="listitem">
+            <span class="step-icon" aria-hidden="true">🎙</span>
+            <div class="step-text">
+              <strong>Você fala</strong>
+              Microfone abre automaticamente após cada narração
+            </div>
+          </div>
+          <div class="flow-step" role="listitem">
+            <span class="step-icon" aria-hidden="true">🧠</span>
+            <div class="step-text">
+              <strong>IA processa</strong>
+              Whisper transcreve com 95%+ de acurácia em pt-BR
+            </div>
+          </div>
+          <div class="flow-step" role="listitem">
+            <span class="step-icon" aria-hidden="true">⚔</span>
+            <div class="step-text">
+              <strong>Dados rolam</strong>
+              Sistema Shadowdark determina sucesso ou falha
+            </div>
+          </div>
+          <div class="flow-step" role="listitem">
+            <span class="step-icon" aria-hidden="true">🔊</span>
+            <div class="step-text">
+              <strong>O Mestre narra</strong>
+              Voz neural sintetizada com efeitos sonoros ao vivo
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════
+     COMO FUNCIONA
+══════════════════════════════════════ -->
+<section id="como-funciona" aria-label="Como funciona">
+  <div class="container">
+    <p class="section-eyebrow fade-in">mecânica</p>
+    <h2 class="section-title fade-in">Como um turno funciona</h2>
+    <p class="section-sub fade-in">
+      Cada rodada é um ciclo completo de áudio. Zero texto na tela,
+      zero leitura necessária.
+    </p>
+
+    <div class="steps-row fade-in">
+      <div class="step-card">
+        <div class="step-num" aria-hidden="true">01</div>
+        <div class="step-card-icon" aria-hidden="true">🔔</div>
+        <h3 class="step-card-title">Chime</h3>
+        <p class="step-card-text">
+          Um sino sutil indica que o microfone está aberto.
+          O jogo espera você.
+        </p>
+      </div>
+      <div class="step-card">
+        <div class="step-num" aria-hidden="true">02</div>
+        <div class="step-card-icon" aria-hidden="true">🎲</div>
+        <h3 class="step-card-title">Ação + Dados</h3>
+        <p class="step-card-text">
+          Você declara a ação. Se há risco, o sistema rola d20 automaticamente
+          e injeta o resultado na narrativa do Mestre.
+        </p>
+      </div>
+      <div class="step-card">
+        <div class="step-num" aria-hidden="true">03</div>
+        <div class="step-card-icon" aria-hidden="true">📖</div>
+        <h3 class="step-card-title">Narração</h3>
+        <p class="step-card-text">
+          O Mestre narra em 1–4 frases concisas, com efeitos sonoros
+          sincronizados com o momento exato da narrativa.
+        </p>
+      </div>
+    </div>
+
+    <div class="divider fade-in"></div>
+
+    <div class="steps-row fade-in">
+      <div class="step-card">
+        <div class="step-num" aria-hidden="true">✦</div>
+        <div class="step-card-icon" aria-hidden="true">👁</div>
+        <h3 class="step-card-title">Olhos do Jogador</h3>
+        <p class="step-card-text">
+          Consulte inventário, saúde ou o ambiente a qualquer momento.
+          Uma voz feminina responde discretamente — o tempo do jogo não avança.
+        </p>
+      </div>
+      <div class="step-card">
+        <div class="step-num" aria-hidden="true">✦</div>
+        <div class="step-card-icon" aria-hidden="true">⚡</div>
+        <h3 class="step-card-title">Gatilhos Narrativos</h3>
+        <p class="step-card-text">
+          Eventos pré-escritos injetam cenas dramáticas no ritmo certo,
+          garantindo tensão mesmo em exploração passiva.
+        </p>
+      </div>
+      <div class="step-card">
+        <div class="step-num" aria-hidden="true">✦</div>
+        <div class="step-card-icon" aria-hidden="true">💾</div>
+        <h3 class="step-card-title">Save Automático</h3>
+        <p class="step-card-text">
+          O estado do mundo é salvo a cada turno. Continue exatamente
+          de onde parou na próxima sessão.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════
+     SHADOWDARK
+══════════════════════════════════════ -->
+<section id="shadowdark" aria-label="Sistema Shadowdark">
+  <div class="container">
+    <div class="sdark-grid">
+
+      <div class="fade-in">
+        <p class="section-eyebrow" style="text-align:left; margin-bottom:16px;">sistema de regras</p>
+        <h2 class="sdark-title">
+          Shadowdark:<br>
+          <span class="gold">simples, tenso, honesto.</span>
+        </h2>
+        <p class="sdark-text">
+          Ressoar usa uma adaptação do Shadowdark RPG — um sistema criado com
+          uma filosofia radical: menos regras, mais drama.
+        </p>
+        <p class="sdark-text">
+          Ações rotineiras têm sucesso automático. O Mestre narra livremente.
+          Dados só entram quando há risco real e a falha seria
+          <em>narrativamente interessante</em>.
+        </p>
+
+        <div class="rule-list" role="list" aria-label="Regras do sistema">
+          <div class="rule-item" role="listitem">
+            <span class="rule-icon" aria-hidden="true">🎲</span>
+            <p class="rule-text">
+              <strong>Um dado, d20.</strong>
+              Sem modificadores de atributo, sem fichas complexas.
+              Role ≥ DC para sucesso.
+            </p>
+          </div>
+          <div class="rule-item" role="listitem">
+            <span class="rule-icon" aria-hidden="true">⚔</span>
+            <p class="rule-text">
+              <strong>Classe define estilo, não poder.</strong>
+              Bardo tem vantagem em persuasão e engano.
+              Aventureiro, em combate e força.
+            </p>
+          </div>
+          <div class="rule-item" role="listitem">
+            <span class="rule-icon" aria-hidden="true">☠</span>
+            <p class="rule-text">
+              <strong>Natural 1 tem consequências.</strong>
+              O Mestre foi instruído a narrar uma reviravolta grave.
+              Cada sessão tem peso real.
+            </p>
+          </div>
+          <div class="rule-item" role="listitem">
+            <span class="rule-icon" aria-hidden="true">✨</span>
+            <p class="rule-text">
+              <strong>Natural 20 é épico.</strong>
+              Um resultado excepcional, além do esperado —
+              narrado com a grandiosidade que merece.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div class="fade-in">
+        <div class="dice-showcase" role="complementary" aria-label="Tabela de resultados de dados">
+          <p class="dice-title">resultados dos dados</p>
+          <table class="dice-table">
+            <thead>
+              <tr>
+                <th scope="col">Resultado</th>
+                <th scope="col">Condição</th>
+                <th scope="col">Narrativa</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="result-crit" aria-label="Sucesso Crítico, dado 20">20</td>
+                <td>Natural 20</td>
+                <td>Sucesso Crítico ✨</td>
+              </tr>
+              <tr>
+                <td class="result-suc" aria-label="Sucesso, dado maior ou igual à dificuldade">≥ DC</td>
+                <td>Roll ≥ DC</td>
+                <td>Sucesso</td>
+              </tr>
+              <tr>
+                <td class="result-fail" aria-label="Falha, dado menor que a dificuldade">&lt; DC</td>
+                <td>Roll &lt; DC</td>
+                <td>Falha + complicação</td>
+              </tr>
+              <tr>
+                <td class="result-fumble" aria-label="Falha Crítica, dado 1">1</td>
+                <td>Natural 1</td>
+                <td>Falha Crítica ☠</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <div class="example-roll" aria-label="Exemplo de rolagem">
+            <p class="example-hud" aria-label="Resultado: dados 4 e 16, maior 16, DC 12, Vantagem, Sucesso">
+              🎲 4 / 16 → 16 &nbsp;·&nbsp; DC 12 &nbsp;·&nbsp; Vantagem &nbsp;·&nbsp; Sucesso
+            </p>
+            <p class="example-narr">
+              "Silas estreita os olhos por um momento, mas sua lábia
+              é perfeita. Ele suspira e desliza a chave pelo balcão."
+            </p>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════
+     CAMPANHAS
+══════════════════════════════════════ -->
+<section id="campanhas" aria-label="Campanhas disponíveis">
+  <div class="container">
+    <p class="section-eyebrow fade-in">histórias</p>
+    <h2 class="section-title fade-in">Campanhas disponíveis</h2>
+    <p class="section-sub fade-in">
+      Cada campanha é um mundo com NPCs, locais, gatilhos narrativos
+      e finais múltiplos escritos à mão.
+    </p>
+
+    <div class="camp-grid fade-in">
+      <div class="camp-card">
+        <p class="camp-label">campanha 1 · RPG · modo livre</p>
+        <h3 class="camp-name">O Lamento do Bardo</h3>
+        <p class="camp-desc">
+          Uma cidade gótica envolta em névoa. Uma praga que corrói músicos
+          em silêncio. Você chega como bardo — e descobre que a própria
+          música pode ser uma arma ou uma prisão.
+        </p>
+        <div class="camp-tags">
+          <span class="tag">gótico</span>
+          <span class="tag">investigação</span>
+          <span class="tag">3 atos</span>
+          <span class="tag">dragão disfarçado</span>
+        </div>
+      </div>
+
+      <div class="camp-card">
+        <p class="camp-label">campanha 2 · RPG · ação</p>
+        <h3 class="camp-name">A Pedra de Pedraverde</h3>
+        <p class="camp-desc">
+          Uma vila pacífica, um cristal desaparecido, uma floresta que
+          não quer ser atravessada. Aventureiro, espada em punho —
+          a região te chama.
+        </p>
+        <div class="camp-tags">
+          <span class="tag">aventura</span>
+          <span class="tag">combate</span>
+          <span class="tag">floresta sombria</span>
+          <span class="tag">aventureiro</span>
+        </div>
+      </div>
+
+      <div class="camp-card" style="border-top: 1px solid rgba(201,168,76,0.06);">
+        <p class="camp-label">conto interativo · escolhas</p>
+        <h3 class="camp-name">O Corvo</h3>
+        <p class="camp-desc">
+          Baseado na tradição literária de Poe. Um homem, uma câmara
+          escura, memórias que sangram. Cada escolha altera variáveis
+          de sanidade, esperança e obsessão. Finais múltiplos.
+        </p>
+        <div class="camp-tags">
+          <span class="tag">conto</span>
+          <span class="tag">literário</span>
+          <span class="tag">psicológico</span>
+          <span class="tag">finais múltiplos</span>
+        </div>
+      </div>
+
+      <div class="camp-card" style="border-top: 1px solid rgba(201,168,76,0.06); opacity: 0.55;">
+        <p class="camp-label">em desenvolvimento</p>
+        <h3 class="camp-name">Em breve...</h3>
+        <p class="camp-desc">
+          Novas campanhas são escritas continuamente. O sistema de arquivos
+          permite criar e plugar qualquer mundo com um arquivo JSON.
+        </p>
+        <div class="camp-tags">
+          <span class="tag">extensível</span>
+          <span class="tag">comunidade</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════
+     TECNOLOGIA
+══════════════════════════════════════ -->
+<section id="tecnologia" aria-label="Tecnologia utilizada">
+  <div class="container">
+    <p class="section-eyebrow fade-in">sob o capô</p>
+    <h2 class="section-title fade-in">Tecnologia de ponta,<br><span class="gold">invisível para o jogador.</span></h2>
+    <p class="section-sub fade-in">
+      Cada camada foi escolhida para maximizar imersão e acurácia —
+      especialmente para quem depende inteiramente do áudio.
+    </p>
+
+    <div class="tech-cards fade-in">
+      <div class="tech-card">
+        <div class="tech-logo" aria-hidden="true">🧠</div>
+        <h3 class="tech-name">OpenAI GPT-4o</h3>
+        <p class="tech-desc">
+          Motor narrativo com 4 personas especializadas: Mestre, Archivista,
+          Olhos do Jogador e Mestre dos Contos.
+        </p>
+      </div>
+
+      <div class="tech-card">
+        <div class="tech-logo" aria-hidden="true">🎤</div>
+        <h3 class="tech-name">Whisper STT</h3>
+        <p class="tech-desc">
+          Transcrição de voz com 95%+ de acurácia em português,
+          incluindo vocabulário medieval e nomes próprios de RPG.
+        </p>
+      </div>
+
+      <div class="tech-card">
+        <div class="tech-logo" aria-hidden="true">🔊</div>
+        <h3 class="tech-name">Google Neural TTS</h3>
+        <p class="tech-desc">
+          Síntese de voz neural pt-BR. Voz masculina para o Mestre,
+          feminina para os Olhos do Jogador — distinção auditiva imediata.
+        </p>
+      </div>
+
+      <div class="tech-card">
+        <div class="tech-logo" aria-hidden="true">🎵</div>
+        <h3 class="tech-name">Freesound SFX</h3>
+        <p class="tech-desc">
+          Biblioteca de efeitos sonoros contextuais infinita.
+          Sons sincronizados com a posição exata do texto narrado.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════
+     CTA FINAL
+══════════════════════════════════════ -->
+<section id="cta" aria-label="Chamada para ação">
+  <div class="container">
+    <h2 class="cta-title fade-in">
+      Sua aventura<br>começa agora.
+    </h2>
+    <p class="cta-sub fade-in">
+      Nenhum manual para ler. Nenhum botão para encontrar.
+      Apenas a sua voz e o mundo que ela constrói.
+    </p>
+    <a href="/jogo" class="btn-primary fade-in" aria-label="Entrar no jogo Ressoar">
+      Entrar no Jogo
+    </a>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════
+     FOOTER
+══════════════════════════════════════ -->
+<footer>
+  <p>
+    <strong style="font-family:'Cinzel',serif; color:var(--gold); letter-spacing:3px;">RESSOAR</strong>
+    &nbsp;—&nbsp; Plataforma de Narrativa Interativa por Voz
+  </p>
+  <p style="margin-top:8px;">
+    Shadowdark RPG adaptado para acessibilidade total &nbsp;·&nbsp;
+    Português Brasileiro &nbsp;·&nbsp;
+    Open Source
+  </p>
+</footer>
+
+<!-- ══════════════════════════════════════
+     SCRIPTS
+══════════════════════════════════════ -->
+<script>
+  // ── Partículas de fundo (igual ao jogo) ──────────────────────────────────
+  (function () {
+    const canvas = document.getElementById('bg-canvas');
+    const ctx    = canvas.getContext('2d');
+    let W, H, particles = [];
+
+    function resize() {
+      W = canvas.width  = window.innerWidth;
+      H = canvas.height = window.innerHeight;
+    }
+
+    function makeParticle() {
+      return {
+        x: Math.random() * W,
+        y: Math.random() * H,
+        r: Math.random() * 1.2 + 0.3,
+        vx: (Math.random() - 0.5) * 0.25,
+        vy: (Math.random() - 0.5) * 0.25,
+        a: Math.random() * 0.6 + 0.1,
+      };
+    }
+
+    function init() {
+      resize();
+      particles = Array.from({ length: 120 }, makeParticle);
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, W, H);
+      particles.forEach(p => {
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(201,168,76,${p.a})`;
+        ctx.fill();
+        p.x += p.vx; p.y += p.vy;
+        if (p.x < 0) p.x = W;
+        if (p.x > W) p.x = 0;
+        if (p.y < 0) p.y = H;
+        if (p.y > H) p.y = 0;
+      });
+      requestAnimationFrame(draw);
+    }
+
+    window.addEventListener('resize', resize);
+    init();
+    draw();
+  })();
+
+  // ── Scroll fade-in ────────────────────────────────────────────────────────
+  (function () {
+    const els = document.querySelectorAll('.fade-in');
+    const io  = new IntersectionObserver((entries) => {
+      entries.forEach(e => {
+        if (e.isIntersecting) {
+          e.target.classList.add('visible');
+          io.unobserve(e.target);
+        }
+      });
+    }, { threshold: 0.12 });
+    els.forEach(el => io.observe(el));
+  })();
+</script>
+
+</body>
+</html>
