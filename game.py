@@ -189,67 +189,15 @@ def _flatten_scene_map(elements) -> list[str]:
 
 def validate_player_action(action: str, character: dict, world_state: dict = None) -> tuple[bool, str]:
     """
-    SISTEMA DE INTERAÇÃO AMBIENTAL DINÂMICA
-
-    Valida se uma ação é possível baseada no contexto da cena atual.
-    O jogador só pode interagir com objetos que existem no ambiente.
-
-    Retorna (é_válida, mensagem_explicativa)
+    Valida apenas ações fisicamente impossíveis (voar, teletransportar, etc).
+    A presença de objetos na cena é julgada pelo GM, que tem o contexto narrativo completo.
     """
     if not action or len(action.strip()) < 2:
-        return True, ""  # Ações muito curtas passam sem validação
+        return True, ""
 
     action_lower = action.lower()
     character_class = character.get('class', 'Aventureiro')
-
-    # Extrai objetos que o jogador está tentando usar na ação
-    mentioned_objects = extract_objects_from_action(action)
-
-    # Se não há objetos específicos mencionados, aplica filtro básico de habilidades impossíveis
-    if not mentioned_objects:
-        return validate_impossible_abilities(action_lower, character_class)
-
-    # Filtra objetos que são claramente ações gerais, não objetos físicos
-    general_action_words = ['pistas', 'informações', 'detalhes', 'sinais', 'evidências']
-    mentioned_objects = [obj for obj in mentioned_objects if obj not in general_action_words]
-
-    # Se após filtrar não sobrou nenhum objeto, trata como ação geral
-    if not mentioned_objects:
-        return validate_impossible_abilities(action_lower, character_class)
-
-    # Se temos world_state, verifica se os objetos existem na cena
-    if world_state:
-        raw = world_state.get('world_state', {}).get('interactable_elements_in_scene', [])
-        scene_elements_lower = _flatten_scene_map(raw)
-
-        # Verifica cada objeto mencionado pelo jogador
-        missing_objects = []
-        for obj in mentioned_objects:
-            obj_found = False
-
-            # Verifica correspondência exata
-            if obj in scene_elements_lower:
-                obj_found = True
-            else:
-                # Verifica correspondência parcial (ex: "mesa" em "mesa de madeira")
-                for scene_elem in scene_elements_lower:
-                    if obj in scene_elem or scene_elem in obj:
-                        obj_found = True
-                        break
-
-            if not obj_found:
-                missing_objects.append(obj)
-
-        # Se há objetos que não existem na cena
-        if missing_objects:
-            if len(missing_objects) == 1:
-                return False, f"Não há nenhum(a) '{missing_objects[0]}' aqui para você interagir."
-            else:
-                objects_list = "', '".join(missing_objects)
-                return False, f"Não há '{objects_list}' aqui para você interagir."
-
-    # Se chegou até aqui, a ação é válida
-    return True, ""
+    return validate_impossible_abilities(action_lower, character_class)
 
 def validate_impossible_abilities(action_lower: str, character_class: str) -> tuple[bool, str]:
     """
