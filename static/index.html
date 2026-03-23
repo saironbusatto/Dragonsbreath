@@ -542,21 +542,8 @@
             return;
           }
 
-          // Lê de volta o que foi entendido (SpeechSynthesis nativo — sem custo)
-          await speakBack(`Você disse: ${text}`);
-
-          // Sino suave de confirmação
-          await playConfirmChime();
-
-          // Aguarda confirmação (ou auto-confirma após silêncio)
-          const confirmed = await waitForConfirmation();
-          if (confirmed) {
-            sendAction(text);
-          } else {
-            // Cancelado — reinicia gravação
-            transcript.textContent = '';
-            await playChimeThenListen();
-          }
+          // Envia direto ao GM — sem etapa de confirmação
+          sendAction(text);
         } catch (e) {
           showToast('Erro na transcrição: ' + e.message);
           setOrbState('idle', '🎙', 'toque para falar');
@@ -637,72 +624,6 @@
   }
 
   // ── Leitura de volta (SpeechSynthesis nativo — pt-BR, sem API) ─────────────
-  function speakBack(text) {
-    return new Promise((resolve) => {
-      if (!window.speechSynthesis) { resolve(); return; }
-      window.speechSynthesis.cancel();
-      const utt = new SpeechSynthesisUtterance(text);
-      utt.lang = 'pt-BR';
-      utt.rate = 1.15;
-      utt.volume = 0.85;
-      utt.onend = resolve;
-      utt.onerror = resolve;
-      window.speechSynthesis.speak(utt);
-    });
-  }
-
-  // Sino mais suave como sinal de "pode confirmar"
-  function playConfirmChime() {
-    return new Promise((resolve) => {
-      const chime = new Audio(CHIME_URL);
-      chime.volume = 0.4;
-      chime.onended = resolve;
-      chime.onerror = resolve;
-      chime.play().catch(resolve);
-    });
-  }
-
-  // ── Aguarda confirmação verbal (auto-confirma após silêncio) ──────────────
-  const _CANCEL_KW = ['não','nao','cancela','cancelar','repete','repetir','errado','volta','voltar','desfaz'];
-  const _CONFIRM_KW = ['sim','pode','ok','isso','confirmar','confirma','certo','exato','vai','manda','pronto'];
-
-  async function waitForConfirmation() {
-    setOrbState('listening', '✔', 'confirma ou cancela...');
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      return await new Promise((resolve) => {
-        const mime = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
-          ? 'audio/webm;codecs=opus' : 'audio/webm';
-        const rec = new MediaRecorder(stream, { mimeType: mime });
-        const chunks = [];
-        rec.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
-        rec.onstop = async () => {
-          stream.getTracks().forEach(t => t.stop());
-          if (chunks.length === 0) { resolve(true); return; } // silêncio = confirma
-          try {
-            const blob = new Blob(chunks, { type: mime });
-            const b64 = await blobToBase64(blob);
-            const res = await fetch(`${API}/api/transcribe`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ audio: b64, mime_type: mime }),
-            });
-            const data = await res.json();
-            const word = (data.text || '').toLowerCase().trim();
-            console.log('[CONFIRM] ouvido:', word);
-            const cancelled = _CANCEL_KW.some(k => word.includes(k));
-            resolve(!cancelled); // não cancelado = confirmado
-          } catch { resolve(true); } // erro = confirma por segurança
-        };
-        rec.start(100);
-        // Para após 4s (auto-confirma por silêncio)
-        setTimeout(() => { if (rec.state === 'recording') rec.stop(); }, 4000);
-      });
-    } catch {
-      return true; // sem microfone = confirma
-    }
-  }
-
   // ── Enviar ação ────────────────────────────────────────────────────────────
   async function sendAction(action) {
     if (!action.trim() || !sessionId) return;
