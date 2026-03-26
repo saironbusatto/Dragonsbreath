@@ -320,13 +320,14 @@ def detect_sfx_list(narrative_text: str) -> list[dict]:
 
 # ─── TTS server-side (retorna bytes MP3) ─────────────────────────────────────
 
-def synthesize_speech(text: str, voice_type: str = "master") -> bytes | None:
+def synthesize_speech(text: str, voice_type: str = "master", speed: float = 1.0) -> bytes | None:
     """Chama OpenAI TTS e retorna os bytes MP3, ou None se indisponível.
 
     Vozes configuráveis via env:
-      OPENAI_TTS_VOICE_MASTER   (padrão: onyx)
+      OPENAI_TTS_VOICE_MASTER   (padrão: fable)
       OPENAI_TTS_VOICE_NARRATOR (padrão: nova)
     Modelo configurável via OPENAI_TTS_MODEL (padrão: tts-1).
+    speed: 0.25–4.0 (padrão 1.0)
     """
     api_key = os.environ.get("OPENAI_API_KEY")
     if not api_key:
@@ -336,10 +337,10 @@ def synthesize_speech(text: str, voice_type: str = "master") -> bytes | None:
     if voice_type == "narrator":
         voice = os.getenv("OPENAI_TTS_VOICE_NARRATOR", "nova")
     else:
-        voice = os.getenv("OPENAI_TTS_VOICE_MASTER", "onyx")
+        voice = os.getenv("OPENAI_TTS_VOICE_MASTER", "fable")
 
     model = os.getenv("OPENAI_TTS_MODEL", "tts-1")
-    print(f"[TTS] Sintetizando com voz={voice} modelo={model}, texto={text[:60]!r}...")
+    print(f"[TTS] Sintetizando com voz={voice} modelo={model} speed={speed}, texto={text[:60]!r}...")
 
     try:
         from openai import OpenAI as _OpenAI
@@ -349,6 +350,7 @@ def synthesize_speech(text: str, voice_type: str = "master") -> bytes | None:
             voice=voice,
             input=text,
             response_format="mp3",
+            speed=speed,
         )
         audio_bytes = response.content
         print(f"[TTS] OK — {len(audio_bytes)} bytes")
@@ -358,9 +360,9 @@ def synthesize_speech(text: str, voice_type: str = "master") -> bytes | None:
         return None
 
 
-def to_audio_response(text: str, voice_type: str = "master") -> str | None:
+def to_audio_response(text: str, voice_type: str = "master", speed: float = 1.0) -> str | None:
     """Retorna áudio como base64 string, ou None."""
-    audio_bytes = synthesize_speech(text, voice_type)
+    audio_bytes = synthesize_speech(text, voice_type, speed)
     if audio_bytes:
         return base64.b64encode(audio_bytes).decode("utf-8")
     return None
@@ -491,7 +493,8 @@ def start_game(req: StartRequest):
     session_id = str(uuid.uuid4())
     sessions[session_id] = world_state
 
-    audio = to_audio_response(opening_clean, "master")
+    tts_speed = 1.3 if req.tutorial else 1.0
+    audio = to_audio_response(opening_clean, "master", tts_speed)
     sfx = detect_sfx_list(opening_clean)
     ambient_url = _get_ambient_for_act(current_act)
 
@@ -572,7 +575,8 @@ def take_action(req: ActionRequest):
 
     new_act = world_state.get("player_character", {}).get("current_act", 1)
     ambient_url = _get_ambient_for_act(new_act) if new_act != current_act else None
-    audio = to_audio_response(cleaned_narrative, "master")
+    tts_speed = 1.3 if tutorial_turn > 0 else 1.0
+    audio = to_audio_response(cleaned_narrative, "master", tts_speed)
     sfx = detect_sfx_list(cleaned_narrative)
 
     return {
