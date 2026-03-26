@@ -1,0 +1,46 @@
+{
+  "itens_magicos": {
+    "tomo_de_strahd": {
+      "nome": "Tomo de Strahd",
+      "descricao": "Um diário de capa de couro escurecido com páginas escritas em tinta ferruginosa.",
+      "efeito": "Revela fragmentos do passado de Strahd e indícios de suas fraquezas.",
+      "ato_aparicao": 2,
+      "raridade": "raro"
+    },
+    "simbolo_sagrado_de_ravenkind": {
+      "nome": "Símbolo Sagrado de Ravenkind",
+      "descricao": "Relicário de platina com um cristal solar no centro.",
+      "efeito": "Emite luz sagrada que enfraquece vampiros e protege aliados próximos.",
+      "ato_aparicao": 3,
+      "raridade": "raro"
+    },
+    "espada_do_sol": {
+      "nome": "Espada do Sol",
+      "descricao": "Empunhadura antiga que manifesta uma lâmina de luz pura quando ativada.",
+      "efeito": "Causa dano devastador a criaturas da escuridão e rompe proteções necromânticas.",
+      "ato_aparicao": 3,
+      "raridade": "lendário"
+    },
+    "anel_de_disfarce_de_rictavio": {
+      "nome": "Anel de Disfarce de Rictavio",
+      "descricao": "Um anel simples de prata opaca com runas internas quase invisíveis.",
+      "efeito": "Permite assumir aparência distinta por curtos períodos.",
+      "ato_aparicao": 2,
+      "raridade": "incomum"
+    },
+    "amuleto_de_argynvost": {
+      "nome": "Amuleto de Argynvost",
+      "descricao": "Pingente de osso branco com brilho frio, pendurado por corrente de ferro.",
+      "efeito": "Fortalece a resistência mental contra medo e influência vampírica.",
+      "ato_aparicao": 3,
+      "raridade": "incomum"
+    },
+    "dons_do_ambar": {
+      "nome": "Dons do Âmbar",
+      "descricao": "Fragmentos de poder selados em sarcófagos antigos.",
+      "efeito": "Concede poder extraordinário em troca de corrupção espiritual.",
+      "ato_aparicao": 4,
+      "raridade": "lendário"
+    }
+  }
+}

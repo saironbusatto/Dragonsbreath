@@ -1,0 +1,113 @@
+{
+  "locais": {
+    "vila_barovia": {
+      "nome": "Vila de Baróvia",
+      "descricao": "Ruas estreitas, casas trancadas e um luto permanente sob céu cinza.",
+      "ato_aparicao": 1,
+      "gatilhos": {
+        "choro_de_mary": {
+          "descricao": "Um choro desesperado ecoa de uma casa fechada com tábuas.",
+          "sfx": "choro",
+          "proximo": "lobos_na_nevoa"
+        },
+        "lobos_na_nevoa": {
+          "descricao": "Uivos cercam a vila enquanto a névoa avança pelas vielas.",
+          "sfx": "lobo",
+          "proximo": null
+        },
+        "sombra_ravenloft": {
+          "descricao": "O castelo surge ao longe como uma silhueta que observa cada passo seu.",
+          "sfx": "vento",
+          "proximo": null
+        }
+      }
+    },
+    "estrada_svalich": {
+      "nome": "Estrada de Svalich",
+      "descricao": "Uma trilha escura de floresta encharcada, envolta em névoa e silêncio predatório.",
+      "ato_aparicao": 1,
+      "gatilhos": {
+        "galhos_estalam": {
+          "descricao": "Galhos estalam à sua esquerda, como se algo grande o seguisse.",
+          "sfx": "passos",
+          "proximo": "corvos_em_revoada"
+        },
+        "corvos_em_revoada": {
+          "descricao": "Uma revoada de corvos corta o céu e some na direção de Vallaki.",
+          "sfx": "corvos",
+          "proximo": null
+        }
+      }
+    },
+    "vallaki": {
+      "nome": "Vallaki",
+      "descricao": "Uma cidade cercada por paliçadas onde a alegria é obrigatória e o medo é lei.",
+      "ato_aparicao": 2,
+      "gatilhos": {
+        "proclama_festival": {
+          "descricao": "Um arauto anuncia o Festival do Sol Ardente com um sorriso forçado.",
+          "sfx": "pessoas",
+          "proximo": "sussurro_wachter"
+        },
+        "sussurro_wachter": {
+          "descricao": "Um bilhete lacrado menciona Lady Wachter e um encontro secreto à meia-noite.",
+          "sfx": "sussurro",
+          "proximo": null
+        }
+      }
+    },
+    "acampamento_tser_pool": {
+      "nome": "Acampamento Tser Pool",
+      "descricao": "Carroças vistani rodeiam uma fogueira viva onde o destino é lido em cartas.",
+      "ato_aparicao": 2,
+      "gatilhos": {
+        "cartas_tarokka": {
+          "descricao": "Madam Eva vira uma carta e seu nome parece vibrar no ar.",
+          "sfx": "magia",
+          "proximo": null
+        }
+      }
+    },
+    "moinho_dos_ossos": {
+      "nome": "Moinho dos Ossos",
+      "descricao": "Um moinho velho de pedra com cheiro doce demais para ser inocente.",
+      "ato_aparicao": 3,
+      "gatilhos": {
+        "cheiro_podrido": {
+          "descricao": "Sob o aroma de tortas, há um fedor de sangue velho e gordura queimada.",
+          "sfx": "grito",
+          "proximo": null
+        }
+      }
+    },
+    "templo_de_ambar": {
+      "nome": "Templo de Âmbar",
+      "descricao": "Um santuário antigo de pedra e gelo com sarcófagos que sussurram promessas.",
+      "ato_aparicao": 3,
+      "gatilhos": {
+        "sarcofago_sussurra": {
+          "descricao": "Uma voz antiga oferece poder em troca de um preço que ela não revela.",
+          "sfx": "sussurro",
+          "proximo": null
+        }
+      }
+    },
+    "castelo_ravenloft": {
+      "nome": "Castelo Ravenloft",
+      "descricao": "Torres negras, corredores infinitos e um trono de pedra onde o terror é paciente.",
+      "ato_aparicao": 4,
+      "gatilhos": {
+        "portas_selam": {
+          "descricao": "As portas se fecham sozinhas atrás de você com um estrondo final.",
+          "sfx": "porta",
+          "proximo": "risada_de_strahd"
+        },
+        "risada_de_strahd": {
+          "descricao": "Uma risada baixa percorre os corredores, como se o castelo inteiro zombasse.",
+          "sfx": "risada",
+          "proximo": null
+        }
+      }
+    }
+  }
+}

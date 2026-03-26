@@ -1,0 +1,68 @@
+{
+  "npcs": {
+    "strahd": {
+      "nome": "Strahd von Zarovich",
+      "aparencia_facil": "Um nobre pálido, impecável e de olhar hipnótico, sempre cercado por silêncio e autoridade.",
+      "verdade_oculta": "É o senhor vampírico de Baróvia, preso a um pacto ancestral com os Poderes das Trevas.",
+      "tipo": "antagonista_principal",
+      "dificuldade_descoberta": "fácil",
+      "ato_aparicao": 1
+    },
+    "ireena": {
+      "nome": "Ireena Kolyana",
+      "aparencia_facil": "Uma jovem nobre de postura firme, marcada por noites sem dormir e um medo que se recusa a confessar.",
+      "verdade_oculta": "Carrega a alma reencarnada de Tatyana, alvo obsessivo de Strahd.",
+      "tipo": "aliada_chave",
+      "dificuldade_descoberta": "difícil",
+      "ato_aparicao": 1
+    },
+    "ismark": {
+      "nome": "Ismark Kolyanovich",
+      "aparencia_facil": "Um homem cansado e resoluto, tentando proteger a irmã em meio ao colapso da vila.",
+      "verdade_oculta": "Sabe que Baróvia não oferece segurança real e quer tirar Ireena do alcance de Strahd a qualquer custo.",
+      "tipo": "aliado",
+      "dificuldade_descoberta": "fácil",
+      "ato_aparicao": 1
+    },
+    "madam_eva": {
+      "nome": "Madam Eva",
+      "aparencia_facil": "Uma vidente anciã de voz serena, cercada por cartas, velas e fumaça de ervas.",
+      "verdade_oculta": "Manipula os destinos há décadas e possui vínculos de sangue com Strahd.",
+      "tipo": "oraculo_ambiguo",
+      "dificuldade_descoberta": "difícil",
+      "ato_aparicao": 2
+    },
+    "fiona_wachter": {
+      "nome": "Lady Fiona Wachter",
+      "aparencia_facil": "Uma aristocrata elegante, fria e estrategista, com séquito fiel e discurso inflamado.",
+      "verdade_oculta": "Comanda um culto e pretende tomar Vallaki para servir aos interesses de Strahd.",
+      "tipo": "antagonista_secundaria",
+      "dificuldade_descoberta": "difícil",
+      "ato_aparicao": 2
+    },
+    "van_richten": {
+      "nome": "Rudolph van Richten",
+      "aparencia_facil": "Um viajante excêntrico e discreto, aparentemente inofensivo.",
+      "verdade_oculta": "É um lendário caçador de monstros operando sob disfarce, aguardando a chance de atingir Strahd.",
+      "tipo": "aliado_oculto",
+      "dificuldade_descoberta": "difícil",
+      "ato_aparicao": 2
+    },
+    "ezmerelda": {
+      "nome": "Ezmerelda d'Avenir",
+      "aparencia_facil": "Uma caçadora destemida, de fala direta e movimentos rápidos.",
+      "verdade_oculta": "Ex-pupila de van Richten, age por conta própria e pode precipitar confrontos perigosos.",
+      "tipo": "aliada_independente",
+      "dificuldade_descoberta": "médio",
+      "ato_aparicao": 3
+    },
+    "baba_lysaga": {
+      "nome": "Baba Lysaga",
+      "aparencia_facil": "Uma velha bruxa de presença grotesca, cercada de pântano, ossos e magia pútrida.",
+      "verdade_oculta": "Considera Strahd seu filho e move forças inteiras para preservar seu reinado.",
+      "tipo": "antagonista_secundaria",
+      "dificuldade_descoberta": "médio",
+      "ato_aparicao": 3
+    }
+  }
+}

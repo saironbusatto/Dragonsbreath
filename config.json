@@ -79,6 +79,46 @@
           ]
         }
       }
+    },
+    "curse_of_strahd": {
+      "name": "Curse of Strahd - O Vale das Sombras",
+      "description": "Uma campanha de horror gótico em Baróvia, com névoa, maldição ancestral e confronto contra Strahd.",
+      "files": {
+        "npcs": "campanhas/curse_of_strahd/npcs.json",
+        "itens_magicos": "campanhas/curse_of_strahd/itens_magicos.json",
+        "itens_comuns": "campanhas/curse_of_strahd/itens_comuns.json",
+        "locais": "campanhas/curse_of_strahd/locais.json",
+        "campanha": "campanhas/curse_of_strahd/campanha.md"
+      },
+      "player_template": {
+        "class": "Aventureiro",
+        "starting_hp": 24,
+        "max_slots": 10,
+        "starting_inventory": [
+          "Estaca de Freixo",
+          "Água Benta",
+          "Mapa Riscado de Baróvia",
+          "Tocha Encharcada",
+          "Poção de Cura"
+        ]
+      },
+      "world_template": {
+        "initial_description": "Você desperta na névoa e encontra a Vila de Baróvia sob um céu morto e silencioso.",
+        "initial_quest": "Escoltar Ireena com segurança e reunir as relíquias para enfrentar Strahd",
+        "initial_location": "vila_barovia",
+        "initial_triggers": {
+          "vila_barovia": [
+            "choro_de_mary",
+            "sombra_ravenloft"
+          ],
+          "estrada_svalich": [
+            "galhos_estalam"
+          ],
+          "vallaki": [
+            "proclama_festival"
+          ]
+        }
+      }
     }
   },
   "elevenlabs": {

@@ -1,0 +1,63 @@
+{
+  "itens_comuns": {
+    "tocha_encharcada": {
+      "nome": "Tocha Encharcada",
+      "descricao": "Uma tocha improvisada com pano encharcado em óleo escuro.",
+      "efeito": "Ilumina corredores por pouco tempo, mas pode apagar com chuva forte.",
+      "ato_aparicao": 1,
+      "slots": 1
+    },
+    "estaca_de_freixo": {
+      "nome": "Estaca de Freixo",
+      "descricao": "Uma estaca rústica talhada para combate contra mortos-vivos.",
+      "efeito": "Ferramenta útil para conter vampiros quando estão enfraquecidos.",
+      "ato_aparicao": 1,
+      "slots": 1
+    },
+    "agua_benta": {
+      "nome": "Água Benta",
+      "descricao": "Frasco de vidro com água consagrada pela igreja local.",
+      "efeito": "Causa dor e recuo em criaturas profanas.",
+      "consumivel": true,
+      "ato_aparicao": 1,
+      "slots": 1
+    },
+    "mapa_riscado_de_barovia": {
+      "nome": "Mapa Riscado de Baróvia",
+      "descricao": "Mapa incompleto com anotações nervosas e rotas evitadas por viajantes.",
+      "efeito": "Ajuda a orientar deslocamentos entre pontos seguros e áreas de risco.",
+      "ato_aparicao": 1,
+      "slots": 1
+    },
+    "cartas_tarokka_marcadas": {
+      "nome": "Cartas Tarokka Marcadas",
+      "descricao": "Cartas antigas com símbolos de destino e anotações no verso.",
+      "efeito": "Guia pistas sobre relíquias e o local do confronto final.",
+      "ato_aparicao": 2,
+      "slots": 1
+    },
+    "vinho_dos_gemas": {
+      "nome": "Vinho dos Gemas",
+      "descricao": "Uma garrafa rara da vinícola de Baróvia, protegida com cera preta.",
+      "efeito": "Restaura o ânimo de aliados e reduz o medo por um curto período.",
+      "consumivel": true,
+      "ato_aparicao": 2,
+      "slots": 1
+    },
+    "pocao_de_cura": {
+      "nome": "Poção de Cura",
+      "descricao": "Líquido vermelho translúcido com aroma de ervas e mel.",
+      "efeito": { "hp_restore": 10 },
+      "consumivel": true,
+      "ato_aparicao": 1,
+      "slots": 1
+    },
+    "chave_de_catacumba": {
+      "nome": "Chave de Catacumba",
+      "descricao": "Chave de ferro negro com entalhes nobres corroídos pelo tempo.",
+      "efeito": "Abre áreas seladas nas catacumbas de Ravenloft.",
+      "ato_aparicao": 4,
+      "slots": 1
+    }
+  }
+}
