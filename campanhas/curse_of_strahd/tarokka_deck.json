@@ -285,9 +285,18 @@
     {
       "id": "alto_0", "numero": 0,
       "nome": "O Louco",
-      "profecia_aliado": "Seu aliado virá de onde você menos espera — procure aquele que todos descartaram como louco, pois apenas quem perdeu o medo pode verdadeiramente guiá-lo.",
-      "alvo_aliado": "npc_louco_barovia",
-      "aliado_descricao": "Um habitante aparentemente demente que guarda sabedoria oculta",
+      "variantes_aliado": [
+        {
+          "profecia_aliado": "Seu aliado virá de onde você menos espera — procure aquele que todos descartaram como louco, pois apenas quem perdeu o medo pode verdadeiramente guiá-lo.",
+          "alvo_aliado": "parriwimple",
+          "aliado_descricao": "Parriwimple, o grandalhão inocente de Vallaki cujo coração puro esconde força inesperada"
+        },
+        {
+          "profecia_aliado": "Um músico que trocou sua alma por eternidade guarda ainda uma centelha de livre-arbítrio — encontre-o antes que as trevas a apaguem de vez.",
+          "alvo_aliado": "escher_vampiro",
+          "aliado_descricao": "Escher, o bardo vampiro consorte de Strahd, com centelha residual de redenção"
+        }
+      ],
       "profecia_confronto": "O confronto final chegará onde a sanidade é irrelevante e o caos reina — nas ruas onde o primeiro grito desta terra ainda ressoa.",
       "alvo_confronto": "vila_barovia",
       "confronto_descricao": "Nas ruas da Vila de Baróvia"
@@ -315,9 +324,18 @@
     {
       "id": "alto_3", "numero": 3,
       "nome": "A Imperatriz",
-      "profecia_aliado": "Ela carrega um peso maior do que imagina — uma alma que atravessou séculos e que o próprio Conde reconhece. Proteja-a, pois ela é tanto chave quanto arma.",
-      "alvo_aliado": "ireena",
-      "aliado_descricao": "Ireena Kolyana, reencarnação de Tatyana",
+      "variantes_aliado": [
+        {
+          "profecia_aliado": "Ela carrega um peso maior do que imagina — uma alma que atravessou séculos e que o próprio Conde reconhece. Proteja-a, pois ela é tanto chave quanto arma.",
+          "alvo_aliado": "ireena",
+          "aliado_descricao": "Ireena Kolyana, reencarnação de Tatyana"
+        },
+        {
+          "profecia_aliado": "Uma dama de ferro que governa com sorriso calculado sabe mais sobre as fraquezas do Conde do que admite — sua lealdade tem preço, mas ela pode pagar o que você nunca poderia.",
+          "alvo_aliado": "lady_wachter",
+          "aliado_descricao": "Lady Fiona Wachter, nobre de Vallaki com agenda própria e conhecimento perigoso"
+        }
+      ],
       "profecia_confronto": "Nas profundezas onde os ancestrais do Conde dormem em pedra fria, onde o sangue de linhagens extintas ainda ecoa, ali você o encontrará em sua forma mais vulnerável.",
       "alvo_confronto": "cryptas_ravenloft",
       "confronto_descricao": "Criptas do Castelo Ravenloft"
@@ -345,9 +363,18 @@
     {
       "id": "alto_6", "numero": 6,
       "nome": "Os Amantes",
-      "profecia_aliado": "O amor que transcende gerações será sua maior arma — aquela que carrega a chama de uma alma amada pelo inimigo estará ao seu lado quando mais precisar.",
-      "alvo_aliado": "ireena",
-      "aliado_descricao": "Ireena Kolyana, alma perseguida pelo Conde",
+      "variantes_aliado": [
+        {
+          "profecia_aliado": "O amor que transcende gerações será sua maior arma — aquela que carrega a chama de uma alma amada pelo inimigo estará ao seu lado quando mais precisar.",
+          "alvo_aliado": "ireena",
+          "aliado_descricao": "Ireena Kolyana, alma perseguida pelo Conde"
+        },
+        {
+          "profecia_aliado": "Uma caçadora que aprendeu sobre amor ao perdê-lo para as trevas caminha sozinha nesta terra — ela sabe mais sobre matar o que ama do que qualquer outro aliado que você poderia ter.",
+          "alvo_aliado": "ezmerelda",
+          "aliado_descricao": "Ezmerelda d'Avenir, caçadora Vistani e ex-pupila de Van Richten"
+        }
+      ],
       "profecia_confronto": "Onde flores mortas decoram pedra e amores impossíveis foram testemunhados por gárgulas sem expressão, ali o confronto final assumirá sua forma mais pessoal.",
       "alvo_confronto": "castelo_ravenloft",
       "confronto_descricao": "Jardins ou câmaras pessoais do Castelo Ravenloft"
@@ -355,9 +382,18 @@
     {
       "id": "alto_7", "numero": 7,
       "nome": "A Carruagem",
-      "profecia_aliado": "Um povo nômade que conhece cada centímetro desta terra amaldiçoada guardará seu aliado mais valioso — busque a fogueira que nunca se apaga na névoa.",
-      "alvo_aliado": "vistani_davian",
-      "aliado_descricao": "Davian Martikov ou líder Vistani aliado",
+      "variantes_aliado": [
+        {
+          "profecia_aliado": "Um povo nômade que conhece cada centímetro desta terra amaldiçoada guardará seu aliado mais valioso — busque a fogueira que nunca se apaga na névoa.",
+          "alvo_aliado": "vistani_davian",
+          "aliado_descricao": "Davian Martikov, líder dos Guardiões da Pena em Vallaki"
+        },
+        {
+          "profecia_aliado": "Nem todos os Vistani escolhem as correntes — há um entre eles que carrega remorso pesado como o ouro que ganhou traindo inocentes. Esse remorso pode ser sua arma.",
+          "alvo_aliado": "arrigal_redentor",
+          "aliado_descricao": "Arrigal, espião Vistani de Strahd que pode ser virado contra seu mestre"
+        }
+      ],
       "profecia_confronto": "Na estrada onde o destino de todos que entram nesta terra é selado, onde a névoa primeiro fechou seus braços ao redor de uma nova vítima — ali o círculo se fecha.",
       "alvo_confronto": "estrada_svalich",
       "confronto_descricao": "Estrada de Svalich, entrada em Baróvia"
@@ -365,9 +401,18 @@
     {
       "id": "alto_8", "numero": 8,
       "nome": "A Força",
-      "profecia_aliado": "Um cavaleiro que a morte não quis receber completo aguarda em ruínas de honra — sua força vem de uma promessa não cumprida que o mantém de pé onde mortais caem.",
-      "alvo_aliado": "cavaleiro_revenant",
-      "aliado_descricao": "Um cavaleiro revenante de Argynvostholt",
+      "variantes_aliado": [
+        {
+          "profecia_aliado": "Um cavaleiro que a morte não quis receber completo aguarda em ruínas de honra — sua força vem de uma promessa não cumprida que o mantém de pé onde mortais caem.",
+          "alvo_aliado": "cavaleiro_revenant",
+          "aliado_descricao": "Um cavaleiro revenante de Argynvostholt"
+        },
+        {
+          "profecia_aliado": "O irmão que não soube proteger o que mais amava carrega essa falha como armadura — ele lutará ao seu lado não por glória, mas porque desta vez não pode falhar.",
+          "alvo_aliado": "ismark",
+          "aliado_descricao": "Ismark Kolyanovich, irmão de Ireena, buscando redenção"
+        }
+      ],
       "profecia_confronto": "Onde uma ordem de cavaleiros caiu mas não se curvou, onde pedras guardam a memória de uma resistência que o Conde nunca conseguiu apagar, ali ele se tornará vulnerável.",
       "alvo_confronto": "argynvostholt",
       "confronto_descricao": "Mansão de Argynvostholt"
@@ -385,9 +430,18 @@
     {
       "id": "alto_10", "numero": 10,
       "nome": "A Roda da Fortuna",
-      "profecia_aliado": "A fortuna coloca ao seu lado aquele que a própria fortuna abandonou — um nobre caído que ainda carrega influência suficiente para virar a mesa quando menos se espera.",
-      "alvo_aliado": "noble_aliado_inesperado",
-      "aliado_descricao": "Um nobre ou figura de influência em posição precária",
+      "variantes_aliado": [
+        {
+          "profecia_aliado": "A fortuna coloca ao seu lado aquele que a própria fortuna abandonou — um nobre caído que ainda carrega influência suficiente para virar a mesa quando menos se espera.",
+          "alvo_aliado": "noble_aliado_inesperado",
+          "aliado_descricao": "Um nobre ou figura de influência em posição precária em Vallaki"
+        },
+        {
+          "profecia_aliado": "Um morto que ainda se recusa a aceitar a derrota aguarda no limiar entre dois mundos — o espírito de um pai que viu tudo pode mostrar o que nenhum vivo viu.",
+          "alvo_aliado": "nikolai_wachter_fantasma",
+          "aliado_descricao": "O espírito do falecido Nikolai Wachter Sr., com conhecimentos sobre Strahd"
+        }
+      ],
       "profecia_confronto": "Onde um aristocrata traidor tece seus planos sob lustre de normalidade, onde a roda da fortuna girou para o lado errado desta família — ali o Conde terá um encontro inesperado.",
       "alvo_confronto": "mansao_wachter",
       "confronto_descricao": "Mansão Wachterhaus, Vallaki"
@@ -405,9 +459,18 @@
     {
       "id": "alto_12", "numero": 12,
       "nome": "O Enforcado",
-      "profecia_aliado": "Um sacrifício que ainda anda — alguém que trocou parte de si por conhecimento do inimigo carrega essa transação como fardo e como dádiva ao mesmo tempo.",
-      "alvo_aliado": "npc_arrependido",
-      "aliado_descricao": "Um aliado marcado por um custo pessoal para obter informação vital",
+      "variantes_aliado": [
+        {
+          "profecia_aliado": "Um sacrifício que ainda anda — alguém que trocou parte de si por conhecimento do inimigo carrega essa transação como fardo e como dádiva ao mesmo tempo.",
+          "alvo_aliado": "npc_arrependido",
+          "aliado_descricao": "Um servo arrependido de Strahd que pagou preço alto por saber demais"
+        },
+        {
+          "profecia_aliado": "Entre os que vendem sorrisos e segredos, há um que guarda o mais importante de todos — procure o Vistani que chora em silêncio quando a fogueira apaga.",
+          "alvo_aliado": "vistani_redentor",
+          "aliado_descricao": "Um Vistani com remorso que guarda segredo vital sobre os pontos fracos de Strahd"
+        }
+      ],
       "profecia_confronto": "Onde os mortos que resistiram foram pendurados como aviso para os vivos, o cemitério guarda não apenas corpos mas também a memória de resistências que ainda podem vencer.",
       "alvo_confronto": "cemiterio_barovia",
       "confronto_descricao": "Cemitério da Vila de Baróvia"
@@ -421,6 +484,26 @@
       "profecia_confronto": "Nas profundezas mais fundas, onde os mortos mais antigos de uma linhagem milenar dormem em câmaras que nunca viram luz natural, ali a morte encontrará o senhor da morte.",
       "alvo_confronto": "cryptas_ravenloft",
       "confronto_descricao": "As criptas mais profundas do Castelo Ravenloft"
+    },
+    {
+      "id": "darklord", "numero": 14,
+      "nome": "O Senhor das Trevas",
+      "profecia_aliado": "Você deve enfrentar o mal desta terra sozinho. Nenhuma mão estenderá a lança por você. Nenhum ombro dividirá o peso. O destino exige que você seja suficiente — ou que não seja.",
+      "alvo_aliado": null,
+      "aliado_descricao": null,
+      "profecia_confronto": "Onde o senhor nasceu, onde matou, onde caiu — no coração de pedra do Castelo Ravenloft, nos aposentos que guardam a memória do primeiro pecado, ali o confronto será inevitável.",
+      "alvo_confronto": "castelo_ravenloft",
+      "confronto_descricao": "Aposentos centrais do Castelo Ravenloft"
+    },
+    {
+      "id": "mists", "numero": 15,
+      "nome": "As Névoas",
+      "profecia_aliado": "Entre as névoas que engoliam viajantes por séculos, um rosto familiar emerge — alguém que você conheceu antes de entrar nesta terra carrega ainda o suficiente de si mesmo para lutar ao seu lado.",
+      "alvo_aliado": "aliado_nevoa",
+      "aliado_descricao": "Um aliado surgido das próprias névoas — alguém inesperado que cruzou para Baróvia",
+      "profecia_confronto": "A névoa obscurece tudo. Madam Eva vira a carta e fecha os olhos. O local do confronto final não pode ser visto — apenas vivido. Volte em três dias e as cartas poderão falar mais claramente.",
+      "alvo_confronto": null,
+      "confronto_descricao": null
     }
   ]
 }

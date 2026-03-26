@@ -83,9 +83,12 @@ def _is_flip_action(action: str) -> bool:
 
 # ─── API pública ──────────────────────────────────────────────────────────────
 
-def draw_cards(world_state: dict) -> dict:
-    """Embaralha e sorteia 5 cartas. Idempotente — não redesorteia se já feito."""
-    if world_state.get("tarokka_reading", {}).get("drawn"):
+def draw_cards(world_state: dict, force: bool = False) -> dict:
+    """
+    Embaralha e sorteia 5 cartas.
+    force=True permite re-leitura (ex: Ezmerelda), sobrescrevendo a leitura anterior.
+    """
+    if not force and world_state.get("tarokka_reading", {}).get("drawn"):
         return world_state
 
     deck = _load_deck()
@@ -115,24 +118,38 @@ def draw_cards(world_state: dict) -> dict:
         }
         item_locations[item_label] = card["alvo_semantico"]
 
-    # Posição 4 — Aliado
+    # Posição 4 — Aliado (com suporte a variantes A/B e carta Darklord)
     aliado_card = drawn_alto[0]
+    variantes = aliado_card.get("variantes_aliado")
+    if variantes:
+        v = random.choice(variantes)
+        aliado_profecia = v["profecia_aliado"]
+        aliado_alvo     = v["alvo_aliado"]
+        aliado_desc     = v.get("aliado_descricao", "")
+    else:
+        aliado_profecia = aliado_card.get("profecia_aliado", "")
+        aliado_alvo     = aliado_card.get("alvo_aliado")      # None = Darklord
+        aliado_desc     = aliado_card.get("aliado_descricao", "")
+
     cards["aliado"] = {
         "nome":           aliado_card["nome"],
         "numero":         aliado_card.get("numero", 0),
-        "profecia":       aliado_card["profecia_aliado"],
-        "alvo_semantico": aliado_card["alvo_aliado"],
-        "alvo_descricao": aliado_card.get("aliado_descricao", ""),
+        "profecia":       aliado_profecia,
+        "alvo_semantico": aliado_alvo,
+        "alvo_descricao": aliado_desc,
+        "sem_aliado":     aliado_alvo is None,
     }
 
-    # Posição 5 — Confronto
+    # Posição 5 — Confronto (com suporte à carta Mists)
     confronto_card = drawn_alto[1]
+    confronto_alvo = confronto_card.get("alvo_confronto")     # None = Mists
     cards["confronto"] = {
-        "nome":           confronto_card["nome"],
-        "numero":         confronto_card.get("numero", 0),
-        "profecia":       confronto_card["profecia_confronto"],
-        "alvo_semantico": confronto_card["alvo_confronto"],
-        "alvo_descricao": confronto_card.get("confronto_descricao", ""),
+        "nome":             confronto_card["nome"],
+        "numero":           confronto_card.get("numero", 0),
+        "profecia":         confronto_card.get("profecia_confronto", ""),
+        "alvo_semantico":   confronto_alvo,
+        "alvo_descricao":   confronto_card.get("confronto_descricao", ""),
+        "confronto_livre":  confronto_alvo is None,
     }
 
     world_state["tarokka_reading"] = {
@@ -144,13 +161,15 @@ def draw_cards(world_state: dict) -> dict:
 
 
 def on_trigger(world_state: dict) -> dict:
-    """Chamado pelo motor quando o gatilho cartas_tarokka dispara."""
-    world_state = draw_cards(world_state)
-    if not world_state.get("campaign_event_state"):
-        world_state["campaign_event_state"] = {
-            "handler": "tarokka",
-            "stage":   "intro",
-        }
+    """
+    Chamado quando o gatilho cartas_tarokka dispara.
+    Sempre force=True: re-leituras (ex: Ezmerelda) sobrescrevem a anterior.
+    """
+    world_state = draw_cards(world_state, force=True)
+    world_state["campaign_event_state"] = {
+        "handler": "tarokka",
+        "stage":   "intro",
+    }
     return world_state
 
 
@@ -259,30 +278,62 @@ def get_inspect_response(world_state: dict) -> str:
 
 
 def build_gm_context_block(world_state: dict) -> str:
-    """Bloco injetado no system prompt do GM com localizações reais dos itens."""
+    """Bloco injetado no system prompt do GM com todas as regras do Tarokka."""
     reading = world_state.get("tarokka_reading", {})
     if not reading.get("drawn"):
         return ""
 
+    cards     = reading.get("cards", {})
     item_locs = reading.get("item_locations", {})
-    if not item_locs:
-        return ""
 
-    lines = [
-        "",
-        "--- DESTINOS DO TAROKKA (LOCALIZAÇÕES REAIS DOS ITENS SAGRADOS) ---",
-        "Madam Eva sorteouy as cartas. Os itens sagrados estão ocultos nos locais abaixo.",
-        "REGRA: O jogador SÓ encontra estes itens no local indicado.",
-        "Se procurar em local errado, narre que não encontra nada.",
-    ]
-    for item, loc in item_locs.items():
-        card = next(
-            (v for k, v in reading.get("cards", {}).items()
-             if v.get("alvo_semantico") == loc and
-             k in ("tomo_de_strahd", "simbolo_sagrado_de_ravenkind", "espada_solar")),
-            {}
-        )
-        desc = card.get("alvo_descricao", loc)
-        lines.append(f"- {item}: escondido em '{loc}' ({desc})")
+    lines = ["", "--- DESTINOS DO TAROKKA ---"]
+
+    # ── Itens sagrados ────────────────────────────────────────────────────────
+    if item_locs:
+        lines.append("ITENS SAGRADOS — REGRA: O jogador SÓ encontra cada item no local indicado.")
+        lines.append("Se procurar em local errado, narre que não encontra nada.")
+        for item, loc in item_locs.items():
+            card = next(
+                (v for k, v in cards.items()
+                 if v.get("alvo_semantico") == loc
+                 and k in ("tomo_de_strahd", "simbolo_sagrado_de_ravenkind", "espada_solar")),
+                {}
+            )
+            desc = card.get("alvo_descricao", loc)
+            lines.append(f"  - {item}: em '{loc}' ({desc})")
+
+    # ── Aliado ────────────────────────────────────────────────────────────────
+    aliado = cards.get("aliado", {})
+    if aliado:
+        if aliado.get("sem_aliado"):
+            lines.append(
+                "ALIADO: NENHUM. A carta do Senhor das Trevas foi sorteada. "
+                "O jogador enfrenta o mal desta terra sozinho — nenhum NPC aliado é atribuído."
+            )
+        else:
+            alvo  = aliado.get("alvo_semantico", "?")
+            desc  = aliado.get("alvo_descricao", alvo)
+            lines.append(
+                f"ALIADO: '{alvo}' ({desc}). "
+                "REGRA SHADOWDARK: Se este NPC estiver presente no confronto final com Strahd, "
+                "o jogador rola 2d20 e mantém o maior (Vantagem) em todas as rolagens contra Strahd."
+            )
+
+    # ── Local do confronto final ───────────────────────────────────────────────
+    confronto = cards.get("confronto", {})
+    if confronto:
+        if confronto.get("confronto_livre"):
+            lines.append(
+                "CONFRONTO FINAL: INDETERMINADO. A carta das Névoas foi sorteada. "
+                "O confronto pode ocorrer em qualquer ponto do Castelo Ravenloft. "
+                "Madam Eva pode ser reencontrada para nova leitura após três dias."
+            )
+        else:
+            alvo = confronto.get("alvo_semantico", "?")
+            desc = confronto.get("alvo_descricao", alvo)
+            lines.append(
+                f"CONFRONTO FINAL: em '{alvo}' ({desc}). "
+                "REGRA: O confronto decisivo com Strahd deve ocorrer neste local."
+            )
 
     return "\n".join(lines)
