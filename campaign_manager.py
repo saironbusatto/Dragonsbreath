@@ -122,6 +122,50 @@ def get_campaign_inspection_patterns() -> dict:
     return patterns
 
 
+def call_campaign_post_narrative(world_state: dict, gm_narrative: str) -> dict:
+    """
+    Chama post_narrative_hook em todos os handlers da campanha que o implementem.
+    Chamado após cada resposta do GM, antes do update_world_state.
+    """
+    files = get_campaign_files()
+    base_path = files.get("npcs", "")
+    if not base_path:
+        return world_state
+    campaign_dir = os.path.dirname(base_path)
+    try:
+        for fname in os.listdir(campaign_dir):
+            if not fname.endswith(".py"):
+                continue
+            mod = load_campaign_handler(fname[:-3])
+            if mod and hasattr(mod, "post_narrative_hook"):
+                world_state = mod.post_narrative_hook(world_state, gm_narrative)
+    except Exception:
+        pass
+    return world_state
+
+
+def call_campaign_on_travel(world_state: dict, old_loc: str, new_loc: str) -> dict:
+    """
+    Chama on_travel em todos os handlers da campanha que o implementem.
+    Chamado quando current_location_key muda após update_world_state.
+    """
+    files = get_campaign_files()
+    base_path = files.get("npcs", "")
+    if not base_path:
+        return world_state
+    campaign_dir = os.path.dirname(base_path)
+    try:
+        for fname in os.listdir(campaign_dir):
+            if not fname.endswith(".py"):
+                continue
+            mod = load_campaign_handler(fname[:-3])
+            if mod and hasattr(mod, "on_travel"):
+                world_state = mod.on_travel(world_state, old_loc, new_loc)
+    except Exception:
+        pass
+    return world_state
+
+
 def switch_campaign(campaign_id: str) -> bool:
     """Troca para uma campanha específica."""
     config = load_config()

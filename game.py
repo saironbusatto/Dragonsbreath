@@ -16,6 +16,8 @@ from campaign_manager import (
     get_current_campaign,
     load_campaign_handler,
     get_campaign_inspection_patterns,
+    call_campaign_post_narrative,
+    call_campaign_on_travel,
 )
 
 # Import audio manager for text-to-speech and sound effects
@@ -740,15 +742,30 @@ def resolve_resurrection_offering(world_state: dict, offering_text: str) -> dict
 
 
 def _build_campaign_gm_block(world_state: dict) -> str:
-    """Agrega blocos de contexto de todos os handlers de campanha ativos."""
-    event_state = world_state.get("campaign_event_state", {})
-    handler_name = event_state.get("handler", "") if isinstance(event_state, dict) else ""
-    if not handler_name:
+    """
+    Agrega blocos de contexto de TODOS os handlers da campanha que tenham
+    build_gm_context_block — incluindo handlers sempre-ativos como leis_de_barovia.
+    """
+    from campaign_manager import get_campaign_files
+    import os as _os
+    files = get_campaign_files()
+    base_path = files.get("npcs", "")
+    if not base_path:
         return ""
-    handler_mod = load_campaign_handler(handler_name)
-    if handler_mod and hasattr(handler_mod, "build_gm_context_block"):
-        return handler_mod.build_gm_context_block(world_state)
-    return ""
+    campaign_dir = _os.path.dirname(base_path)
+    blocks = []
+    try:
+        for fname in sorted(_os.listdir(campaign_dir)):
+            if not fname.endswith(".py"):
+                continue
+            mod = load_campaign_handler(fname[:-3])
+            if mod and hasattr(mod, "build_gm_context_block"):
+                block = mod.build_gm_context_block(world_state)
+                if block:
+                    blocks.append(block)
+    except Exception:
+        pass
+    return "\n".join(blocks)
 
 
 def get_gm_narrative(world_state: dict, player_action: str, game_context: dict, roll_result: dict | None = None) -> str:
@@ -1697,11 +1714,20 @@ def new_game_loop(world_state: dict, save_filepath: str, game_context: dict):
             # Toca o chime após a narração para indicar que o jogador pode falar
             play_chime()
 
+        # Hooks pós-narrativa da campanha (ex: névoas, espiões, almas)
+        world_state = call_campaign_post_narrative(world_state, gm_response)
+
         # Atualização do estado do mundo com gatilho incluído
+        old_location = world_state.get("world_state", {}).get("current_location_key")
         gatilho_para_arquivista = f"(Evento ambiental: {gatilho_escolhido})" if gatilho_escolhido else ""
         world_state = update_world_state(world_state, f"{player_action} {gatilho_para_arquivista}", gm_response)
         sync_act_with_location(world_state)
-        
+
+        # Hook de viagem: detecta mudança de local e calcula encontros
+        new_location = world_state.get("world_state", {}).get("current_location_key")
+        if new_location and new_location != old_location:
+            world_state = call_campaign_on_travel(world_state, old_location or "", new_location)
+
         # Salva estado
         save_world_state(world_state, save_filepath)
 
