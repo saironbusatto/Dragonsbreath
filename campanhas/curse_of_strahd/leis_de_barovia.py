@@ -376,13 +376,22 @@ def build_gm_context_block(world_state: dict) -> str:
     # ── 8. Gothic Loot pendente ───────────────────────────────────────────────
     gothic_pending = world_state.get("gothic_loot_pending")
     if gothic_pending:
-        item = gothic_pending.get("item", "")
-        lines.append(
-            f"⚠ GOTHIC LOOT PRIORITÁRIO: O jogador encontrou um item macabro. "
-            f"Narre a descoberta de '{item}' com dois parágrafos de atmosfera gótica sombria. "
-            f"Inclua obrigatoriamente: [INVENTORY_UPDATE] {{\"add\": [\"{item}\"]}} "
-            f"e [MOOD:tense] na sua resposta."
-        )
+        if gothic_pending.get("inventory_full"):
+            lines.append(
+                "⚠ GOTHIC LOOT — INVENTÁRIO CHEIO: O jogador tentou pegar um item mas não tem "
+                "espaço. Avise-o que sua bolsa está lotada e que precisa descartar algo antes "
+                "de pegar mais um objeto. Use [MOOD:tense]."
+            )
+        else:
+            item = gothic_pending.get("item", "")
+            lines.append(
+                f"⚠ GOTHIC LOOT PRIORITÁRIO: "
+                f"O jogador foi bem-sucedido na busca e encontrou o seguinte item: {item}. "
+                f"Descreva o momento em que ele toca o objeto pela primeira vez usando detalhes "
+                f"sensoriais macabros. Encerre sua resposta usando o portão emocional [MOOD:tense] "
+                f"para desacelerar o áudio. "
+                f"Inclua obrigatoriamente [INVENTORY_UPDATE] {{\"add\": [\"{item}\"]}} na resposta."
+            )
 
     # ── 9. Magia e Luz ────────────────────────────────────────────────────────
     lines.append(
@@ -442,7 +451,9 @@ def post_narrative_hook(world_state: dict, gm_narrative: str) -> dict:
     if _TAG_GOTHIC_LOOT.search(gm_narrative):
         inventory = world_state.get("player_character", {}).get("inventory", [])
         slots_used = len(inventory) if isinstance(inventory, list) else 0
-        if slots_used < _MAX_INVENTORY_SLOTS:
+        if slots_used >= _MAX_INVENTORY_SLOTS:
+            world_state["gothic_loot_pending"] = {"inventory_full": True}
+        else:
             used_trinkets = world_state.get("gothic_trinkets_used", [])
             all_trinkets  = _load_trinkets()
             available     = [t for t in all_trinkets if t not in used_trinkets]
