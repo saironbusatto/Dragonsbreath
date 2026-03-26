@@ -383,6 +383,32 @@ NUNCA ultrapasse 4 frases de narração. Menos é mais.
             f"REGRA ABSOLUTA: narre ESTRITAMENTE conforme o resultado. Não inverta nem ignore os dados.\n"
         )
 
+    # Bloco de tutorial (injetado nos primeiros turnos quando tutorial_turn > 0)
+    tutorial_turn = world_state.get("tutorial_turn", 0)
+    tutorial_block = ""
+    if tutorial_turn == 3:
+        tutorial_block = (
+            "\n\n[MODO TUTORIAL — TURNO 1 DE 3]\n"
+            "Este é o primeiro turno do jogador. Ele está aprendendo a jogar.\n"
+            "Após narrar a cena de abertura normalmente, termine com uma dica sussurrada "
+            "entre parênteses sugerindo uma ação concreta. Ex: '(Dica: tente dizer \"examino o [objeto]\" ou \"falo com o [personagem]\")'\n"
+            "A dica deve mencionar algo que você acabou de descrever na cena."
+        )
+    elif tutorial_turn == 2:
+        tutorial_block = (
+            "\n\n[MODO TUTORIAL — TURNO 2 DE 3]\n"
+            "O jogador está aprendendo. Após narrar o resultado da ação, "
+            "sugira discretamente que ele pode pegar itens do ambiente ou explorar. "
+            "Ex: '(Dica: você pode dizer \"pego o [item]\" ou \"olho ao redor\")'"
+        )
+    elif tutorial_turn == 1:
+        tutorial_block = (
+            "\n\n[MODO TUTORIAL — TURNO 3 DE 3]\n"
+            "Último turno guiado. Narre normalmente e encerre com: "
+            "'(Dica: diga \"status\" para ver sua saúde, ou \"inventário\" para ver seus itens — a qualquer momento.)' "
+            "Após isso, o jogo segue sem mais dicas."
+        )
+
     # USER: contexto dinâmico que muda a cada turno
     user_content = f"""--- ESTADO ATUAL DO MUNDO ---
 {json.dumps(world_state, indent=2, ensure_ascii=False)}
@@ -393,7 +419,7 @@ Itens disponíveis: {json.dumps(game_context.get('items', {}), indent=2, ensure_
 Locais relevantes: {json.dumps(game_context.get('locais', {}), indent=2, ensure_ascii=False)}
 Gatilhos Narrativos Ativos: {json.dumps(game_context.get('gatilhos', []), indent=2, ensure_ascii=False)}
 
---- AÇÃO DO JOGADOR ---{dice_block}
+--- AÇÃO DO JOGADOR ---{dice_block}{tutorial_block}
 {player_action}"""
 
     try:

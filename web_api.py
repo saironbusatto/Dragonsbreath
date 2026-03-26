@@ -372,9 +372,14 @@ class TranscribeRequest(BaseModel):
     audio: str       # base64 do áudio gravado pelo MediaRecorder
     mime_type: str = "audio/webm"  # mime type enviado pelo browser
 
+class TTSRequest(BaseModel):
+    text: str
+    voice_type: str = "narrator"
+
 class StartRequest(BaseModel):
     player_name: str
     campaign_id: str
+    tutorial: bool = False
 
 class ActionRequest(BaseModel):
     session_id: str
@@ -398,6 +403,13 @@ def _state_summary(world_state: dict) -> dict:
 
 
 # ─── Endpoints ────────────────────────────────────────────────────────────────
+
+@app.post("/api/tts")
+def tts_endpoint(req: TTSRequest):
+    """Sintetiza texto em áudio MP3 (base64). Usado pelo prólogo e tutorial."""
+    audio = to_audio_response(req.text, req.voice_type)
+    return {"audio": audio}
+
 
 @app.post("/api/transcribe")
 def transcribe_audio(req: TranscribeRequest):
@@ -464,6 +476,8 @@ def start_game(req: StartRequest):
     switch_campaign(req.campaign_id)
     world_state = create_initial_world_state(req.player_name.strip())
     world_state["game_mode"] = "rpg"
+    if req.tutorial:
+        world_state["tutorial_turn"] = 3
 
     current_act = world_state["player_character"]["current_act"]
     game_context = load_game_context_for_act(current_act, world_state)
@@ -488,6 +502,7 @@ def start_game(req: StartRequest):
         "sfx": sfx,
         "ambient": {"url": ambient_url, "volume": 0.15} if ambient_url else None,
         "state": _state_summary(world_state),
+        "tutorial_turn": world_state.get("tutorial_turn", 0),
     }
 
 
@@ -548,6 +563,11 @@ def take_action(req: ActionRequest):
     recent.append(cleaned_narrative[:300])
     world_state["recent_narrations"] = recent[-2:]
 
+    # Decrementa contador do tutorial após cada ação regular
+    tutorial_turn = world_state.get("tutorial_turn", 0)
+    if tutorial_turn > 0:
+        world_state["tutorial_turn"] = tutorial_turn - 1
+
     sessions[req.session_id] = world_state
 
     new_act = world_state.get("player_character", {}).get("current_act", 1)
@@ -567,6 +587,7 @@ def take_action(req: ActionRequest):
         "ambient": {"url": ambient_url, "volume": 0.15} if ambient_url else None,
         "state": _state_summary(world_state),
         "valid": True,
+        "tutorial_turn": world_state.get("tutorial_turn", 0),
     }
 
 

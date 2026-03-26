@@ -302,56 +302,225 @@
       text-align: center;
     }
     #toast.show { opacity: 1; }
+
+    /* ── Prólogo ── */
+    #prologue-screen {
+      position: fixed;
+      inset: 0;
+      background: #080508;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 60;
+      padding: 40px 24px;
+      text-align: center;
+      cursor: pointer;
+    }
+    #prologue-screen.hidden { display: none; }
+
+    .prologue-phase {
+      font-family: 'Crimson Text', Georgia, serif;
+      font-size: clamp(1.15rem, 3.5vw, 1.5rem);
+      font-style: italic;
+      color: #e8dcc8;
+      max-width: 560px;
+      line-height: 1.75;
+      opacity: 0;
+      transform: translateY(10px);
+      transition: opacity 1.2s ease, transform 1.2s ease;
+      margin-bottom: 28px;
+    }
+    .prologue-phase.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    #prologue-enter {
+      margin-top: 16px;
+      font-family: 'Cinzel', serif;
+      font-size: 0.75rem;
+      letter-spacing: 5px;
+      color: #c9a84c;
+      opacity: 0;
+      transition: opacity 1s ease;
+      text-transform: uppercase;
+    }
+    #prologue-enter.visible { opacity: 1; }
+
+    #prologue-skip {
+      position: absolute;
+      bottom: 28px;
+      font-size: 0.65rem;
+      color: #3a2a3a;
+      letter-spacing: 2px;
+    }
+
+    /* ── Tutorial hint ── */
+    #tutorial-hint {
+      position: fixed;
+      bottom: 60px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-style: italic;
+      font-size: 0.78rem;
+      color: #7a6a58;
+      text-align: center;
+      max-width: 380px;
+      padding: 0 20px;
+      opacity: 0;
+      transition: opacity 0.8s;
+      pointer-events: none;
+    }
+    #tutorial-hint.visible { opacity: 1; }
+
+    /* ── Help overlay ── */
+    #help-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(8,5,8,0.92);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 70;
+      padding: 24px;
+    }
+    #help-overlay.hidden { display: none; }
+
+    .help-card {
+      background: #0f0b10;
+      border: 1px solid #2d1b4e;
+      border-radius: 12px;
+      padding: 36px 40px;
+      max-width: 440px;
+      width: 90vw;
+    }
+    .help-card h2 {
+      font-family: 'Cinzel', serif;
+      font-size: 0.8rem;
+      letter-spacing: 5px;
+      color: #c9a84c;
+      margin-bottom: 24px;
+      text-align: center;
+    }
+    .help-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      padding: 8px 0;
+      border-bottom: 1px solid #1a1220;
+      font-size: 0.9rem;
+      gap: 16px;
+    }
+    .help-key {
+      font-family: monospace;
+      background: #1a1020;
+      border: 1px solid #3a2a4a;
+      border-radius: 4px;
+      padding: 2px 8px;
+      font-size: 0.8rem;
+      color: #c9a84c;
+      white-space: nowrap;
+    }
+    .help-desc { color: #9a8a78; }
+    #help-close {
+      display: block;
+      margin: 24px auto 0;
+      background: none;
+      border: 1px solid #2d1b4e;
+      color: #7a6a58;
+      font-family: 'Cinzel', serif;
+      font-size: 0.7rem;
+      letter-spacing: 3px;
+      padding: 8px 20px;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    #help-close:hover { border-color: #c9a84c; color: #c9a84c; }
+
+    /* foco visível para teclado */
+    :focus-visible {
+      outline: 2px solid #c9a84c;
+      outline-offset: 3px;
+      border-radius: 4px;
+    }
   </style>
 </head>
 <body>
 
 <canvas id="bg-canvas"></canvas>
 
+<!-- Prólogo (primeira visita) -->
+<div id="prologue-screen" role="dialog" aria-modal="true" aria-label="Introdução ao Ressoar" class="hidden">
+  <div aria-live="polite" aria-atomic="true">
+    <p class="prologue-phase" id="p1">Antes de entrar, feche os olhos.<br>Você não vai precisar deles aqui.</p>
+    <p class="prologue-phase" id="p2">Neste mundo, sua voz é sua única arma.<br>Fale sua ação — o Mestre responde.</p>
+    <p class="prologue-phase" id="p3">Diga <em>"inventário"</em> para ver o que carrega.<br><em>"Status"</em> para saber como está.<br>O sino toca quando é sua vez.</p>
+  </div>
+  <p id="prologue-enter" aria-live="polite">pressione qualquer tecla para entrar</p>
+  <p id="prologue-skip" aria-hidden="true">esc · clique · qualquer tecla</p>
+</div>
+
 <!-- Tela de configuração -->
-<div id="setup-screen">
+<div id="setup-screen" role="region" aria-label="Configuração do jogo">
   <div class="setup-card">
-    <div class="logo">RESSOAR</div>
+    <div class="logo" aria-label="Ressoar">RESSOAR</div>
     <p class="tagline">Existe um som que só você pode emitir.<br>O que o mundo vai escutar de você?</p>
 
     <div class="field">
-      <label>Campanha</label>
-      <select id="campaign-select"></select>
+      <label for="campaign-select">Campanha</label>
+      <select id="campaign-select" aria-describedby="campaign-desc"></select>
     </div>
-    <p id="campaign-desc" class="campaign-desc"></p>
+    <p id="campaign-desc" class="campaign-desc" aria-live="polite"></p>
 
     <div class="field">
-      <label>Seu Nome</label>
-      <input id="player-name" type="text" placeholder="Como te chamam, viajante?" maxlength="40" autocomplete="off" />
+      <label for="player-name">Seu Nome</label>
+      <input id="player-name" type="text" placeholder="Como te chamam, viajante?" maxlength="40" autocomplete="off" aria-required="true" />
     </div>
 
-    <button id="begin-btn" disabled>ENTRAR</button>
+    <button id="begin-btn" disabled aria-label="Entrar no jogo">ENTRAR</button>
   </div>
 </div>
 
 <!-- Tela de jogo -->
-<div id="game-screen">
-  <div id="status-bar">
-    <div id="char-info" style="font-size:0.65rem;letter-spacing:3px;opacity:0.4">RESSOAR</div>
-    <div class="hp-wrap">
-      <span class="hp-label">HP</span>
-      <div class="hp-track"><div class="hp-fill" id="hp-fill" style="width:100%"></div></div>
-      <span id="hp-text">—</span>
+<div id="game-screen" role="main" aria-label="Jogo Ressoar">
+  <div id="status-bar" role="status" aria-label="Status do personagem" aria-live="polite">
+    <div id="char-info" style="font-size:0.65rem;letter-spacing:3px;opacity:0.4" aria-label="Personagem">RESSOAR</div>
+    <div class="hp-wrap" aria-label="Pontos de vida">
+      <span class="hp-label" aria-hidden="true">HP</span>
+      <div class="hp-track" aria-hidden="true"><div class="hp-fill" id="hp-fill" style="width:100%"></div></div>
+      <span id="hp-text" aria-label="Vida atual">—</span>
     </div>
   </div>
 
   <div class="orb-wrap">
-    <div id="orb" class="idle" title="Clique para falar">
-      <span id="orb-icon">🎙</span>
+    <div id="orb" class="idle" role="button" tabindex="0"
+         aria-label="Gravar fala — pressione Enter ou Espaço"
+         aria-describedby="orb-label">
+      <span id="orb-icon" aria-hidden="true">🎙</span>
     </div>
   </div>
 
-  <div id="orb-label">aguardando o mestre...</div>
-  <div id="transcript"></div>
+  <div id="orb-label" aria-live="polite" aria-atomic="true">aguardando o mestre...</div>
+  <div id="transcript" aria-live="polite" aria-atomic="true"></div>
 </div>
 
-<div id="hint">ao ouvir o sino, fale sua ação · diga "inventário" ou "status" a qualquer momento</div>
-<div id="toast"></div>
+<div id="tutorial-hint" role="note" aria-live="polite"></div>
+<div id="hint" aria-label="Dica: ao ouvir o sino, fale sua ação. Diga inventário ou status a qualquer momento. Pressione H para ver atalhos de teclado.">ao ouvir o sino, fale sua ação · diga "inventário" ou "status" · H para atalhos</div>
+<div id="toast" role="alert" aria-live="assertive"></div>
+
+<!-- Help overlay -->
+<div id="help-overlay" class="hidden" role="dialog" aria-modal="true" aria-label="Atalhos de teclado">
+  <div class="help-card">
+    <h2>ATALHOS DE TECLADO</h2>
+    <div class="help-row"><span class="help-key">Espaço / Enter</span><span class="help-desc">Gravar fala</span></div>
+    <div class="help-row"><span class="help-key">Esc</span><span class="help-desc">Parar gravação ou narração</span></div>
+    <div class="help-row"><span class="help-key">I</span><span class="help-desc">Ver inventário</span></div>
+    <div class="help-row"><span class="help-key">S</span><span class="help-desc">Ver status / vida</span></div>
+    <div class="help-row"><span class="help-key">H  /  ?</span><span class="help-desc">Abrir / fechar esta ajuda</span></div>
+    <button id="help-close" aria-label="Fechar ajuda">FECHAR</button>
+  </div>
+</div>
 
 <script>
   const API = '';
@@ -362,6 +531,8 @@
   let currentAudio = null;
   let ambientAudio = null;
   let currentAmbientUrl = null;
+  let tutorialTurn = 0;
+  const isFirstVisit = !localStorage.getItem('ressoar_visited');
 
   const orb       = document.getElementById('orb');
   const orbIcon   = document.getElementById('orb-icon');
@@ -448,16 +619,20 @@
       const res = await fetch(`${API}/api/start`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ player_name: playerName, campaign_id: campaignId }),
+        body: JSON.stringify({ player_name: playerName, campaign_id: campaignId, tutorial: isFirstVisit }),
       });
       if (!res.ok) throw new Error((await res.json()).detail || 'Erro');
       const data = await res.json();
 
       sessionId = data.session_id;
+      tutorialTurn = data.tutorial_turn || 0;
+      localStorage.setItem('ressoar_visited', '1');
+
       document.getElementById('setup-screen').style.display = 'none';
       document.getElementById('game-screen').style.display = 'flex';
 
       updateStatus(data.state);
+      updateTutorialHint(tutorialTurn);
 
       // Inicia loop de ambiente do ato 1
       if (data.ambient) setAmbient(data.ambient.url, data.ambient.volume);
@@ -472,11 +647,17 @@
     }
   });
 
-  // ── Orb: clique apenas como fallback manual ────────────────────────────────
+  // ── Orb: clique e teclado ─────────────────────────────────────────────────
   orb.addEventListener('click', () => {
     if (isSpeaking) { stopAudio(); return; }
     if (isListening) return;
     startRecording();
+  });
+  orb.addEventListener('keydown', e => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      orb.click();
+    }
   });
 
   // ── Gravação via MediaRecorder + detecção de silêncio ─────────────────────
@@ -641,6 +822,10 @@
       const data = await res.json();
 
       updateStatus(data.state);
+      if (typeof data.tutorial_turn === 'number') {
+        tutorialTurn = data.tutorial_turn;
+        updateTutorialHint(tutorialTurn);
+      }
       transcript.textContent = '';
 
       if (data.inspection) {
@@ -845,6 +1030,13 @@
     orb.className = state;
     orbIcon.textContent = icon;
     orbLabel.textContent = label;
+    const ariaLabels = {
+      idle:      'Gravar fala — pressione Enter ou Espaço',
+      listening: 'Ouvindo você — fale sua ação',
+      thinking:  'O Mestre está pensando...',
+      speaking:  'Narração em andamento — pressione Escape para parar',
+    };
+    orb.setAttribute('aria-label', ariaLabels[state] || label);
   }
 
   function updateStatus(state) {
@@ -871,8 +1063,139 @@
     toastTimer = setTimeout(() => t.classList.remove('show'), 4000);
   }
 
+  // ── Tutorial hint ─────────────────────────────────────────────────────────
+  function updateTutorialHint(turn) {
+    const el = document.getElementById('tutorial-hint');
+    const hints = {
+      3: 'dica: fale com um personagem ou examine algo ao seu redor',
+      2: 'dica: você pode pegar itens — tente dizer "pego o [item]"',
+      1: 'dica: diga "status" ou "inventário" a qualquer momento',
+    };
+    if (hints[turn]) {
+      el.textContent = hints[turn];
+      el.classList.add('visible');
+    } else {
+      el.classList.remove('visible');
+    }
+  }
+
+  // ── Help overlay ──────────────────────────────────────────────────────────
+  const helpOverlay = document.getElementById('help-overlay');
+  const helpClose   = document.getElementById('help-close');
+
+  function openHelp() {
+    helpOverlay.classList.remove('hidden');
+    helpClose.focus();
+  }
+  function closeHelp() {
+    helpOverlay.classList.add('hidden');
+    orb.focus();
+  }
+
+  helpClose.addEventListener('click', closeHelp);
+  helpOverlay.addEventListener('click', e => { if (e.target === helpOverlay) closeHelp(); });
+
+  // ── Atalhos de teclado ────────────────────────────────────────────────────
+  document.addEventListener('keydown', e => {
+    // Prólogo: qualquer tecla avança
+    if (!document.getElementById('prologue-screen').classList.contains('hidden')) {
+      dismissPrologue();
+      return;
+    }
+
+    // Help overlay aberto: só Escape fecha
+    if (!helpOverlay.classList.contains('hidden')) {
+      if (e.key === 'Escape') closeHelp();
+      return;
+    }
+
+    // Ignorar se está numa input/select
+    if (['INPUT', 'SELECT', 'TEXTAREA'].includes(document.activeElement.tagName)) return;
+
+    // Setup screen visível: Enter no begin-btn
+    const setup = document.getElementById('setup-screen');
+    if (setup.style.display !== 'none') {
+      if (e.key === 'Enter') document.getElementById('begin-btn').click();
+      return;
+    }
+
+    // Jogo ativo
+    if (e.key === ' ' || e.key === 'Enter') {
+      e.preventDefault();
+      if (isSpeaking) { stopAudio(); return; }
+      if (!isListening) startRecording();
+    } else if (e.key === 'Escape') {
+      if (isSpeaking) stopAudio();
+      if (isListening) stopRecording();
+    } else if ((e.key === 'i' || e.key === 'I') && !isListening && !isSpeaking) {
+      sendAction('inventário');
+    } else if ((e.key === 's' || e.key === 'S') && !isListening && !isSpeaking) {
+      sendAction('status');
+    } else if (e.key === 'h' || e.key === 'H' || e.key === '?') {
+      openHelp();
+    }
+  });
+
+  // ── Prólogo ───────────────────────────────────────────────────────────────
+  const prologueEl = document.getElementById('prologue-screen');
+
+  async function fetchPrologueAudio(text) {
+    try {
+      const res = await fetch(`${API}/api/tts`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text, voice_type: 'narrator' }),
+      });
+      const data = await res.json();
+      return data.audio || null;
+    } catch { return null; }
+  }
+
+  function playBase64Audio(b64) {
+    if (!b64) return;
+    try {
+      const blob = base64ToBlob(b64, 'audio/mp3');
+      const url  = URL.createObjectURL(blob);
+      const a    = new Audio(url);
+      a.onended = () => URL.revokeObjectURL(url);
+      a.play().catch(() => {});
+    } catch {}
+  }
+
+  function dismissPrologue() {
+    prologueEl.classList.add('hidden');
+  }
+
+  async function runPrologue() {
+    prologueEl.classList.remove('hidden');
+    prologueEl.addEventListener('click', dismissPrologue, { once: true });
+
+    const phases = ['p1', 'p2', 'p3'];
+    const texts  = [
+      'Antes de entrar, feche os olhos. Você não vai precisar deles aqui.',
+      'Neste mundo, sua voz é sua única arma. Fale sua ação — o Mestre responde.',
+      'Diga inventário para ver o que carrega. Status para saber como está. O sino toca quando é sua vez.',
+    ];
+
+    // Busca os áudios em paralelo
+    const audios = await Promise.all(texts.map(t => fetchPrologueAudio(t)));
+
+    for (let i = 0; i < phases.length; i++) {
+      if (prologueEl.classList.contains('hidden')) return;
+      const el = document.getElementById(phases[i]);
+      el.classList.add('visible');
+      playBase64Audio(audios[i]);
+      await new Promise(r => setTimeout(r, 3800));
+    }
+
+    if (!prologueEl.classList.contains('hidden')) {
+      document.getElementById('prologue-enter').classList.add('visible');
+    }
+  }
+
   // ── Init ───────────────────────────────────────────────────────────────────
   loadCampaigns();
+  if (isFirstVisit) runPrologue();
 </script>
 </body>
 </html>
