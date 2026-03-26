@@ -391,7 +391,8 @@ NUNCA ultrapasse 4 frases de narração. Menos é mais.
             "\n\n[MODO TUTORIAL — TURNO 1 DE 3]\n"
             "Este é o primeiro turno do jogador. Ele está aprendendo a jogar.\n"
             "Após narrar a cena de abertura normalmente, termine com uma dica sussurrada "
-            "entre parênteses sugerindo uma ação concreta. Ex: '(Dica: tente dizer \"examino o [objeto]\" ou \"falo com o [personagem]\")'\n"
+            "entre parênteses sugerindo uma ação concreta E mencionando que pode pressionar H para ver atalhos de teclado. "
+            "Ex: '(Dica: tente dizer \"examino o [objeto]\" ou \"falo com o [personagem]\" · pressione H para ver os atalhos do jogo)'\n"
             "A dica deve mencionar algo que você acabou de descrever na cena."
         )
     elif tutorial_turn == 2:

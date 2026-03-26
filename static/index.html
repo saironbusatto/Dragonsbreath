@@ -1067,9 +1067,9 @@
   function updateTutorialHint(turn) {
     const el = document.getElementById('tutorial-hint');
     const hints = {
-      3: 'dica: fale com um personagem ou examine algo ao seu redor',
-      2: 'dica: você pode pegar itens — tente dizer "pego o [item]"',
-      1: 'dica: diga "status" ou "inventário" a qualquer momento',
+      3: 'dica: fale com um personagem ou examine algo ao seu redor · pressione H para ver todos os atalhos',
+      2: 'dica: você pode pegar itens — tente dizer "pego o [item]" · I = inventário · S = status',
+      1: 'dica: diga "status" ou "inventário" a qualquer momento · Espaço ou Enter para gravar',
     };
     if (hints[turn]) {
       el.textContent = hints[turn];
