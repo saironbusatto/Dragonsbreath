@@ -1007,6 +1007,17 @@ Gatilhos Narrativos Ativos: {json.dumps(game_context.get('gatilhos', []), indent
     try:
         model = os.environ.get('OPENAI_MODEL_MESTRE') or os.environ.get('OPENAI_MODEL', 'gpt-4o-mini')
         client = OpenAI(api_key=api_key)
+
+        mood = world_state.get("narration_mood", "normal")
+        is_critical = bool(roll_result and (roll_result.get("critical") or roll_result.get("fumble")))
+        is_dramatic  = mood in ("dramatic", "sad", "combat") or bool(world_state.get("hdywdtd_pending"))
+        if is_critical:
+            max_tok = 720   # crítico/fumble — cena memorável
+        elif is_dramatic:
+            max_tok = 580   # combate, clímax, tensão
+        else:
+            max_tok = 480   # turno normal — conciso
+
         response = client.chat.completions.create(
             model=model,
             messages=[
@@ -1014,7 +1025,7 @@ Gatilhos Narrativos Ativos: {json.dumps(game_context.get('gatilhos', []), indent
                 {"role": "user",   "content": user_content},
             ],
             temperature=0.75,
-            max_tokens=480,
+            max_tokens=max_tok,
         )
         return response.choices[0].message.content.strip()
     except Exception as e:
