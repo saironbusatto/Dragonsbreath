@@ -733,6 +733,9 @@
       updateStatus(data.state);
       updateTutorialHint(tutorialTurn);
 
+      // Intro majestosa antes do tutorial começar
+      await playMajesticIntro();
+
       // Inicia loop de ambiente do ato 1
       if (data.ambient) setAmbient(data.ambient.url, data.ambient.volume);
 
@@ -1087,6 +1090,72 @@
       chime.onended = () => { startRecording(); resolve(); };
       chime.onerror  = () => { startRecording(); resolve(); };
       chime.play().catch(() => { startRecording(); resolve(); });
+    });
+  }
+
+  // ── Intro majestosa (Web Audio, sem arquivo externo) ─────────────────────
+  function playMajesticIntro() {
+    return new Promise(resolve => {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+
+      // Reverb simples: delay em loop curto
+      const convGain = ctx.createGain();
+      convGain.gain.value = 0.22;
+      const delay = ctx.createDelay(0.08);
+      delay.delayTime.value = 0.055;
+      const delayFB = ctx.createGain();
+      delayFB.gain.value = 0.45;
+      delay.connect(delayFB);
+      delayFB.connect(delay);
+      delay.connect(convGain);
+      convGain.connect(ctx.destination);
+
+      const master = ctx.createGain();
+      master.connect(ctx.destination);
+      master.connect(delay);
+      master.gain.setValueAtTime(0, 0);
+      master.gain.linearRampToValueAtTime(0.75, 0.6);
+      master.gain.setValueAtTime(0.75, 3.0);
+      master.gain.linearRampToValueAtTime(0, 4.2);
+
+      // D maior: Re2 (73 Hz) · Re3 · Fa#3 · La3 · Re4 · La4 · Re5
+      // Entram em arpejo ascendente, dando sensação de fanfarra crescente
+      const voices = [
+        { freq: 73.42,  type: 'sawtooth', vol: 0.18, t: 0.00, atk: 1.4 },  // Re2 — baixo profundo
+        { freq: 146.83, type: 'sawtooth', vol: 0.22, t: 0.18, atk: 1.1 },  // Re3
+        { freq: 185.00, type: 'sawtooth', vol: 0.18, t: 0.40, atk: 0.9 },  // Fa#3
+        { freq: 220.00, type: 'sawtooth', vol: 0.18, t: 0.62, atk: 0.8 },  // La3
+        { freq: 293.66, type: 'square',   vol: 0.12, t: 0.84, atk: 0.7 },  // Re4 — brilho
+        { freq: 440.00, type: 'sine',     vol: 0.10, t: 1.05, atk: 0.6 },  // La4 — shimmer
+        { freq: 587.33, type: 'sine',     vol: 0.07, t: 1.25, atk: 0.5 },  // Re5 — campanada
+      ];
+
+      voices.forEach(({ freq, type, vol, t, atk }) => {
+        const osc  = ctx.createOscillator();
+        const gain = ctx.createGain();
+        const lpf  = ctx.createBiquadFilter();
+        lpf.type = 'lowpass';
+        lpf.frequency.value = Math.min(freq * 6, 3400);
+        lpf.Q.value = 0.8;
+
+        osc.type = type;
+        osc.frequency.value = freq;
+        // leve detune para calor orquestral
+        osc.detune.value = (Math.random() - 0.5) * 8;
+
+        gain.gain.setValueAtTime(0, ctx.currentTime + t);
+        gain.gain.linearRampToValueAtTime(vol, ctx.currentTime + t + atk);
+        gain.gain.setValueAtTime(vol, ctx.currentTime + t + atk + 0.8);
+        gain.gain.linearRampToValueAtTime(0, ctx.currentTime + t + atk + 2.2);
+
+        osc.connect(lpf);
+        lpf.connect(gain);
+        gain.connect(master);
+        osc.start(ctx.currentTime + t);
+        osc.stop(ctx.currentTime + t + atk + 2.5);
+      });
+
+      setTimeout(() => { ctx.close(); resolve(); }, 4600);
     });
   }
 
