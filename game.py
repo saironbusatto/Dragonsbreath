@@ -34,7 +34,7 @@ except ImportError:
     def play_chime(): pass
     def play_sfx(sfx_name): pass
 
-MAX_INVENTORY_SLOTS = 5
+MAX_INVENTORY_SLOTS = 10
 QUEST_ITEM_KEYWORDS = ['moeda', 'chave', 'nota', 'mapa', 'pergaminho', 'cristal', 'símbolo', 'anel', 'diapasão']
 VALID_MOODS = ("combat", "tense", "dramatic", "sad", "relief", "normal")
 DEFAULT_MOOD = "normal"
