@@ -113,6 +113,23 @@
       text-align: center;
     }
 
+    .featured-campaign-note {
+      width: 100%;
+      text-align: left;
+      font-size: 0.72rem;
+      color: #8e7a50;
+      letter-spacing: 1px;
+      margin-top: -8px;
+      margin-bottom: -8px;
+    }
+
+    .featured-campaign-note strong {
+      color: var(--gold);
+      font-family: 'Cinzel', serif;
+      letter-spacing: 2px;
+      font-size: 0.68rem;
+    }
+
     #begin-btn {
       background: none;
       border: 1px solid var(--gold);
@@ -273,6 +290,15 @@
       min-height: 1.4em;
       transition: color 0.3s;
       padding: 0 20px;
+    }
+    #transcript.hdywdtd {
+      font-family: 'Cinzel', serif;
+      font-style: normal;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      color: #ffd700;
+      text-shadow: 0 0 24px rgba(201,168,76,0.65);
+      font-size: 1rem;
     }
 
     /* Dica de comandos de voz */
@@ -472,9 +498,15 @@
     <p class="tagline">Existe um som que só você pode emitir.<br>O que o mundo vai escutar de você?</p>
 
     <div class="field">
+      <label for="campaign-search">Buscar Aventura</label>
+      <input id="campaign-search" type="search" placeholder="Digite: curse, baróvia, bardo..." autocomplete="off" />
+    </div>
+
+    <div class="field">
       <label for="campaign-select">Campanha</label>
       <select id="campaign-select" aria-describedby="campaign-desc"></select>
     </div>
+    <p class="featured-campaign-note"><strong>destaque:</strong> Curse of Strahd aparece primeiro na busca.</p>
     <p id="campaign-desc" class="campaign-desc" aria-live="polite"></p>
 
     <div class="field">
@@ -528,6 +560,7 @@
 
 <script>
   const API = '';
+  const FEATURED_CAMPAIGN_ID = 'curse_of_strahd';
   let sessionId = null;
   let recognition = null;
   let isSpeaking = false;
@@ -536,6 +569,8 @@
   let ambientAudio = null;
   let currentAmbientUrl = null;
   let tutorialTurn = 0;
+  let playbackToken = 0;
+  let campaignsCache = [];
   const isFirstVisit = !localStorage.getItem('ressoar_visited');
 
   const orb       = document.getElementById('orb');
@@ -581,19 +616,69 @@
   animateParticles();
 
   // ── Setup campanhas ────────────────────────────────────────────────────────
+  function normalizeText(value) {
+    return (value || '')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+      .trim();
+  }
+
+  function sortCampaigns(campaigns) {
+    return [...campaigns].sort((a, b) => {
+      const aScore = a.id === FEATURED_CAMPAIGN_ID ? 0 : 1;
+      const bScore = b.id === FEATURED_CAMPAIGN_ID ? 0 : 1;
+      if (aScore !== bScore) return aScore - bScore;
+      return (a.name || '').localeCompare((b.name || ''), 'pt-BR', { sensitivity: 'base' });
+    });
+  }
+
+  function renderCampaignOptions(filterTerm = '') {
+    const sel = document.getElementById('campaign-select');
+    const previous = sel.value;
+    const normalizedFilter = normalizeText(filterTerm);
+
+    const visible = sortCampaigns(campaignsCache).filter(c => {
+      if (!normalizedFilter) return true;
+      const searchable = normalizeText(`${c.name} ${c.description || ''} ${c.id}`);
+      return searchable.includes(normalizedFilter);
+    });
+
+    sel.innerHTML = '';
+    if (!visible.length) {
+      const opt = document.createElement('option');
+      opt.value = '';
+      opt.textContent = 'Nenhuma aventura encontrada';
+      opt.dataset.desc = 'Tente buscar por outro termo.';
+      sel.appendChild(opt);
+      sel.disabled = true;
+      updateDesc();
+      updateBeginButtonState();
+      return;
+    }
+
+    sel.disabled = false;
+    visible.forEach(c => {
+      const opt = document.createElement('option');
+      opt.value = c.id;
+      opt.textContent = c.name;
+      opt.dataset.desc = c.description || '';
+      sel.appendChild(opt);
+    });
+
+    const candidatePreferred = visible.find(c => c.id === FEATURED_CAMPAIGN_ID)?.id;
+    const candidatePrevious = visible.find(c => c.id === previous)?.id;
+    sel.value = candidatePrevious || candidatePreferred || visible[0].id;
+    updateDesc();
+    updateBeginButtonState();
+  }
+
   async function loadCampaigns() {
     try {
       const res = await fetch(`${API}/api/campaigns`);
       const data = await res.json();
-      const sel = document.getElementById('campaign-select');
-      data.campaigns.forEach(c => {
-        const opt = document.createElement('option');
-        opt.value = c.id;
-        opt.textContent = c.name;
-        opt.dataset.desc = c.description || '';
-        sel.appendChild(opt);
-      });
-      updateDesc();
+      campaignsCache = Array.isArray(data.campaigns) ? data.campaigns : [];
+      renderCampaignOptions(document.getElementById('campaign-search').value);
     } catch(e) { showToast('Erro ao carregar campanhas.'); }
   }
 
@@ -603,17 +688,27 @@
     document.getElementById('campaign-desc').textContent = opt?.dataset.desc || '';
   }
 
-  document.getElementById('campaign-select').addEventListener('change', updateDesc);
-  document.getElementById('player-name').addEventListener('input', () => {
+  function updateBeginButtonState() {
+    const playerName = document.getElementById('player-name').value.trim();
+    const campaignSel = document.getElementById('campaign-select');
     document.getElementById('begin-btn').disabled =
-      document.getElementById('player-name').value.trim().length < 2;
+      playerName.length < 2 || campaignSel.disabled || !campaignSel.value;
+  }
+
+  document.getElementById('campaign-select').addEventListener('change', () => {
+    updateDesc();
+    updateBeginButtonState();
   });
+  document.getElementById('campaign-search').addEventListener('input', (event) => {
+    renderCampaignOptions(event.target.value);
+  });
+  document.getElementById('player-name').addEventListener('input', updateBeginButtonState);
 
   // ── Iniciar jogo ───────────────────────────────────────────────────────────
   document.getElementById('begin-btn').addEventListener('click', async () => {
     const playerName = document.getElementById('player-name').value.trim();
     const campaignId = document.getElementById('campaign-select').value;
-    if (!playerName) return;
+    if (!playerName || !campaignId) return;
 
     const btn = document.getElementById('begin-btn');
     btn.disabled = true;
@@ -641,7 +736,9 @@
       // Inicia loop de ambiente do ato 1
       if (data.ambient) setAmbient(data.ambient.url, data.ambient.volume);
 
-      if (data.audio) {
+      if (data.audio_timeline) {
+        await playAudioTimeline(data.audio_timeline, data.sfx || []);
+      } else if (data.audio) {
         await playAudio(data.audio, data.sfx || []);
       }
     } catch (e) {
@@ -684,6 +781,7 @@
 
       isListening = true;
       setOrbState('listening', '🎙', 'ouvindo você...');
+      transcript.classList.remove('hdywdtd');
       transcript.style.color = '#8b2020';
       transcript.textContent = '...';
 
@@ -720,6 +818,7 @@
           });
           const data = await res.json();
           const text = data.text || '';
+          transcript.classList.remove('hdywdtd');
           transcript.textContent = text;
 
           if (!text.trim()) {
@@ -814,6 +913,7 @@
     if (!action.trim() || !sessionId) return;
 
     setOrbState('thinking', '⋯', 'o mestre pensa...');
+    transcript.classList.remove('hdywdtd');
     transcript.style.color = '#4a3a6a';
 
     try {
@@ -830,7 +930,7 @@
         tutorialTurn = data.tutorial_turn;
         updateTutorialHint(tutorialTurn);
       }
-      transcript.textContent = '';
+      clearTranscript();
 
       if (data.inspection) {
         // Resposta do agente "Olhos do Jogador" — sem SFX, sem trigger, sem ambient
@@ -854,11 +954,19 @@
           if (data.fumble_sfx)   await playSFXAwaitable(data.fumble_sfx,   0.60);
         }
 
+        if (data.hdywdtd) {
+          showHdywdtdPrompt(data.hdywdtd_prompt || 'Como você quer fazer isso?');
+        }
+
         // Gatilho narrativo: toca o SFX do trigger antes da narração
         if (data.trigger_sfx) playSFX(data.trigger_sfx);
 
-        if (data.audio) {
-          await playAudio(data.audio, data.sfx || []);
+        if (data.audio_timeline) {
+          const speakingLabel = data.hdywdtd ? 'silêncio dramático...' : 'o mestre narra...';
+          await playAudioTimeline(data.audio_timeline, data.sfx || [], speakingLabel);
+        } else if (data.audio) {
+          const speakingLabel = data.hdywdtd ? 'silêncio dramático...' : 'o mestre narra...';
+          await playAudio(data.audio, data.sfx || [], speakingLabel);
         } else {
           setOrbState('idle', '🎙', 'toque para falar');
         }
@@ -866,7 +974,7 @@
     } catch (e) {
       showToast('Erro: ' + e.message);
       setOrbState('idle', '🎙', 'toque para falar');
-      transcript.textContent = '';
+      clearTranscript();
     }
   }
 
@@ -883,6 +991,7 @@
 
   // ── Dados Shadowdark ──────────────────────────────────────────────────────
   function showRollResult(roll) {
+    transcript.classList.remove('hdywdtd');
     const mod = { advantage: 'Vantagem', disadvantage: 'Desvantagem', normal: 'Normal' }[roll.modifier];
     const diceStr = roll.dice.join(' / ');
     let outcome;
@@ -895,6 +1004,17 @@
     else if (roll.fumble)  transcript.style.color = '#a03030'; // vermelho escuro — Natural 1
     else if (roll.success) transcript.style.color = '#8fd4a0'; // verde — sucesso
     else                   transcript.style.color = '#e07070'; // vermelho — falha
+  }
+
+  function showHdywdtdPrompt(promptText) {
+    transcript.classList.add('hdywdtd');
+    transcript.style.color = '';
+    transcript.textContent = `⚔ ${promptText}`;
+  }
+
+  function clearTranscript() {
+    transcript.classList.remove('hdywdtd');
+    transcript.textContent = '';
   }
 
   // Versão awaitable do playSFX — aguarda o áudio terminar antes de continuar.
@@ -973,47 +1093,85 @@
   // ── Áudio (narração TTS) ───────────────────────────────────────────────────
   async function playAudio(base64mp3, sfxList, speakingLabel = 'o mestre narra...') {
     stopAudio();
+    const token = ++playbackToken;
     isSpeaking = true;
     setOrbState('speaking', '🔊', speakingLabel);
 
+    await playAudioSegment(base64mp3, sfxList, token);
+    if (token !== playbackToken) return;
+    isSpeaking = false;
+    currentAudio = null;
+    await playChimeThenListen();
+  }
+
+  async function playAudioTimeline(timeline, sfxList = [], speakingLabel = 'o mestre narra...') {
+    stopAudio();
+    const token = ++playbackToken;
+    isSpeaking = true;
+    setOrbState('speaking', '🔊', speakingLabel);
+
+    let firstAudio = true;
+    const sequence = Array.isArray(timeline) ? timeline : [];
+    for (const item of sequence) {
+      if (token !== playbackToken) return;
+      if (item?.type === 'audio' && item.audio) {
+        await playAudioSegment(item.audio, firstAudio ? sfxList : [], token);
+        firstAudio = false;
+      } else if (item?.type === 'pause') {
+        const ms = Number(item.ms) || 0;
+        if (ms > 0) await waitWithToken(ms, token);
+      }
+    }
+    if (token !== playbackToken) return;
+    isSpeaking = false;
+    currentAudio = null;
+    await playChimeThenListen();
+  }
+
+  async function playAudioSegment(base64mp3, sfxList, token) {
     return new Promise((resolve) => {
+      if (!base64mp3 || token !== playbackToken) return resolve();
+
       const audioBlob = base64ToBlob(base64mp3, 'audio/mp3');
       const blobUrl = URL.createObjectURL(audioBlob);
       currentAudio = new Audio(blobUrl);
 
-      // Agenda SFX somente quando o áudio estiver tocando e a duração for
-      // confiável (isFinite). Para MP3-Blob, onloadedmetadata pode retornar
-      // NaN — setTimeout(fn, NaN) dispara imediatamente e quebra o timing.
       let sfxScheduled = false;
       const trySched = () => {
-        if (sfxScheduled) return;
+        if (sfxScheduled || token !== playbackToken) return;
         const dur = currentAudio && currentAudio.duration;
         if (dur && isFinite(dur)) {
           sfxScheduled = true;
-          scheduleSFX(sfxList, dur);
+          scheduleSFX(sfxList || [], dur);
         }
       };
-      // onplay: áudio realmente começou — melhor ponto de partida para os timers
-      currentAudio.onplay           = trySched;
-      // ondurationchange: fallback para quando o browser atualiza a duração VBR
+      currentAudio.onplay = trySched;
       currentAudio.ondurationchange = trySched;
 
-      const afterNarration = () => {
+      let finished = false;
+      const done = () => {
+        if (finished) return;
+        finished = true;
         cancelSFX();
-        isSpeaking = false;
         currentAudio = null;
         URL.revokeObjectURL(blobUrl);
-        playChimeThenListen();
         resolve();
       };
+      currentAudio.onended = done;
+      currentAudio.onerror = done;
+      currentAudio.onpause = done;
+      currentAudio.play().catch(done);
+    });
+  }
 
-      currentAudio.onended = afterNarration;
-      currentAudio.onerror = afterNarration;
-      currentAudio.play().catch(afterNarration);
+  function waitWithToken(ms, token) {
+    return new Promise((resolve) => {
+      setTimeout(() => resolve(token === playbackToken), ms);
     });
   }
 
   function stopAudio() {
+    playbackToken += 1;
     cancelSFX();
     if (currentAudio) {
       currentAudio.pause();

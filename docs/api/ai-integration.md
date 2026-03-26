@@ -6,6 +6,20 @@ A plataforma usa **OpenAI GPT-4o-mini** como motor de inteligência artificial c
 
 ---
 
+## Atualização Funcional (Fases 1-7 de Curse of Strahd)
+
+Integrações adicionadas no ciclo recente:
+
+- contratos de prompt para:
+  - `[HDYWDTDT]` (finalização cinematográfica);
+  - `[PAUSE_BEAT]` (pausa dramática no fluxo de áudio);
+  - `mood` obrigatório por resposta;
+- suporte de backend para remoção/interpretação de tags narrativas antes da exibição final;
+- suporte ao fluxo de ressurreição com estado de limbo e resolução por oferenda;
+- persistência de pacing e estado tático para manter coerência entre turnos.
+
+---
+
 ## Quatro Personas de IA
 
 ### 1. Mestre do Jogo (RPG)
@@ -37,6 +51,11 @@ NUNCA ultrapasse 4 frases.
 7. ANTI-REPETIÇÃO: NUNCA redescreva o que já está em "recent_narrations".
 10. Encerre sempre com: "O que você faz?"
 
+--- PORTÕES EMOCIONAIS (MOOD) ---
+- Escolher exatamente 1 mood por resposta
+- Encerrar com tag: [MOOD:combat|tense|dramatic|sad|relief|normal]
+- O mood altera estilo textual da narração (ritmo, vocabulário, intensidade)
+
 --- NARRAÇÃO SONORA ---
 15. Inclua o som que os objetos produzem.
 16. Mencione o som ANTES do objeto (isca sonora).
@@ -53,12 +72,20 @@ REGRA ABSOLUTA: narre ESTRITAMENTE conforme o resultado. Não inverta nem ignore
 
 **Output esperado:**
 ```
+[MOOD:tense]
 [STATUS_UPDATE] {"hp_change": -3}
 
 A criatura recua ferida... [1-4 frases narrativas]
 
 O que você faz?
 ```
+
+**Pós-processamento de mood (backend):**
+- `clean_and_process_ai_response()` remove `[MOOD:...]` da narrativa final
+- salva mood em `world_state["narration_mood"]`
+- API converte mood para velocidade de TTS:
+  - `combat=1.45`, `tense=1.15`, `dramatic=0.85`
+  - `sad=0.80`, `relief=0.92`, `normal=1.00`
 
 ---
 

@@ -6,6 +6,26 @@
 
 ---
 
+## Atualizações Recentes (Curse of Strahd — Fases 1-7)
+
+Principais evoluções incorporadas ao módulo:
+
+- Prompt v2 do Mestre com contrato narrativo cinematográfico e brevidade forçada.
+- Sistema de combate com `combat_state` e gatilho `[HDYWDTDT]` para finalizações relevantes.
+- Sistema de ritmo emocional com `emotional_pacing` e alívio forçado após tensão prolongada.
+- Tag `[PAUSE_BEAT]` tratada no backend para pausa dramática em áudio.
+- Fluxo de ressurreição baroviana:
+  - limbo ao chegar em `hp == 0`;
+  - oferenda emocional;
+  - DC progressiva (12/15/18);
+  - persistência de `death_count`, `resurrection_flaws` e `alignment`.
+- Ajustes para coerência de classe (vantagem/desvantagem contextual no Shadowdark).
+
+Referência detalhada por fase:
+- `docs/campaigns/curse-of-strahd-evolucao-fases.md`
+
+---
+
 ## Funções Principais
 
 ### `main()`
@@ -105,49 +125,48 @@ Output: ["mesa", "livro"]
 
 ---
 
-### `validate_player_action(objects, world_state) → bool`
-Verifica se os objetos mencionados existem na cena atual.
-
-**Lógica:**
-```python
-scene_objects = world_state["world_state"]["interactable_elements_in_scene"]
-for obj in objects:
-    if obj not in scene_objects:
-        return False, f"'{obj}' não está nesta cena. Você vê: {scene_objects}"
-return True, None
-```
+### `validate_player_action(action, character, world_state=None) → tuple[bool, str]`
+Valida ações fisicamente impossíveis (voar, teleporte, magia proibida etc.) e retorna feedback textual.
 
 ---
 
-### `get_gm_narrative(world_state, campaign_data, action, trigger=None) → str`
-Constrói o prompt e chama o Gemini para gerar a narrativa do Mestre.
+### `get_gm_narrative(world_state, player_action, game_context, roll_result=None) → str`
+Constrói o prompt e chama o modelo para gerar a narrativa do Mestre.
 
-**Contexto fornecido ao Gemini:**
+**Contexto fornecido ao modelo:**
 - Nome, classe, HP, inventário do personagem
 - Localização atual e descrição da cena
-- NPCs presentes na cena
-- Missões ativas
-- Últimos eventos resumidos
+- Mapa semântico da cena (`interactable_elements_in_scene`)
 - Ação do jogador
 - Gatilho (se houver)
-- Dados da campanha (NPCs completos, locais, itens)
+- Dados do contexto do ato (NPCs, locais, itens)
 - Regras da classe (habilidades e restrições)
+- Resultado de dados Shadowdark (quando aplicável)
 
 **Instruções chave no prompt:**
 - Narrar consequências da ação
-- Incluir 2-4 objetos interativos específicos na descrição
-- Usar `[STATUS_UPDATE: hp=X]` para dano/cura
-- Usar `[INVENTORY_UPDATE: +item]` ou `-item` para inventário
+- Usar `[STATUS_UPDATE] {"hp_change": ...}` para dano/cura
+- Usar `[INVENTORY_UPDATE] {"add": [...], "remove": [...]}` para inventário
+- Usar `[MOOD:combat|tense|dramatic|sad|relief|normal]` ao final
 - NUNCA oferecer múltipla escolha
 - Sempre terminar com "O que você faz?"
 - Respeitar limitações da classe
 
-**Parâmetros Gemini:**
+**Parâmetros do modelo:**
 ```python
 temperature = 0.75
-max_output_tokens = 1024
-safety_settings = BLOCK_NONE  # todos os filtros desligados
+max_tokens = 1024
 ```
+
+---
+
+### `clean_and_process_ai_response(response_text, world_state) → tuple[str, dict]`
+Processa tags estruturadas da resposta do Mestre e devolve narrativa limpa + estado atualizado.
+
+**Processa:**
+- `[MOOD:...]` → grava em `world_state["narration_mood"]` (fallback `normal`)
+- `[INVENTORY_UPDATE] {...}` → adiciona/remove itens
+- `[STATUS_UPDATE] {...}` → ajusta HP com clamp entre `0` e `max_hp`
 
 ---
 

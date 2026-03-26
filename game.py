@@ -3,7 +3,13 @@ import json
 import os
 import re
 import random
-from world_state_manager import update_world_state, create_initial_world_state, load_world_state, save_world_state
+from world_state_manager import (
+    update_world_state,
+    create_initial_world_state,
+    load_world_state,
+    save_world_state,
+    ensure_npc_signature_memory,
+)
 from campaign_manager import get_campaign_files, load_campaign_data, get_current_campaign
 
 # Import audio manager for text-to-speech and sound effects
@@ -24,6 +30,42 @@ MAX_INVENTORY_SLOTS = 5
 QUEST_ITEM_KEYWORDS = ['moeda', 'chave', 'nota', 'mapa', 'pergaminho', 'cristal', 'símbolo', 'anel', 'diapasão']
 VALID_MOODS = ("combat", "tense", "dramatic", "sad", "relief", "normal")
 DEFAULT_MOOD = "normal"
+MIN_ACT = 1
+MAX_ACT = 10
+HDYWDTDT_TAG = "HDYWDTDT"
+HDYWDTDT_PROMPT = "Como você quer fazer isso?"
+PAUSE_BEAT_TAG = "PAUSE_BEAT"
+PAUSE_BEAT_PROMPT_SECONDS = 2400
+HIGH_TENSION_MOODS = ("combat", "tense")
+PEAK_SILENCE_MOODS = ("tense", "dramatic")
+MA_RELIEF_MOODS = ("relief", "normal")
+MA_FATIGUE_THRESHOLD = 3
+RESURRECTION_STAGE_AWAITING_OFFERING = "awaiting_offering"
+RESURRECTION_MOOD = "sad"
+DEFAULT_ALIGNMENT = "neutro"
+COMBAT_ACTION_HINTS = (
+    "atac", "golpe", "fer", "cort", "apunhal", "arremess", "flech", "dispar",
+    "esmaga", "esmag", "acert", "derrub", "luta", "combate", "duelo", "investida",
+    "bloque", "esquiv", "contra-ataque", "contra ataque", "mord", "arranh",
+)
+SIGNIFICANT_THREAT_HINTS = (
+    "antagonista", "boss", "chefe", "vilao", "vampiro", "lord", "conde", "elite",
+    "antagonista_principal", "antagonista_secundaria", "vilao_de_elite",
+)
+BAROVIAN_DARK_GIFTS = (
+    ("olhos de fumaça", "Você passa a desconfiar de qualquer gesto de compaixão."),
+    ("sangue negro como piche", "Você sente prazer frio ao ver o medo alheio."),
+    ("sombra que se move sozinha", "Você evita vínculos por acreditar que todos vão trair você."),
+    ("voz dupla em sussurro", "Você responde à dor com crueldade calculada."),
+)
+BARD_OFFERING_HINTS = (
+    "canção", "musica", "melodia", "lembran", "promessa", "amor",
+    "verso", "poema", "esposa", "familia", "coração", "coracao",
+)
+ADVENTURER_OFFERING_HINTS = (
+    "vingan", "promessa", "jurar", "determina", "combate", "lutar", "proteger",
+    "honra", "sobreviver", "missao", "missão", "dever", "companheiro",
+)
 
 # Definições de habilidades por classe
 CLASS_ABILITIES = {
@@ -301,6 +343,395 @@ def _fmt_scene(scene: dict | list) -> str:
         parts.append("Saídas: " + ", ".join(scene["saidas"]))
     return "\n".join(parts) if parts else "(cena ainda não mapeada — use julgamento narrativo)"
 
+def _fmt_npc_signatures(scene_npcs: dict) -> str:
+    """Formata assinaturas narrativas dos NPCs ativos na cena."""
+    if not isinstance(scene_npcs, dict) or not scene_npcs:
+        return "(nenhuma assinatura de NPC ativa na cena)"
+
+    blocks = []
+    for scene_name, data in scene_npcs.items():
+        if not isinstance(data, dict):
+            continue
+        nome = data.get("nome", scene_name)
+        motivacao = data.get("motivacao_principal", "Não definido")
+        intencao = data.get("intencao_na_interacao", "Não definido")
+        postura = data.get("linguagem_corporal", "Não definido")
+        voz = data.get("voz_textual", "Não definido")
+        camada_externa = data.get("camada_externa", "")
+        camada_oculta = data.get("camada_oculta", "")
+        regras = data.get("regras_de_atuacao", [])
+        if isinstance(regras, list):
+            regras_texto = "; ".join(str(r) for r in regras if isinstance(r, str) and r.strip())
+        else:
+            regras_texto = ""
+
+        lines = [
+            f"- {nome} (referência em cena: {scene_name})",
+            f"  Motivação: {motivacao}",
+            f"  Intenção atual: {intencao}",
+            f"  Postura: {postura}",
+            f"  Voz textual: {voz}",
+        ]
+        if camada_externa:
+            lines.append(f"  Camada externa: {camada_externa}")
+        if camada_oculta:
+            lines.append(f"  Camada oculta: {camada_oculta}")
+        if regras_texto:
+            lines.append(f"  Regras de atuação: {regras_texto}")
+        blocks.append("\n".join(lines))
+
+    return "\n".join(blocks) if blocks else "(nenhuma assinatura de NPC ativa na cena)"
+
+
+def _is_combat_action(action: str) -> bool:
+    lowered = (action or "").lower()
+    return any(pattern in lowered for pattern in COMBAT_ACTION_HINTS)
+
+
+def _is_significant_threat_signature(scene_name: str, signature: dict) -> bool:
+    if not isinstance(signature, dict):
+        return False
+    joined = " ".join(
+        str(signature.get(k, ""))
+        for k in ("tipo", "arquetipo_social", "moral_tonalidade", "nome")
+    ).lower()
+    joined = f"{joined} {scene_name.lower()}"
+
+    if any(hint in joined for hint in SIGNIFICANT_THREAT_HINTS):
+        return True
+    if signature.get("arquetipo_social") == "vilao_de_elite":
+        return True
+    if signature.get("moral_tonalidade") == "negativa" and signature.get("origem") == "preparado":
+        return True
+    return False
+
+
+def _update_combat_state(world_state: dict, player_action: str, roll_result: dict | None) -> dict:
+    ws = world_state.setdefault("world_state", {})
+    combat_state = ws.setdefault("combat_state", {})
+
+    turns_with_risk = int(combat_state.get("turns_with_risk", 0))
+    calm_turns = int(combat_state.get("calm_turns", 0))
+    active = bool(combat_state.get("active", False))
+
+    combat_intent = bool(roll_result) or _is_combat_action(player_action)
+    if combat_intent:
+        active = True
+        calm_turns = 0
+        if roll_result:
+            turns_with_risk += 1
+    else:
+        calm_turns += 1
+        if calm_turns >= 2:
+            active = False
+            turns_with_risk = 0
+
+    scene_signatures = ws.get("scene_npc_signatures", {})
+    significant_threats: list[str] = []
+    if isinstance(scene_signatures, dict):
+        for scene_name, signature in scene_signatures.items():
+            if not _is_significant_threat_signature(scene_name, signature):
+                continue
+            threat_name = ""
+            if isinstance(signature, dict):
+                threat_name = signature.get("nome_em_cena") or signature.get("nome") or scene_name
+            if threat_name not in significant_threats:
+                significant_threats.append(threat_name)
+
+    climactic = active and bool(significant_threats) and turns_with_risk >= 3
+
+    combat_state.update({
+        "active": active,
+        "turns_with_risk": turns_with_risk,
+        "calm_turns": calm_turns,
+        "significant_threat_present": bool(significant_threats),
+        "significant_threats": significant_threats,
+        "climactic_combat": climactic,
+    })
+    if roll_result:
+        combat_state["last_roll"] = {
+            "roll": roll_result.get("roll"),
+            "dc": roll_result.get("dc"),
+            "success": roll_result.get("success"),
+            "critical": roll_result.get("critical"),
+            "fumble": roll_result.get("fumble"),
+        }
+
+    ws["combat_state"] = combat_state
+    world_state["world_state"] = ws
+    return combat_state
+
+
+def _fmt_combat_state(combat_state: dict) -> str:
+    if not isinstance(combat_state, dict):
+        return (
+            "Combate ativo: não\n"
+            "Turnos com risco: 0\n"
+            "Ameaça significativa presente: não\n"
+            "Ameaças significativas: nenhuma\n"
+            "Clímax de combate: não"
+        )
+
+    threats = combat_state.get("significant_threats", [])
+    if not isinstance(threats, list) or not threats:
+        threats_text = "nenhuma"
+    else:
+        threats_text = ", ".join(str(t) for t in threats if isinstance(t, str))
+    return (
+        f"Combate ativo: {'sim' if combat_state.get('active') else 'não'}\n"
+        f"Turnos com risco: {int(combat_state.get('turns_with_risk', 0))}\n"
+        f"Ameaça significativa presente: {'sim' if combat_state.get('significant_threat_present') else 'não'}\n"
+        f"Ameaças significativas: {threats_text}\n"
+        f"Clímax de combate: {'sim' if combat_state.get('climactic_combat') else 'não'}"
+    )
+
+
+def _get_emotional_pacing_state(world_state: dict) -> dict:
+    ws = world_state.setdefault("world_state", {})
+    pacing = ws.setdefault("emotional_pacing", {})
+    if not isinstance(pacing, dict):
+        pacing = {}
+        ws["emotional_pacing"] = pacing
+
+    pacing.setdefault("consecutive_high_tension_turns", 0)
+    pacing.setdefault("force_relief_next", False)
+    pacing.setdefault("last_mood", DEFAULT_MOOD)
+    pacing.setdefault("last_location_key", ws.get("current_location_key", ""))
+    pacing.setdefault("negative_space_beats", 0)
+    pacing.setdefault("last_silent_end", False)
+    return pacing
+
+
+def _fmt_emotional_pacing_state(pacing: dict, location_key: str) -> str:
+    if not isinstance(pacing, dict):
+        return (
+            "Consecutivos alta tensão: 0\n"
+            "Alívio forçado no próximo turno: não\n"
+            "Último mood: normal\n"
+            "Local atual: desconhecido\n"
+            "Mudança de local neste turno: não"
+        )
+    last_location = pacing.get("last_location_key", "")
+    is_new_location = bool(location_key and last_location and location_key != last_location)
+    return (
+        f"Consecutivos alta tensão: {int(pacing.get('consecutive_high_tension_turns', 0))}\n"
+        f"Alívio forçado no próximo turno: {'sim' if pacing.get('force_relief_next') else 'não'}\n"
+        f"Último mood: {pacing.get('last_mood', DEFAULT_MOOD)}\n"
+        f"Local atual: {location_key or 'desconhecido'}\n"
+        f"Mudança de local neste turno: {'sim' if is_new_location else 'não'}"
+    )
+
+
+def _split_pause_beats(narrative: str) -> list[str]:
+    return [seg.strip() for seg in re.split(rf'\[{PAUSE_BEAT_TAG}\]', narrative, flags=re.IGNORECASE)]
+
+
+def _ensure_resurrection_persistence(world_state: dict) -> dict:
+    pc = world_state.setdefault("player_character", {})
+    if not isinstance(pc.get("death_count"), int):
+        pc["death_count"] = int(pc.get("death_count", 0) or 0)
+    if not isinstance(pc.get("resurrection_flaws"), list):
+        pc["resurrection_flaws"] = []
+    pc.setdefault("alignment", DEFAULT_ALIGNMENT)
+    world_state["player_character"] = pc
+    return world_state
+
+
+def get_resurrection_dc(next_death_count: int) -> int:
+    if next_death_count <= 1:
+        return 12
+    if next_death_count == 2:
+        return 15
+    return 18
+
+
+def _offering_advantage_by_class(offering_text: str, character_class: str) -> tuple[bool, str]:
+    text = (offering_text or "").strip().lower()
+    if len(text) < 18:
+        return False, "A oferenda foi breve demais para fortalecer sua alma."
+
+    if character_class == "Bardo":
+        if any(hint in text for hint in BARD_OFFERING_HINTS):
+            return True, "Sua oferenda ecoa como uma canção de memória e vínculo."
+        return False, "Você oferece sentimento real, mas sem a cadência plena da sua arte."
+
+    if character_class == "Aventureiro":
+        if any(hint in text for hint in ADVENTURER_OFFERING_HINTS):
+            return True, "Sua vontade de luta ancora sua alma com firmeza brutal."
+        return False, "A coragem existe, mas falta uma âncora nítida de propósito."
+
+    generic = any(hint in text for hint in ("promessa", "amor", "familia", "vingan", "dever"))
+    return generic, "Sua oferenda encontra algum eco nas brumas." if generic else "As brumas quase engolem sua voz."
+
+
+def _roll_resurrection_check(advantage: bool, dc: int) -> dict:
+    if advantage:
+        dice = [random.randint(1, 20), random.randint(1, 20)]
+        roll = max(dice)
+        modifier = "advantage"
+    else:
+        dice = [random.randint(1, 20)]
+        roll = dice[0]
+        modifier = "normal"
+
+    return {
+        "roll": roll,
+        "dice": dice,
+        "dc": dc,
+        "modifier": modifier,
+        "success": roll >= dc,
+        "critical": roll == 20,
+        "fumble": roll == 1,
+    }
+
+
+def start_resurrection_limbo(world_state: dict) -> tuple[bool, str]:
+    world_state = _ensure_resurrection_persistence(world_state)
+    character = world_state.get("player_character", {})
+    status = character.get("status", {})
+    hp = int(status.get("hp", 0) or 0)
+    if hp > 0:
+        return False, ""
+
+    existing = world_state.get("resurrection_state", {})
+    if isinstance(existing, dict) and existing.get("stage") == RESURRECTION_STAGE_AWAITING_OFFERING:
+        return False, ""
+
+    next_death_count = int(character.get("death_count", 0)) + 1
+    dc = get_resurrection_dc(next_death_count)
+    character["death_count"] = next_death_count
+    world_state["player_character"] = character
+    world_state["narration_mood"] = RESURRECTION_MOOD
+    world_state["resurrection_state"] = {
+        "stage": RESURRECTION_STAGE_AWAITING_OFFERING,
+        "dc": dc,
+        "death_count": next_death_count,
+    }
+
+    limbo_text = (
+        "O mundo se dissolve em névoa fria, e sua alma deriva sem peso pelas brumas de Baróvia. "
+        "Aqui, nenhuma alma parte em paz, apenas se perde. "
+        "Uma presença antiga cobra seu preço: o que prende sua alma a este mundo? Faça sua oferenda emocional."
+    )
+    return True, limbo_text
+
+
+def resolve_resurrection_offering(world_state: dict, offering_text: str) -> dict:
+    world_state = _ensure_resurrection_persistence(world_state)
+    character = world_state.get("player_character", {})
+    status = character.setdefault("status", {"hp": 0, "max_hp": 20})
+    flaws = character.setdefault("resurrection_flaws", [])
+
+    state = world_state.get("resurrection_state", {})
+    if not isinstance(state, dict) or state.get("stage") != RESURRECTION_STAGE_AWAITING_OFFERING:
+        return {
+            "ok": False,
+            "narrative": "As brumas se fecham em silêncio. Ainda não há ritual de retorno em andamento.",
+            "mood": RESURRECTION_MOOD,
+            "roll": None,
+            "result_type": "none",
+        }
+
+    offering = (offering_text or "").strip()
+    if len(offering) < 8:
+        return {
+            "ok": False,
+            "narrative": "A névoa rejeita o vazio. Fale uma oferenda emocional verdadeira para tentar voltar.",
+            "mood": RESURRECTION_MOOD,
+            "roll": None,
+            "result_type": "waiting_offering",
+        }
+
+    character_class = character.get("class", "Aventureiro")
+    dc = int(state.get("dc", 12))
+    has_advantage, advantage_reason = _offering_advantage_by_class(offering, character_class)
+    roll = _roll_resurrection_check(has_advantage, dc)
+
+    result_type = "success"
+    mood = "dramatic"
+    if roll["critical"]:
+        result_type = "critical_success"
+        mood = "relief"
+        narrative = (
+            f"{advantage_reason} Sua alma rasga as brumas com um clarão impossível e retorna sem cobrança. "
+            "Você desperta ofegante, com um fio de vida e o coração ainda em guerra contra o vazio."
+        )
+    elif roll["fumble"]:
+        result_type = "critical_failure"
+        mood = "tense"
+        character["alignment"] = "maligno"
+        anomaly, personality_flaw = random.choice(BAROVIAN_DARK_GIFTS)
+        dark_gift_flaw = {
+            "type": "dark_gift",
+            "severity": "grave",
+            "anomaly": anomaly,
+            "description": personality_flaw,
+            "death_count": character.get("death_count", 0),
+        }
+        flaws.append(dark_gift_flaw)
+        flaw = {
+            "type": "barovian_total_corruption",
+            "severity": "grave",
+            "description": "Sua essência retorna corrompida; Strahd sente seu nome como um sino de escárnio.",
+            "death_count": character.get("death_count", 0),
+        }
+        flaws.append(flaw)
+        world_state.setdefault("world_state", {}).setdefault("strahd_attention", 0)
+        world_state["world_state"]["strahd_attention"] += 1
+        narrative = (
+            f"{advantage_reason} A volta acontece, mas algo pior vem junto. "
+            "Você ergue o corpo do chão com um sorriso que não reconhece como seu, "
+            f"marcado por {anomaly}, enquanto uma risada distante de Strahd atravessa a névoa e crava seu destino."
+        )
+    elif roll["success"]:
+        result_type = "success"
+        mood = "dramatic"
+        flaw = {
+            "type": "resurrection_madness",
+            "severity": "temporaria",
+            "description": "Você sente a certeza claustrofóbica de que sua alma jamais deixará Baróvia.",
+            "death_count": character.get("death_count", 0),
+        }
+        flaws.append(flaw)
+        narrative = (
+            f"{advantage_reason} Sua alma encontra o caminho de volta, mas a travessia quebra algo por dentro. "
+            "Você retorna respirando aos golpes, trazendo nos olhos a loucura de quem viu o cárcere das próprias almas."
+        )
+    else:
+        result_type = "failure"
+        mood = "tense"
+        anomaly, personality_flaw = random.choice(BAROVIAN_DARK_GIFTS)
+        flaw = {
+            "type": "dark_gift",
+            "severity": "persistente",
+            "anomaly": anomaly,
+            "description": personality_flaw,
+            "death_count": character.get("death_count", 0),
+        }
+        flaws.append(flaw)
+        narrative = (
+            f"{advantage_reason} Sua alma não consegue voltar sozinha. "
+            "Os Poderes das Trevas puxam você de volta ao corpo em troca de uma marca: "
+            f"{anomaly}. A partir de agora, {personality_flaw.lower()}"
+        )
+
+    status["hp"] = 1
+    character["status"] = status
+    character["resurrection_flaws"] = flaws
+    world_state["player_character"] = character
+    world_state["narration_mood"] = mood
+    world_state.pop("resurrection_state", None)
+
+    return {
+        "ok": True,
+        "narrative": f"{narrative} O que você faz?",
+        "mood": mood,
+        "roll": roll,
+        "result_type": result_type,
+        "advantage_reason": advantage_reason,
+        "used_advantage": has_advantage,
+    }
+
 
 def get_gm_narrative(world_state: dict, player_action: str, game_context: dict, roll_result: dict | None = None) -> str:
     api_key = os.environ.get('OPENAI_API_KEY')
@@ -315,11 +746,22 @@ def get_gm_narrative(world_state: dict, player_action: str, game_context: dict, 
     character_class = character.get('class', 'Aventureiro')
     class_info = CLASS_ABILITIES.get(character_class, CLASS_ABILITIES['Aventureiro'])
 
+    world_state = ensure_npc_signature_memory(world_state)
     ws = world_state.get("world_state", {})
+    combat_state = _update_combat_state(world_state, player_action, roll_result)
+    pacing_state = _get_emotional_pacing_state(world_state)
+    location_key = ws.get("current_location_key", "")
     scene_list = _fmt_scene(ws.get("interactable_elements_in_scene", {}))
+    npc_signature_list = _fmt_npc_signatures(ws.get("scene_npc_signatures", {}))
+    combat_state_list = _fmt_combat_state(combat_state)
+    pacing_state_list = _fmt_emotional_pacing_state(pacing_state, location_key)
 
     # SYSTEM: persona estável + regras que nunca mudam
-    system_content = f"""Você é um Mestre de Jogo narrando "{campaign_name}". Narre sempre em segunda pessoa (você), no tempo presente.
+    system_content = f"""Você é um Mestre de Jogo narrando "{campaign_name}".
+
+REGRA INEGOCIÁVEL DE PERSPECTIVA:
+- Narre SEMPRE em segunda pessoa (você) e no tempo presente.
+- NUNCA narre em terceira pessoa sobre o protagonista.
 
 --- PERFIL DO PERSONAGEM ---
 Classe: {character_class}
@@ -335,6 +777,15 @@ TAMANHO DA RESPOSTA é proporcional à ação:
 - Ação de exploração ou movimento: 2-3 frases + "O que você faz?"
 - Evento importante (combate, descoberta, mudança de local): 3-4 frases + "O que você faz?"
 NUNCA ultrapasse 4 frases de narração. Menos é mais.
+
+--- LENTE CINEMATOGRÁFICA CONDENSADA (MERCER) ---
+Quando entrar em LOCAL NOVO, compacte em até 2 frases:
+1) plano aberto geográfico
+2) atmosfera (som/clima/cheiro)
+3) ponto focal visual
+4) peso emocional
+5) convite à ação
+Sempre de forma econômica (verbos fortes, poucos adjetivos).
 
 --- PORTÕES EMOCIONAIS (MOOD) ---
 Você deve escolher exatamente UM mood por resposta e escrevê-la nesse estilo.
@@ -353,35 +804,93 @@ Perfis de escrita por mood:
 - relief: tom quente, respiro emocional após tensão.
 - normal: exploração e progressão padrão.
 
+--- RITMO EMOCIONAL (MA / ESPAÇO NEGATIVO) ---
+- Use "ma": alternar pressão e respiro para evitar fadiga de horror.
+- Se "Alívio forçado no próximo turno" for "sim", você DEVE escolher mood relief ou normal.
+- Em alívio, lembre o jogador do que está em jogo com detalhe humano (calor, comida, abrigo, lembrança, silêncio acolhedor).
+- Não mantenha combat/tense por muitos turnos sem respiro.
+- Em LOCAL NOVO, aplique "prenúncio e escalada": inclua 1 pista sensorial isolada (cheiro, temperatura, som distante, pressão no ar) sem perigo imediato.
+
+--- SILÊNCIO FÍSICO ---
+- Em picos de tense/dramatic, você pode encerrar em silêncio narrativo (sem "O que você faz?").
+- Quando usar silêncio físico, termine com ponto final absoluto e sem pergunta.
+
+--- TAG DE PAUSA DRAMÁTICA ---
+- Quando precisar forçar suspense dentro da frase, use a tag [{PAUSE_BEAT_TAG}] no ponto exato.
+- Exemplo: "A tampa do caixão se move. [{PAUSE_BEAT_TAG}] Lá dentro, não há corpo."
+- Não abuse: use apenas em batidas críticas.
+
+--- AGÊNCIA E RISCO ---
+Se a ação do jogador for extremamente ousada/arriscada, você pode abrir com a frase exata:
+"Você certamente pode tentar."
+Use isso para validar agência sem prometer sucesso.
+
+--- COMBATE CINEMATOGRÁFICO ---
+- Trate combate como cena viva: impacto, reação emocional do inimigo, ambiente reagindo.
+- Prefira verbos cinéticos: cambaleia, crumple, rasga, colide, careens, estilhaça.
+- Use vocabulário físico/anatômico com parcimônia: mandíbula (maw), clavícula, costelas, tendões.
+- NUNCA informe HP numérico de inimigos.
+- Use gradiente visual de dano: "parece ileso", "ferido", "bem machucado", "à beira de cair".
+- Gradiente obrigatório por faixa: alto HP "avança implacável"; médio HP "mostra desgaste e respiração ofegante"; baixo HP "sangra profusamente, mal se sustenta em pé" / "looking rough".
+
+--- DADOS-INFORMAM-NARRAÇÃO ---
+- Em FALHA (roll < DC), NUNCA narre incompetência ridícula do jogador.
+- Em FALHA, descreva quase-sucesso: mérito do inimigo, defesa, armadura, terreno ou timing impede o êxito.
+- Em SUCESSO CRÍTICO (20 natural), eleve o impacto com vocabulário anatômico e horror corporal quando houver violência.
+- Em FALHA CRÍTICA (1 natural), traga complicação séria com tensão cinematográfica.
+
+--- REGRA HDYWDTDT (GOLPE FINAL SIGNIFICATIVO) ---
+- Se o golpe do jogador for letal contra ameaça significativa, use a tag exata [{HDYWDTDT_TAG}].
+- Ao usar [{HDYWDTDT_TAG}], interrompa a cena no ápice do impacto e NÃO descreva a morte.
+- Ao usar [{HDYWDTDT_TAG}], NÃO termine com "O que você faz?".
+- Reserve [{HDYWDTDT_TAG}] para chefes, inimigos nomeados ou combate em clímax real.
+
+--- ESTADO TÁTICO DE COMBATE ---
+{combat_state_list}
+
+--- ESTADO DE RITMO EMOCIONAL ---
+{pacing_state_list}
+
 --- REGRAS FUNDAMENTAIS ---
 1. Narre APENAS o resultado imediato da ação do jogador. Não redescreva o cenário já conhecido.
 2. Use [STATUS_UPDATE] para mudanças de HP: [STATUS_UPDATE] {{"hp_change": -4}}
 3. Use [INVENTORY_UPDATE] para itens: [INVENTORY_UPDATE] {{"add": ["item"]}}
-4. Sempre gere consequências claras e diretas para a ação do jogador.
-5. Ao explorar um LOCAL NOVO, adicione UM único elemento novo (objeto, som ou evento). Em locais já visitados, só adicione novos elementos se o jogador pedir explicitamente.
-6. Considere o desejo ou objetivo do personagem ao narrar eventos.
-7. ANTI-REPETIÇÃO: NUNCA redescreva objetos, personagens ou elementos já mencionados em narrações anteriores (veja "recent_narrations" no estado). Se já foi descrito, é memória do jogador — não repita.
-8. NUNCA ofereça opções de múltipla escolha (A, B, C). O jogo é completamente aberto.
-9. Apenas descreva o resultado da ação e deixe o jogador decidir livremente.
-10. Encerre sempre com: "O que você faz?"
+4. Quando houver marco narrativo real (troca de fase da aventura), use [ACT_UPDATE] {{"set_act": N}} com N inteiro (ex: 2, 3, 4). Só use quando for realmente necessário.
+5. Sempre gere consequências claras e diretas para a ação do jogador.
+6. Ao explorar um LOCAL NOVO, adicione UM único elemento novo (objeto, som ou evento). Em locais já visitados, só adicione novos elementos se o jogador pedir explicitamente.
+7. Considere o desejo ou objetivo do personagem ao narrar eventos.
+8. ANTI-REPETIÇÃO: NUNCA redescreva objetos, personagens ou elementos já mencionados em narrações anteriores (veja "recent_narrations" no estado). Se já foi descrito, é memória do jogador — não repita.
+9. NUNCA ofereça opções de múltipla escolha (A, B, C). O jogo é completamente aberto.
+10. Apenas descreva o resultado da ação e deixe o jogador decidir livremente.
+11. Encerre com: "O que você faz?", exceto quando usar [{HDYWDTDT_TAG}] ou silêncio físico em pico tense/dramatic.
 
 --- SISTEMA DE INTERAÇÃO AMBIENTAL ---
-11. OBJETOS INTERATIVOS: Mencione 2-3 objetos específicos APENAS ao entrar em um local pela PRIMEIRA VEZ, ou quando o jogador explorar explicitamente. Nas ações seguintes no mesmo local, mencione APENAS objetos diretamente relevantes para a ação atual. Nunca recite a lista de objetos a cada turno.
-12. REALISMO: O jogador só pode interagir com o que você menciona explicitamente na cena.
-13. CONSEQUÊNCIAS: Interprete interações com objetos considerando material, tamanho, estado e ambiente.
-14. INVENTÁRIO CHEIO: Se o personagem tentar pegar um item sem espaço, diga que a bolsa está cheia e peça que ele decida o que abandonar. Nunca force a troca automaticamente.
+12. OBJETOS INTERATIVOS: Mencione 2-3 objetos específicos APENAS ao entrar em um local pela PRIMEIRA VEZ, ou quando o jogador explorar explicitamente. Nas ações seguintes no mesmo local, mencione APENAS objetos diretamente relevantes para a ação atual. Nunca recite a lista de objetos a cada turno.
+13. REALISMO: O jogador só pode interagir com o que você menciona explicitamente na cena.
+14. CONSEQUÊNCIAS: Interprete interações com objetos considerando material, tamanho, estado e ambiente.
+15. INVENTÁRIO CHEIO: Se o personagem tentar pegar um item sem espaço, diga que a bolsa está cheia e peça que ele decida o que abandonar. Nunca force a troca automaticamente.
 
 --- NARRAÇÃO SONORA (o jogo é totalmente por áudio) ---
-15. SONS DOS OBJETOS: Ao mencionar um objeto interativo, inclua o som que ele produz. Use palavras sonoras: ranger, chiar, murmurar, estalar, gotejar, uivar, sussurrar.
-16. ISCAS SONORAS: Para guiar o jogador, mencione o som ANTES do objeto. Ex: "Você ouve um gotejo perto da estante" — não descreva tudo de imediato.
-17. SONS DE AMBIENTE: Mencione som de fundo apenas ao entrar em local novo ou quando mudar a atmosfera da cena. Não repita o ambiente a cada turno.
+16. SONS DOS OBJETOS: Ao mencionar um objeto interativo, inclua o som que ele produz. Use palavras sonoras: ranger, chiar, murmurar, estalar, gotejar, uivar, sussurrar.
+17. ISCAS SONORAS: Para guiar o jogador, mencione o som ANTES do objeto. Ex: "Você ouve um gotejo perto da estante" — não descreva tudo de imediato.
+18. SONS DE AMBIENTE: Mencione som de fundo apenas ao entrar em local novo ou quando mudar a atmosfera da cena. Não repita o ambiente a cada turno.
 
 --- CONTROLE DE CENA ---
-18. ELEMENTOS PRESENTES (ÚNICOS INTERATIVOS):
+19. ELEMENTOS PRESENTES (ÚNICOS INTERATIVOS):
 {scene_list}
-19. SINÔNIMOS: Aceite variações semânticas naturais para os elementos acima — "menino"/"garoto"/"criança"/"corpo" podem ser o mesmo elemento; "caixa"/"caixote"/"baú pequeno" também. Use o contexto para identificar a intenção do jogador.
-20. ANTI-HACK: Se o jogador mencionar objeto, NPC ou item que NÃO consta na lista acima E NÃO está no inventário dele, narre imersivamente que ele procura mas não encontra. NUNCA invente elementos ausentes da cena.
-21. CENA VAZIA: Se a lista acima mostrar "(cena ainda não mapeada)", use julgamento narrativo normalmente — o Arquivista mapeará após este turno."""
+20. SINÔNIMOS: Aceite variações semânticas naturais para os elementos acima — "menino"/"garoto"/"criança"/"corpo" podem ser o mesmo elemento; "caixa"/"caixote"/"baú pequeno" também. Use o contexto para identificar a intenção do jogador.
+21. ANTI-HACK: Se o jogador mencionar objeto, NPC ou item que NÃO consta na lista acima E NÃO está no inventário dele, narre imersivamente que ele procura mas não encontra. NUNCA invente elementos ausentes da cena.
+22. CENA VAZIA: Se a lista acima mostrar "(cena ainda não mapeada)", use julgamento narrativo normalmente — o Arquivista mapeará após este turno.
+
+--- ASSINATURAS DE NPC EM CENA ---
+23. Se houver assinatura ativa de NPC, aplique obrigatoriamente a postura corporal em cada ação relevante dele.
+24. A fala do NPC deve seguir a voz textual da assinatura (tom, cadência, grau de ameaça ou acolhimento).
+25. Priorize a intenção na interação e a motivação principal para decidir reação, concessões e escalada.
+26. Se existir "camada externa" e "camada oculta", mantenha a externa visível e só insinue a oculta sem exposição total.
+27. Respeite regras de atuação específicas dos NPCs listados abaixo.
+
+Assinaturas ativas:
+{npc_signature_list}"""
 
     # Bloco de dados Shadowdark (injetado quando há rolagem)
     dice_block = ""
@@ -393,11 +902,18 @@ Perfis de escrita por mood:
         }
         dice_str = ", ".join(str(d) for d in roll_result["dice"])
         if roll_result["fumble"]:
-            outcome = "FALHA CRÍTICA (1 natural) — narre uma consequência grave, complicação séria ou reviravolta perigosa."
+            outcome = "FALHA CRÍTICA (1 natural) — narre consequência grave e virada perigosa com tensão máxima."
         elif not roll_result["success"]:
-            outcome = f"FALHA ({roll_result['roll']} vs DC {roll_result['dc']}) — narre o fracasso com uma complicação narrativa interessante."
+            outcome = (
+                f"FALHA ({roll_result['roll']} vs DC {roll_result['dc']}) — "
+                "narre quase-sucesso; mérito do inimigo/ambiente impede o êxito; "
+                "nunca incompetência ridícula do jogador."
+            )
         elif roll_result["critical"]:
-            outcome = "SUCESSO CRÍTICO (20 natural) — narre um resultado excepcional, além do esperado."
+            outcome = (
+                "SUCESSO CRÍTICO (20 natural) — narre resultado excepcional; "
+                "em violência, use detalhe anatômico/corporal."
+            )
         else:
             outcome = f"SUCESSO ({roll_result['roll']} vs DC {roll_result['dc']}) — narre o jogador tendo sucesso."
         dice_block = (
@@ -504,6 +1020,8 @@ def load_world_data_for_act(current_act: int) -> tuple[dict, dict, dict]:
 def clean_and_process_ai_response(response_text: str, world_state: dict) -> tuple[str, dict]:
     character = world_state.get('player_character', {})
     narrative = response_text
+    ws = world_state.setdefault("world_state", {})
+    pacing_state = _get_emotional_pacing_state(world_state)
 
     # Captura e remove tag de mood
     mood_matches = re.findall(r'\[MOOD:([a-z_]+)\]', narrative, flags=re.IGNORECASE)
@@ -514,9 +1032,40 @@ def clean_and_process_ai_response(response_text: str, world_state: dict) -> tupl
     else:
         mood = DEFAULT_MOOD
     narrative = re.sub(r'\[MOOD:[a-z_]+\]', '', narrative, flags=re.IGNORECASE).strip()
+    if pacing_state.get("force_relief_next") and mood not in MA_RELIEF_MOODS:
+        mood = "relief"
     world_state['narration_mood'] = mood
 
+    hdywdtd_match = re.search(rf'\[{HDYWDTDT_TAG}\]', narrative, flags=re.IGNORECASE)
+    world_state["hdywdtd_pending"] = bool(hdywdtd_match)
+    if hdywdtd_match:
+        world_state["hdywdtd_prompt"] = HDYWDTDT_PROMPT
+    else:
+        world_state.pop("hdywdtd_prompt", None)
+    narrative = re.sub(rf'\[{HDYWDTDT_TAG}\]', '', narrative, flags=re.IGNORECASE).strip()
+
+    pause_beat_count = len(re.findall(rf'\[{PAUSE_BEAT_TAG}\]', narrative, flags=re.IGNORECASE))
+    pause_segments = _split_pause_beats(narrative)
+    if pause_beat_count > 0 and len(pause_segments) > 1:
+        world_state["pause_beat_count"] = pause_beat_count
+        world_state["pause_beat_segments"] = pause_segments
+    else:
+        world_state["pause_beat_count"] = 0
+        world_state["pause_beat_segments"] = []
+    narrative = " ".join(seg for seg in pause_segments if seg).strip()
+
     # Processa comandos básicos
+    act_match = re.search(r'\[ACT_UPDATE\]\s*(\{.*?\})', narrative, re.DOTALL)
+    if act_match:
+        try:
+            update_data = json.loads(act_match.group(1))
+            if 'set_act' in update_data:
+                new_act = int(update_data['set_act'])
+                character['current_act'] = max(MIN_ACT, min(new_act, MAX_ACT))
+        except (json.JSONDecodeError, ValueError, TypeError):
+            pass
+        narrative = narrative.replace(act_match.group(0), '').strip()
+
     inv_match = re.search(r'\[INVENTORY_UPDATE\]\s*(\{.*?\})', narrative, re.DOTALL)
     if inv_match:
         try:
@@ -545,10 +1094,79 @@ def clean_and_process_ai_response(response_text: str, world_state: dict) -> tupl
         except (json.JSONDecodeError, ValueError, KeyError):
             pass
         narrative = narrative.replace(status_match.group(0), '').strip()
+
+    if world_state.get("hdywdtd_pending"):
+        narrative = re.sub(r'(?i)o que você faz\??\s*$', '', narrative).strip()
+
+    silent_end = False
+    if mood in PEAK_SILENCE_MOODS and not world_state.get("hdywdtd_pending"):
+        has_prompt_tail = bool(re.search(r'(?i)o que você faz\??\s*$', narrative))
+        if not has_prompt_tail:
+            silent_end = True
+
+    if mood in HIGH_TENSION_MOODS:
+        pacing_state["consecutive_high_tension_turns"] = int(pacing_state.get("consecutive_high_tension_turns", 0)) + 1
+    else:
+        pacing_state["consecutive_high_tension_turns"] = 0
+
+    if mood in MA_RELIEF_MOODS:
+        pacing_state["force_relief_next"] = False
+        pacing_state["negative_space_beats"] = int(pacing_state.get("negative_space_beats", 0)) + 1
+    else:
+        pacing_state["force_relief_next"] = int(pacing_state.get("consecutive_high_tension_turns", 0)) >= MA_FATIGUE_THRESHOLD
+
+    pacing_state["last_mood"] = mood
+    pacing_state["last_location_key"] = ws.get("current_location_key", pacing_state.get("last_location_key", ""))
+    pacing_state["last_silent_end"] = silent_end
+    ws["emotional_pacing"] = pacing_state
+    world_state["world_state"] = ws
     
     narrative = re.sub(r'\n{3,}', '\n\n', narrative).strip()
     world_state['player_character'] = character
     return narrative, world_state
+
+def bootstrap_location_triggers(world_state: dict, locais_definidos: dict) -> bool:
+    """Inicializa fila de gatilhos para locais recém-descobertos.
+    Evita locais sem eventos por falta de seed em initial_triggers.
+    """
+    ws = world_state.setdefault("world_state", {})
+    location_key = ws.get("current_location_key")
+    if not location_key or location_key not in locais_definidos:
+        return False
+
+    gatilhos_ativos = ws.setdefault("gatilhos_ativos", {})
+    gatilhos_usados = ws.setdefault("gatilhos_usados", {})
+
+    # Se já existe fila (mesmo vazia), respeita estado atual para não resetar progresso.
+    if location_key in gatilhos_ativos:
+        gatilhos_usados.setdefault(location_key, [])
+        return False
+
+    gatilhos_local = locais_definidos.get(location_key, {}).get("gatilhos", {})
+    gatilhos_ativos[location_key] = list(gatilhos_local.keys())
+    gatilhos_usados.setdefault(location_key, [])
+    return bool(gatilhos_local)
+
+def sync_act_with_location(world_state: dict) -> bool:
+    """Sincroniza current_act com ato_aparicao do local atual, quando necessário."""
+    character = world_state.setdefault("player_character", {})
+    ws = world_state.setdefault("world_state", {})
+    location_key = ws.get("current_location_key")
+    if not location_key:
+        return False
+
+    files = get_campaign_files()
+    locais_path = files.get("locais", "")
+    locais = load_campaign_data(locais_path).get("locais", {})
+    location_data = locais.get(location_key, {})
+    target_act = int(location_data.get("ato_aparicao", MIN_ACT))
+
+    current_act = int(character.get("current_act", MIN_ACT))
+    if target_act > current_act:
+        character["current_act"] = max(MIN_ACT, min(target_act, MAX_ACT))
+        world_state["player_character"] = character
+        return True
+    return False
 
 def get_item_slots(item_name: str) -> int:
     """
@@ -903,6 +1521,7 @@ def get_player_eyes_response(player_action: str, world_state: dict) -> str:
 
 
 def new_game_loop(world_state: dict, save_filepath: str, game_context: dict):
+    _ensure_resurrection_persistence(world_state)
     # Garante que existe o campo rodadas_sem_gatilho
     if "rodadas_sem_gatilho" not in world_state:
         world_state["rodadas_sem_gatilho"] = 0
@@ -919,6 +1538,16 @@ def new_game_loop(world_state: dict, save_filepath: str, game_context: dict):
             save_world_state(world_state, save_filepath)
             print("\nJogo salvo. Obrigado por jogar Dragon's Breath!")
             break
+
+        resurrection_state = world_state.get("resurrection_state", {})
+        if isinstance(resurrection_state, dict) and resurrection_state.get("stage") == RESURRECTION_STAGE_AWAITING_OFFERING:
+            resolution = resolve_resurrection_offering(world_state, player_action)
+            print(f"\n{resolution['narrative']}\n")
+            if AUDIO_ENABLED:
+                master_speech(resolution["narrative"])
+                play_chime()
+            save_world_state(world_state, save_filepath)
+            continue
 
         # Comandos locais
         character = world_state.get('player_character', {})
@@ -938,6 +1567,7 @@ def new_game_loop(world_state: dict, save_filepath: str, game_context: dict):
         # Atualiza contexto com gatilhos do local atual
         current_act = world_state.get('player_character', {}).get('current_act', 1)
         game_context = load_game_context_for_act(current_act, world_state)
+        bootstrap_location_triggers(world_state, game_context.get("locais", {}))
         
         # Sistema de gatilhos com chance progressiva
         # Pega local padrão da campanha atual
@@ -986,21 +1616,32 @@ def new_game_loop(world_state: dict, save_filepath: str, game_context: dict):
         
         # Processa resposta
         cleaned_response, world_state = clean_and_process_ai_response(gm_response, world_state)
+        limbo_started, limbo_narrative = start_resurrection_limbo(world_state)
+        if limbo_started:
+            cleaned_response = limbo_narrative
+            world_state["narration_mood"] = RESURRECTION_MOOD
+        hdywdtd_pending = bool(world_state.get("hdywdtd_pending"))
+        if hdywdtd_pending:
+            output_response = f"{cleaned_response}\n\n{HDYWDTDT_PROMPT}"
+            world_state["hdywdtd_pending"] = False
+        else:
+            output_response = cleaned_response
 
-        print(f"\n{cleaned_response}\n")
+        print(f"\n{output_response}\n")
 
         # Efeitos sonoros contextuais baseados na narrativa
         trigger_contextual_sfx(cleaned_response)
 
         # Narração por voz do Mestre (Brian)
         if AUDIO_ENABLED:
-            master_speech(cleaned_response)
+            master_speech(output_response)
             # Toca o chime após a narração para indicar que o jogador pode falar
             play_chime()
 
         # Atualização do estado do mundo com gatilho incluído
         gatilho_para_arquivista = f"(Evento ambiental: {gatilho_escolhido})" if gatilho_escolhido else ""
         world_state = update_world_state(world_state, f"{player_action} {gatilho_para_arquivista}", gm_response)
+        sync_act_with_location(world_state)
         
         # Salva estado
         save_world_state(world_state, save_filepath)

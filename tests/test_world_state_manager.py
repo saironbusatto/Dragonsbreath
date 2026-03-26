@@ -87,6 +87,14 @@ class TestCreateInitialWorldState:
         assert result["player_character"]["class"] == "Aventureiro"
         assert result["player_character"]["status"]["hp"] == 25
 
+    def test_initial_resurrection_fields_exist(self, campaign_config):
+        with patch("campaign_manager.load_config", return_value=campaign_config):
+            result = world_state_manager.create_initial_world_state("Aldric")
+        pc = result["player_character"]
+        assert pc["death_count"] == 0
+        assert isinstance(pc["resurrection_flaws"], list)
+        assert pc["alignment"] == "neutro"
+
 
 # ─── load_world_state ────────────────────────────────────────────────────────
 
@@ -119,6 +127,18 @@ class TestLoadWorldState:
         path.write_text(json.dumps(world_state_rpg), encoding="utf-8")
         result = world_state_manager.load_world_state(str(path))
         assert result["world_state"]["interactable_elements_in_scene"] == ["portão", "gárgula", "lanterna", "pedras"]
+
+    def test_load_backfills_resurrection_fields(self, tmp_path, world_state_rpg):
+        world_state_rpg["player_character"].pop("death_count", None)
+        world_state_rpg["player_character"].pop("resurrection_flaws", None)
+        world_state_rpg["player_character"].pop("alignment", None)
+        path = tmp_path / "save.json"
+        path.write_text(json.dumps(world_state_rpg), encoding="utf-8")
+        result = world_state_manager.load_world_state(str(path))
+        pc = result["player_character"]
+        assert pc["death_count"] == 0
+        assert isinstance(pc["resurrection_flaws"], list)
+        assert pc["alignment"] == "neutro"
 
 
 # ─── save_world_state ────────────────────────────────────────────────────────
@@ -224,6 +244,53 @@ class TestUpdateWorldState:
                 )
         assert result == world_state_rpg
 
+    def test_preserves_combat_state_when_archivist_omits_field(self, world_state_rpg):
+        world_state_rpg["world_state"]["combat_state"] = {
+            "active": True,
+            "turns_with_risk": 3,
+            "significant_threat_present": True,
+            "significant_threats": ["Strahd von Zarovich"],
+        }
+        world_state_rpg["world_state"]["emotional_pacing"] = {
+            "consecutive_high_tension_turns": 2,
+            "force_relief_next": False,
+            "last_mood": "tense",
+            "last_location_key": "umbraton",
+        }
+        world_state_rpg["pause_beat_count"] = 1
+        world_state_rpg["pause_beat_segments"] = ["A porta abre.", "Nada respira lá dentro."]
+        world_state_rpg["resurrection_state"] = {"stage": "awaiting_offering", "dc": 12, "death_count": 1}
+        world_state_rpg["player_character"]["death_count"] = 1
+        world_state_rpg["player_character"]["resurrection_flaws"] = [{"type": "resurrection_madness"}]
+        world_state_rpg["player_character"]["alignment"] = "neutro"
+
+        updated = dict(world_state_rpg)
+        updated["world_state"] = dict(world_state_rpg["world_state"])
+        updated["world_state"].pop("combat_state", None)
+        updated["world_state"].pop("emotional_pacing", None)
+        updated["player_character"] = dict(world_state_rpg["player_character"])
+        updated["player_character"].pop("death_count", None)
+        updated["player_character"].pop("resurrection_flaws", None)
+        updated["player_character"].pop("alignment", None)
+
+        mock_client = self._make_openai_mock(updated)
+
+        with patch("world_state_manager.OpenAI", return_value=mock_client):
+            with patch.dict(os.environ, {"OPENAI_API_KEY": "sk-test"}):
+                result = world_state_manager.update_world_state(
+                    world_state_rpg, "ataco com tudo", "O combate explode no salão."
+                )
+
+        assert "combat_state" in result["world_state"]
+        assert result["world_state"]["combat_state"]["active"] is True
+        assert "emotional_pacing" in result["world_state"]
+        assert result["world_state"]["emotional_pacing"]["last_mood"] == "tense"
+        assert result["pause_beat_count"] == 1
+        assert len(result["pause_beat_segments"]) == 2
+        assert result["resurrection_state"]["stage"] == "awaiting_offering"
+        assert result["player_character"]["death_count"] == 1
+        assert result["player_character"]["alignment"] == "neutro"
+
 
 # ─── get_openai_response_archivista ──────────────────────────────────────────
 
@@ -268,3 +335,96 @@ class TestGetOpenAIResponseArchivista:
         messages = call_kwargs[1].get("messages") or call_kwargs[0][1] if call_kwargs[0] else []
         # Verifica que o prompt foi incluído de alguma forma na chamada
         assert mock_client.chat.completions.create.called
+
+
+# ─── NPC Signature Memory ─────────────────────────────────────────────────────
+
+class TestNPCSignatureMemory:
+    def test_create_initial_state_seeds_prepared_npc_signatures(self, campaign_config):
+        npcs_payload = {
+            "npcs": {
+                "strahd": {
+                    "nome": "Strahd von Zarovich",
+                    "tipo": "antagonista_principal",
+                    "assinatura_narrativa": {
+                        "motivacao_principal": "Dominar Baróvia",
+                        "intencao_na_interacao": "Testar os heróis"
+                    }
+                }
+            }
+        }
+
+        with patch("campaign_manager.load_config", return_value=campaign_config):
+            with patch("world_state_manager.get_campaign_files", return_value={"npcs": "fake_npcs.json"}):
+                with patch("world_state_manager.load_campaign_data", return_value=npcs_payload):
+                    state = world_state_manager.create_initial_world_state("Aldric")
+
+        ws = state["world_state"]
+        assert "npc_signatures" in ws
+        assert "strahd" in ws["npc_signatures"]
+        assert ws["npc_signatures"]["strahd"]["motivacao_principal"] == "Dominar Baróvia"
+
+    def test_generates_improvised_signature_for_unknown_scene_npc(self, world_state_rpg):
+        world_state_rpg["world_state"]["important_npcs_in_scene"] = {
+            "figura encapuzada": "observa você sem falar"
+        }
+        world_state_rpg["world_state"]["interactable_elements_in_scene"] = {
+            "objetos": ["mesa"],
+            "npcs": ["figura encapuzada"],
+            "npc_itens": {},
+            "containers": {},
+            "saidas": ["porta leste"],
+            "chao": []
+        }
+
+        with patch("world_state_manager.get_campaign_files", return_value={"npcs": ""}):
+            with patch("world_state_manager.load_campaign_data", return_value={}):
+                updated = world_state_manager.ensure_npc_signature_memory(world_state_rpg)
+
+        ws = updated["world_state"]
+        assert "scene_npc_signatures" in ws
+        assert "figura encapuzada" in ws["scene_npc_signatures"]
+        scene_sig = ws["scene_npc_signatures"]["figura encapuzada"]
+        assert scene_sig["origem"] == "improvisado"
+        assert scene_sig["intencao_na_interacao_atual"] == "observa você sem falar"
+        assert scene_sig.get("motivacao_principal")
+
+    def test_update_world_state_keeps_scene_signatures_after_archivist(self, world_state_rpg):
+        archivist_payload = {
+            "player_character": world_state_rpg["player_character"],
+            "world_state": {
+                "current_location_key": "umbraton",
+                "immediate_scene_description": "Você vê uma figura encapuzada perto da lareira.",
+                "active_quests": {"main_quest": "Investigar"},
+                "important_npcs_in_scene": {"figura encapuzada": "testa sua reação"},
+                "interactable_elements_in_scene": {
+                    "objetos": ["lareira"],
+                    "npcs": ["figura encapuzada"],
+                    "npc_itens": {},
+                    "containers": {},
+                    "saidas": ["porta norte"],
+                    "chao": []
+                },
+                "recent_events_summary": ["Você entrou na sala principal"],
+                "gatilhos_ativos": {"umbraton": []},
+                "gatilhos_usados": {"umbraton": []}
+            }
+        }
+
+        mock_client = MagicMock()
+        mock_response = MagicMock()
+        mock_response.choices[0].message.content = json.dumps(archivist_payload, ensure_ascii=False)
+        mock_client.chat.completions.create.return_value = mock_response
+
+        with patch("world_state_manager.OpenAI", return_value=mock_client):
+            with patch("world_state_manager.get_campaign_files", return_value={"npcs": ""}):
+                with patch("world_state_manager.load_campaign_data", return_value={}):
+                    with patch.dict(os.environ, {"OPENAI_API_KEY": "sk-test"}):
+                        updated = world_state_manager.update_world_state(
+                            world_state_rpg, "avanço para a sala", "Você entra e vê uma figura encapuzada."
+                        )
+
+        ws = updated["world_state"]
+        assert "npc_signatures" in ws
+        assert "scene_npc_signatures" in ws
+        assert "figura encapuzada" in ws["scene_npc_signatures"]

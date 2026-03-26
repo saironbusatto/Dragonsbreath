@@ -6,7 +6,27 @@
       "verdade_oculta": "É o senhor vampírico de Baróvia, preso a um pacto ancestral com os Poderes das Trevas.",
       "tipo": "antagonista_principal",
       "dificuldade_descoberta": "fácil",
-      "ato_aparicao": 1
+      "ato_aparicao": 1,
+      "assinatura_narrativa": {
+        "aliases": [
+          "Strahd",
+          "Conde Strahd",
+          "von Zarovich"
+        ],
+        "moral_tonalidade": "negativa",
+        "arquetipo_social": "vilao_de_elite",
+        "motivacao_principal": "Preservar domínio absoluto sobre Baróvia e quebrar a esperança dos heróis em seu próprio ritmo.",
+        "intencao_na_interacao": "Testar arrogância, coragem e fraturas emocionais do grupo sem abrir mão do controle da cena.",
+        "linguagem_corporal": "Postura régia e imóvel; aproxima-se com passos medidos e gestos mínimos, como quem já venceu antes do combate.",
+        "voz_textual": "Majestosa, sedutora, sutil e fria; frases elegantes com pausas calculadas, nunca ansiosa.",
+        "camada_externa": "Um anfitrião aristocrático, cortês e perigosamente paciente.",
+        "camada_oculta": "Predador ancestral que trata pessoas como peças de um experimento cruel.",
+        "regras_de_atuacao": [
+          "Não gritar de raiva, exceto em clímax extremo e raro.",
+          "Manter sempre superioridade emocional e intelectual na conversa.",
+          "Oferecer falsa cortesia como forma de dominação."
+        ]
+      }
     },
     "ireena": {
       "nome": "Ireena Kolyana",
@@ -30,7 +50,26 @@
       "verdade_oculta": "Manipula os destinos há décadas e possui vínculos de sangue com Strahd.",
       "tipo": "oraculo_ambiguo",
       "dificuldade_descoberta": "difícil",
-      "ato_aparicao": 2
+      "ato_aparicao": 2,
+      "assinatura_narrativa": {
+        "aliases": [
+          "Eva",
+          "Vidente de Tser Pool"
+        ],
+        "moral_tonalidade": "ambigua",
+        "arquetipo_social": "oraculo",
+        "motivacao_principal": "Conduzir o destino de Baróvia sem revelar todas as cartas de uma vez.",
+        "intencao_na_interacao": "Responder com charadas e símbolos, guiando os heróis por escolhas de alto custo.",
+        "linguagem_corporal": "Movimentos lentos sobre cartas e brasas, cabeça inclinada como se escutasse vozes distantes.",
+        "voz_textual": "Fluida, enigmática e cerimonial; mistura profecia, metáfora e ambiguidades intencionais.",
+        "camada_externa": "Anciã acolhedora que oferece leitura de destino.",
+        "camada_oculta": "Estrategista que manipula ritmo e direção da campanha por meio de verdades parciais.",
+        "regras_de_atuacao": [
+          "Evitar respostas literais diretas quando houver opção simbólica.",
+          "Usar imagens de presságio, destino e dívida.",
+          "Sempre deixar uma camada de dúvida interpretativa."
+        ]
+      }
     },
     "fiona_wachter": {
       "nome": "Lady Fiona Wachter",
@@ -46,7 +85,27 @@
       "verdade_oculta": "É um lendário caçador de monstros operando sob disfarce, aguardando a chance de atingir Strahd.",
       "tipo": "aliado_oculto",
       "dificuldade_descoberta": "difícil",
-      "ato_aparicao": 2
+      "ato_aparicao": 2,
+      "assinatura_narrativa": {
+        "aliases": [
+          "Rictavio",
+          "Van Richten",
+          "Doutor Rudolph"
+        ],
+        "moral_tonalidade": "ambigua",
+        "arquetipo_social": "habitante",
+        "motivacao_principal": "Eliminar monstros com eficiência cirúrgica sem comprometer sua cobertura.",
+        "intencao_na_interacao": "No disfarce, distrair e observar; em privado, avaliar se os heróis merecem confiança.",
+        "linguagem_corporal": "Em público, gestos teatrais e expansivos; em momentos táticos, postura rígida e economia absoluta de movimento.",
+        "voz_textual": "Camada externa extravagante, com histórias absurdas de circo; camada oculta seca, precisa e calculista.",
+        "camada_externa": "Rictavio, mestre de cerimônias performático e imprevisível.",
+        "camada_oculta": "Van Richten, caçador paciente que mede risco antes de cada palavra.",
+        "regras_de_atuacao": [
+          "Alternar voz conforme contexto social (disfarce público versus estratégia privada).",
+          "Nunca revelar plano completo sem teste de confiança.",
+          "Priorizar prudência tática sobre heroísmo impulsivo."
+        ]
+      }
     },
     "ezmerelda": {
       "nome": "Ezmerelda d'Avenir",

@@ -4,9 +4,9 @@
 
 | Métrica              | Valor                        |
 | -------------------- | ---------------------------- |
-| Total de testes      | ~120                         |
-| Arquivos de teste    | 5                            |
-| Módulos cobertos     | 4 (game, audio, world, camp) |
+| Total de testes      | 243                          |
+| Arquivos de teste    | 6                            |
+| Módulos cobertos     | 5 (game, audio, world, camp, integração) |
 | Tipos de teste       | Unitário + Integração        |
 | Framework            | pytest                       |
 | Mocking              | unittest.mock                |
@@ -119,7 +119,7 @@ tests/
 | `validate_player_action`         | Válida com objetos na cena, inválida, sem objetos conhecidos, tuple, string, voar, magia Bardo, teleporte, ação Bardo válida |
 | `validate_impossible_abilities`  | Voar, teleporte, ação normal, levitar, controlar mente, parar tempo, tuple bool+str |
 | `get_realistic_alternative`      | Retorna str, não vazio, classes diferentes                     |
-| `clean_and_process_ai_response`  | Remove STATUS tag, aplica dano, cura, clamp max, clamp 0, remove INVENTORY tag, adiciona item, remove item, preserva narrativa, sem tags, tuple |
+| `clean_and_process_ai_response`  | Remove STATUS tag, aplica dano, cura, clamp max, clamp 0, remove INVENTORY tag, adiciona item, remove item, extrai/limpa MOOD tag, fallback mood normal, preserva narrativa, sem tags, tuple |
 | `trigger_contextual_sfx`         | Corvo, taverna, chuva, grito, sem keyword, só 1 SFX, moeda, vazio |
 | `get_item_slots`                 | Item conhecido, desconhecido retorna 1, tipo int, exceção retorna 1 |
 | `calculate_used_slots`           | Inventário vazio, 1 slot, 2 slots, múltiplos, tipo int         |
@@ -169,6 +169,24 @@ tests/
 | Trigger disparado → Move para usados  | Trigger sai de ativos e vai para usados                 |
 | Estrutura de arquivos                  | config.json, campanhas/, contos/, sons/ existem         |
 | Validade JSON dos arquivos             | Todos os JSONs das campanhas são válidos                |
+
+---
+
+## QA Narrativo Final — Curse of Strahd (Fase 6/7)
+
+Coberturas adicionadas:
+
+- Strahd em padrão "gato e rato" com transição de combate para tensão.
+- Tarokka artefatos (Tomo, Símbolo, Espada) com validação de coleta e inventário.
+- Calibragem Bardo vs Aventureiro em interações sociais de Baróvia.
+- Forçamento de alívio via `emotional_pacing` após cadeia de alta tensão.
+- Fluxo completo de 4 mortes com DC escalado e persistência de falhas de ressurreição.
+
+Arquivos principais:
+
+- `tests/test_integration.py`
+- `tests/test_game.py`
+- `tests/test_world_state_manager.py`
 
 ---
 

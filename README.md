@@ -13,12 +13,14 @@ Aventura open-world onde o jogador escreve livremente o que seu personagem faz. 
 - Sistema de validação semântica — só é possível interagir com objetos presentes na cena atual
 - Inventário com slots (capacidade por peso, não por quantidade)
 - Gatilhos narrativos com probabilidade crescente, garantindo dinamismo
+- Sistema de **Mood Narrativo** por turno (`combat`, `tense`, `dramatic`, `sad`, `relief`, `normal`) que altera estilo de narração e velocidade de TTS
 - Estado persistente salvo automaticamente a cada turno
 
 **Campanhas disponíveis:**
 
 - **O Lamento do Bardo** — narrativa gótica sobre perda, ilusão e o poder da música (classe: Bardo)
 - **A Busca pelo Cristal Perdido** — aventura clássica de fantasia (classe: Aventureiro)
+- **Curse of Strahd — O Vale das Sombras** — horror gótico em Baróvia, com maldição ancestral e confronto contra Strahd (classe: Aventureiro)
 
 ### Modo Contos Interativos
 
@@ -99,7 +101,8 @@ Dragonsbreath/
 ├── estado_do_mundo.json        # Save automático do jogo (gerado em runtime)
 ├── campanhas/
 │   ├── lamento_do_bardo/       # NPCs, locais, itens e narrativa da campanha gótica
-│   └── exemplo_fantasia/       # NPCs, locais, itens e narrativa da campanha clássica
+│   ├── exemplo_fantasia/       # NPCs, locais, itens e narrativa da campanha clássica
+│   └── curse_of_strahd/        # NPCs, locais, itens e narrativa da campanha de horror gótico
 ├── contos_interativos/
 │   ├── o_corvo_poe.txt         # Texto original de referência (estilo do autor)
 │   └── o_corvo_poe_eventos.json # Mapa de eventos, escolhas e variáveis dinâmicas

@@ -1,4 +1,9 @@
 Curse of Strahd: O Vale das Sombras
+
+Nota técnica:
+Para o histórico de implementação no motor (Fases 1-7), veja
+`docs/campaigns/curse-of-strahd-evolucao-fases.md`.
+
 1. Premissa
 Sob nuvens de tempestade furiosas, o vale de Baróvia jaz isolado do resto do mundo, engolido por uma névoa letal e governado por um tirano imortal. Os personagens são arrancados de suas vidas normais — seja por um pedido de ajuda forjado, uma neblina rastejante no acampamento, ou caçando lobisomens — e lançados neste semiplano de desespero. Sem caminho de volta, a única esperança de sobrevivência é desvendar os segredos da terra, forjar alianças com os poucos corações puros que restam e, inevitavelmente, caminhar para as portas do Castelo Ravenloft para enfrentar o próprio diabo: o vampiro Strahd von Zarovich.
 2. Tema e Tom (Diretrizes de Voz Narrativa - O Método Mercer)

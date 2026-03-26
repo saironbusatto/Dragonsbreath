@@ -103,7 +103,23 @@
       letter-spacing: 5px;
       color: var(--muted);
       text-transform: uppercase;
-      margin-bottom: 48px;
+      margin-bottom: 18px;
+    }
+
+    .hero-featured {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-family: 'Cinzel', serif;
+      font-size: 0.68rem;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--gold);
+      border: 1px solid rgba(201,168,76,0.35);
+      background: rgba(201,168,76,0.08);
+      border-radius: 999px;
+      padding: 7px 14px;
+      margin-bottom: 32px;
     }
 
     .hero-tagline {
@@ -604,6 +620,30 @@
       opacity: 0.5;
     }
 
+    .camp-card.featured-campaign {
+      background:
+        linear-gradient(155deg, rgba(60, 18, 18, 0.35) 0%, rgba(15, 11, 16, 1) 45%),
+        var(--surface);
+      border-top: 1px solid rgba(201,168,76,0.26);
+      box-shadow: 0 18px 38px rgba(0, 0, 0, 0.28);
+    }
+
+    .camp-card.featured-campaign::after {
+      content: 'Aventura em destaque';
+      position: absolute;
+      top: 14px;
+      right: 14px;
+      font-family: 'Cinzel', serif;
+      font-size: 0.56rem;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--gold);
+      border: 1px solid rgba(201,168,76,0.35);
+      background: rgba(10, 6, 12, 0.9);
+      border-radius: 999px;
+      padding: 4px 8px;
+    }
+
     .camp-label {
       font-family: 'Cinzel', serif;
       font-size: 0.65rem;
@@ -742,10 +782,11 @@
 
   <h1 class="hero-logo" aria-label="Ressoar">RESSOAR</h1>
   <p class="hero-sub" aria-hidden="true">RPG — Contos Interativos</p>
+  <p class="hero-featured">Destaque atual: Curse of Strahd</p>
 
   <p class="hero-tagline">
-    Fale. O Mestre responde.<br>
-    O mundo ganha vida pela sua voz.
+    Baróvia te chama pelo nome.<br>
+    Fale. O Mestre responde. Strahd observa.
   </p>
   <p class="hero-tagline-2">
     Uma plataforma de RPG e contos interativos inteiramente por voz —
@@ -1034,8 +1075,24 @@
     </p>
 
     <div class="camp-grid fade-in">
+      <div class="camp-card featured-campaign">
+        <p class="camp-label">campanha em destaque · RPG · horror gótico</p>
+        <h3 class="camp-name">Curse of Strahd · O Vale das Sombras</h3>
+        <p class="camp-desc">
+          Névoa viva. Vila de Baróvia em luto. Um vampiro antigo que testa
+          sua coragem em um jogo de gato e rato. Reúna os artefatos de Tarokka,
+          sobreviva ao Castelo Ravenloft e desafie Strahd no coração da noite.
+        </p>
+        <div class="camp-tags">
+          <span class="tag">baróvia</span>
+          <span class="tag">strahd</span>
+          <span class="tag">terror psicológico</span>
+          <span class="tag">tarokka</span>
+        </div>
+      </div>
+
       <div class="camp-card">
-        <p class="camp-label">campanha 1 · RPG · modo livre</p>
+        <p class="camp-label">campanha 2 · RPG · modo livre</p>
         <h3 class="camp-name">O Lamento do Bardo</h3>
         <p class="camp-desc">
           Uma cidade gótica envolta em névoa. Uma praga que corrói músicos
@@ -1051,7 +1108,7 @@
       </div>
 
       <div class="camp-card">
-        <p class="camp-label">campanha 2 · RPG · ação</p>
+        <p class="camp-label">campanha 3 · RPG · ação</p>
         <h3 class="camp-name">A Pedra de Pedraverde</h3>
         <p class="camp-desc">
           Uma vila pacífica, um cristal desaparecido, uma floresta que
@@ -1079,19 +1136,6 @@
           <span class="tag">literário</span>
           <span class="tag">psicológico</span>
           <span class="tag">finais múltiplos</span>
-        </div>
-      </div>
-
-      <div class="camp-card" style="border-top: 1px solid rgba(201,168,76,0.06); opacity: 0.55;">
-        <p class="camp-label">em desenvolvimento</p>
-        <h3 class="camp-name">Em breve...</h3>
-        <p class="camp-desc">
-          Novas campanhas são escritas continuamente. O sistema de arquivos
-          permite criar e plugar qualquer mundo com um arquivo JSON.
-        </p>
-        <div class="camp-tags">
-          <span class="tag">extensível</span>
-          <span class="tag">comunidade</span>
         </div>
       </div>
     </div>

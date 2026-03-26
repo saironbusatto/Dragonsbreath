@@ -6,11 +6,29 @@ O Modo RPG é um sistema de narrativa interativa de mundo aberto onde o jogador 
 
 Características centrais:
 
-- **Validação Semântica de Ações**: o jogador só pode interagir com objetos presentes na cena
+- **Controle Semântico de Cena (híbrido)**: filtro local bloqueia impossibilidades físicas e o prompt do Mestre aplica anti-hack com o mapa da cena
 - **HUD Narrativo (Olhos do Jogador)**: consultas de inspeção respondidas por voz feminina sem avançar o tempo
 - **Sistema de Dados Shadowdark**: rolagens automáticas d20 com vantagem/desvantagem por classe
 - **Brevidade Forçada**: narrações de 1-4 frases, nunca repetindo elementos já descritos
 - **STT via Whisper**: OpenAI Whisper (`gpt-4o-mini-transcribe`) para alta acurácia em pt-BR
+- **Combate Cinematográfico**: gatilho `[HDYWDTDT]` para finalizações de ameaça significativa
+- **Pacing Emocional (ma)**: alternância tensão/alívio com suporte à tag `[PAUSE_BEAT]`
+- **Ressurreição Baroviana**: limbo narrativo com DC escalado, custos mentais e Dark Gifts persistentes
+
+---
+
+## Atualização — Curse of Strahd (Fases 1-7)
+
+Resumo do que foi incorporado ao modo RPG:
+
+- contrato narrativo v2 (segunda pessoa no presente + lente cinematográfica condensada);
+- assinaturas persistentes de NPC (motivação, intenção, postura, voz, camada externa/oculta);
+- dados informam narração em combate (falha como quase-sucesso, crítico com impacto anatômico);
+- `combat_state` com noção de ameaça significativa e clímax;
+- `emotional_pacing` com forçamento de alívio para evitar fadiga de horror;
+- suporte de backend/frontend para pausa dramática real em áudio;
+- fluxo de morte e retorno com custo crescente (`death_count`, `resurrection_flaws`, `alignment`);
+- QA narrativo de ponta a ponta para Baróvia com regressão automatizada.
 
 ---
 
@@ -276,6 +294,74 @@ world_state["recent_narrations"] = recent[-2:]
 ```
 
 ---
+## Sistema de Mood Narrativo
+
+O Mestre agora opera com **portões emocionais** por turno. Cada resposta deve incluir uma tag no final:
+
+- `[MOOD:combat]`
+- `[MOOD:tense]`
+- `[MOOD:dramatic]`
+- `[MOOD:sad]`
+- `[MOOD:relief]`
+- `[MOOD:normal]`
+
+Fluxo:
+
+1. `get_gm_narrative()` instrui o modelo a escolher **um mood** e encerrar com a tag.
+2. `clean_and_process_ai_response()` remove a tag do texto final e salva em `world_state["narration_mood"]`.
+3. A API converte `narration_mood` em velocidade de TTS:
+   - `combat`: `1.45`
+   - `tense`: `1.15`
+   - `dramatic`: `0.85`
+   - `sad`: `0.80`
+   - `relief`: `0.92`
+   - `normal`: `1.00`
+4. Em tutorial, a velocidade mínima é `1.30`.
+
+Esse sistema altera **estilo de escrita** e **cadência de voz** ao mesmo tempo.
+
+---
+
+## Ressurreição com Peso Narrativo (Baróvia)
+
+Quando o HP chega a `0`, o jogo não encerra com game over imediato. Em vez disso, inicia o **Estado do Limbo**:
+
+1. O sistema força `MOOD:sad`.
+2. A narrativa descreve a alma perdida nas brumas de Baróvia.
+3. O jogador deve oferecer uma **oferenda emocional** (o que ancora sua alma ao mundo).
+4. O sistema resolve uma rolagem Shadowdark com possível vantagem por classe.
+
+### Escala de DC por morte
+
+| Morte | DC |
+|------|----|
+| 1ª | 12 |
+| 2ª | 15 |
+| 3ª+ | 18 |
+
+Campos persistidos no personagem:
+
+- `death_count`
+- `resurrection_flaws`
+- `alignment`
+
+### Vantagem por oferenda (solo)
+
+Oferenda emocional pode conceder vantagem:
+
+- **Bardo**: memória, canção, promessa, vínculo afetivo.
+- **Aventureiro**: determinação, dever, proteção, vingança, sobrevivência.
+
+### Tabela de resolução
+
+| Resultado | Efeito |
+|----------|--------|
+| Crítico (20) | Retorna com 1 HP, sem penalidade |
+| Sucesso | Retorna com 1 HP + `resurrection_madness` temporária |
+| Falha | Retorna com 1 HP + `dark_gift` (anomalia física + falha de personalidade) |
+| Falha Crítica (1) | Retorna com 1 HP, alinhamento corrompido para maligno e atenção de Strahd |
+
+---
 
 ## Fluxo de um Turno Completo
 
@@ -307,12 +393,17 @@ POST /api/action:
   _select_trigger() → injeta gatilho se P disparar
 
   get_gm_narrative() → narrativa (1-4 frases)
+      + [MOOD:xxx] no fim
 
-  Frontend:
+  clean_and_process_ai_response():
+  - aplica STATUS_UPDATE/INVENTORY_UPDATE
+  - extrai mood e salva em world_state["narration_mood"]
+
+  Frontend/API:
   1. 🎲 HUD do dado (se houver rolagem) — verde/vermelho
   2. som de dados rolando (awaitable)
   3. som do gatilho (se houver)
-  4. narração TTS voz masculina
+  4. narração TTS voz masculina com velocidade por mood
   5. SFX sincronizados com posição no texto
 
   update_world_state() → Archivista atualiza mapa semântico

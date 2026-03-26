@@ -116,6 +116,18 @@
           ],
           "vallaki": [
             "proclama_festival"
+          ],
+          "acampamento_tser_pool": [
+            "cartas_tarokka"
+          ],
+          "moinho_dos_ossos": [
+            "cheiro_podrido"
+          ],
+          "templo_de_ambar": [
+            "sarcofago_sussurra"
+          ],
+          "castelo_ravenloft": [
+            "portas_selam"
           ]
         }
       }

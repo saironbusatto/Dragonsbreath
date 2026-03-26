@@ -193,6 +193,49 @@ class TestCleanAndProcessAIResponse:
         _, updated = game.clean_and_process_ai_response(text, world_state_rpg)
         assert updated.get("narration_mood") == "normal"
 
+    def test_extracts_hdywdtd_tag_and_sets_pending_flag(self, world_state_rpg):
+        text = "Seu golpe atravessa a guarda no último instante. [HDYWDTDT]\n[MOOD:dramatic]"
+        cleaned, updated = game.clean_and_process_ai_response(text, world_state_rpg)
+        assert "[HDYWDTDT]" not in cleaned
+        assert updated.get("hdywdtd_pending") is True
+        assert updated.get("hdywdtd_prompt") == "Como você quer fazer isso?"
+
+    def test_hdywdtd_removes_default_question_tail(self, world_state_rpg):
+        text = "A lâmina encontra a abertura no peito do inimigo. O que você faz? [HDYWDTDT]\n[MOOD:combat]"
+        cleaned, _ = game.clean_and_process_ai_response(text, world_state_rpg)
+        assert "O que você faz?" not in cleaned
+
+    def test_pause_beat_is_removed_and_segments_are_saved(self, world_state_rpg):
+        text = "A tampa do caixão range. [PAUSE_BEAT] Lá dentro, não há corpo. [MOOD:tense]"
+        cleaned, updated = game.clean_and_process_ai_response(text, world_state_rpg)
+        assert "[PAUSE_BEAT]" not in cleaned
+        assert updated.get("pause_beat_count") == 1
+        assert len(updated.get("pause_beat_segments", [])) == 2
+        assert "não há corpo" in cleaned
+
+    def test_forces_relief_when_pacing_requires_it(self, world_state_rpg):
+        world_state_rpg["world_state"]["emotional_pacing"] = {
+            "consecutive_high_tension_turns": 4,
+            "force_relief_next": True,
+            "last_mood": "combat",
+            "last_location_key": "umbraton",
+        }
+        text = "A névoa fecha o corredor. [MOOD:tense]"
+        _, updated = game.clean_and_process_ai_response(text, world_state_rpg)
+        assert updated.get("narration_mood") == "relief"
+        pacing = updated["world_state"]["emotional_pacing"]
+        assert pacing.get("force_relief_next") is False
+
+    def test_applies_act_update_tag(self, world_state_rpg):
+        text = 'Você alcança Vallaki. [ACT_UPDATE] {"set_act": 2}\n[MOOD:dramatic]\nO que você faz?'
+        _, updated = game.clean_and_process_ai_response(text, world_state_rpg)
+        assert updated["player_character"]["current_act"] == 2
+
+    def test_act_update_clamped_to_min(self, world_state_rpg):
+        text = 'Retrocesso impossível. [ACT_UPDATE] {"set_act": -3}\nO que você faz?'
+        _, updated = game.clean_and_process_ai_response(text, world_state_rpg)
+        assert updated["player_character"]["current_act"] >= 1
+
     def test_removes_status_update_tag(self, world_state_rpg):
         text = 'Você é atingido. [STATUS_UPDATE] {"hp_change": -5}\nO que você faz?'
         cleaned, _ = game.clean_and_process_ai_response(text, world_state_rpg)
@@ -521,6 +564,162 @@ class TestGetGMNarrative:
                     result = game.get_gm_narrative(world_state_rpg, "ação", {})
         assert not result.startswith("  ")
         assert not result.endswith("  ")
+
+    def test_prompt_contains_phase1_narrative_contract(self, world_state_rpg, campaign_config):
+        mock_client = self._mock_openai("Você respira fundo. O que você faz?")
+
+        with patch("game.OpenAI", return_value=mock_client):
+            with patch("campaign_manager.load_config", return_value=campaign_config):
+                with patch.dict(os.environ, {"OPENAI_API_KEY": "sk-test"}):
+                    game.get_gm_narrative(world_state_rpg, "ação arriscada", {})
+
+        called_kwargs = mock_client.chat.completions.create.call_args.kwargs
+        messages = called_kwargs["messages"]
+        system_prompt = messages[0]["content"]
+        assert "Você certamente pode tentar." in system_prompt
+        assert "LENTE CINEMATOGRÁFICA CONDENSADA (MERCER)" in system_prompt
+        assert "REGRA INEGOCIÁVEL DE PERSPECTIVA" in system_prompt
+        assert "ASSINATURAS DE NPC EM CENA" in system_prompt
+        assert "aplique obrigatoriamente a postura corporal" in system_prompt
+        assert "DADOS-INFORMAM-NARRAÇÃO" in system_prompt
+        assert "[HDYWDTDT]" in system_prompt
+        assert "NUNCA narre incompetência ridícula do jogador" in system_prompt
+        assert "RITMO EMOCIONAL (MA / ESPAÇO NEGATIVO)" in system_prompt
+        assert "[PAUSE_BEAT]" in system_prompt
+        assert "SILÊNCIO FÍSICO" in system_prompt
+
+    def test_combat_state_is_updated_when_roll_is_present(self, world_state_rpg, campaign_config):
+        mock_client = self._mock_openai("Você pressiona o inimigo para trás. O que você faz?")
+        roll_result = {
+            "roll": 17,
+            "dice": [17],
+            "dc": 12,
+            "modifier": "normal",
+            "success": True,
+            "critical": False,
+            "fumble": False,
+        }
+
+        with patch("game.OpenAI", return_value=mock_client):
+            with patch("campaign_manager.load_config", return_value=campaign_config):
+                with patch.dict(os.environ, {"OPENAI_API_KEY": "sk-test"}):
+                    game.get_gm_narrative(world_state_rpg, "ataco com a espada", {}, roll_result)
+
+        combat_state = world_state_rpg["world_state"].get("combat_state", {})
+        assert combat_state.get("active") is True
+        assert combat_state.get("turns_with_risk", 0) >= 1
+
+
+class TestResurrectionFlow:
+    def test_get_resurrection_dc_scaling(self):
+        assert game.get_resurrection_dc(1) == 12
+        assert game.get_resurrection_dc(2) == 15
+        assert game.get_resurrection_dc(3) == 18
+        assert game.get_resurrection_dc(9) == 18
+
+    def test_start_resurrection_limbo_when_hp_zero(self, world_state_rpg):
+        world_state_rpg["player_character"]["status"]["hp"] = 0
+        started, narrative = game.start_resurrection_limbo(world_state_rpg)
+        assert started is True
+        assert "oferenda emocional" in narrative.lower()
+        state = world_state_rpg.get("resurrection_state", {})
+        assert state.get("stage") == "awaiting_offering"
+        assert state.get("dc") == 12
+        assert world_state_rpg["player_character"]["death_count"] == 1
+        assert world_state_rpg.get("narration_mood") == "sad"
+
+    def test_start_resurrection_limbo_ignored_if_hp_positive(self, world_state_rpg):
+        world_state_rpg["player_character"]["status"]["hp"] = 5
+        started, narrative = game.start_resurrection_limbo(world_state_rpg)
+        assert started is False
+        assert narrative == ""
+
+    def test_resolve_offering_critical_success(self, world_state_rpg):
+        world_state_rpg["player_character"]["status"]["hp"] = 0
+        world_state_rpg["player_character"]["class"] = "Bardo"
+        game.start_resurrection_limbo(world_state_rpg)
+
+        with patch("game.random.randint", side_effect=[20, 7]):
+            result = game.resolve_resurrection_offering(
+                world_state_rpg,
+                "Minha canção pela minha esposa ainda me prende a este mundo."
+            )
+
+        assert result["ok"] is True
+        assert result["result_type"] == "critical_success"
+        assert result["roll"]["critical"] is True
+        assert world_state_rpg["player_character"]["status"]["hp"] == 1
+        assert world_state_rpg["player_character"]["resurrection_flaws"] == []
+        assert "resurrection_state" not in world_state_rpg
+
+    def test_resolve_offering_failure_adds_dark_gift(self, world_state_rpg):
+        world_state_rpg["player_character"]["status"]["hp"] = 0
+        world_state_rpg["player_character"]["class"] = "Aventureiro"
+        game.start_resurrection_limbo(world_state_rpg)
+
+        with patch("game.random.randint", return_value=5):
+            with patch("game.random.choice", return_value=("olhos de fumaça", "Você rejeita misericórdia.")):
+                result = game.resolve_resurrection_offering(
+                    world_state_rpg,
+                    "Eu volto porque me recuso a desaparecer."
+                )
+
+        assert result["ok"] is True
+        assert result["result_type"] == "failure"
+        flaws = world_state_rpg["player_character"]["resurrection_flaws"]
+        assert len(flaws) == 1
+        assert flaws[0]["type"] == "dark_gift"
+        assert world_state_rpg["player_character"]["status"]["hp"] == 1
+
+    def test_resolve_offering_fumble_corrupts_alignment(self, world_state_rpg):
+        world_state_rpg["player_character"]["status"]["hp"] = 0
+        game.start_resurrection_limbo(world_state_rpg)
+
+        with patch("game.random.randint", return_value=1):
+            result = game.resolve_resurrection_offering(
+                world_state_rpg,
+                "Prometo voltar por dever, mas as brumas me esmagam."
+            )
+
+        assert result["ok"] is True
+        assert result["result_type"] == "critical_failure"
+        assert world_state_rpg["player_character"]["alignment"] == "maligno"
+        assert world_state_rpg["world_state"].get("strahd_attention", 0) >= 1
+
+    def test_resolve_offering_too_short_keeps_waiting_state(self, world_state_rpg):
+        world_state_rpg["player_character"]["status"]["hp"] = 0
+        game.start_resurrection_limbo(world_state_rpg)
+        result = game.resolve_resurrection_offering(world_state_rpg, "volto")
+        assert result["ok"] is False
+        assert result["result_type"] == "waiting_offering"
+        assert world_state_rpg.get("resurrection_state", {}).get("stage") == "awaiting_offering"
+
+
+class TestActAndTriggerHelpers:
+    def test_bootstrap_location_triggers_for_new_location(self, world_state_rpg):
+        world_state_rpg["world_state"]["current_location_key"] = "vallaki"
+        world_state_rpg["world_state"]["gatilhos_ativos"].pop("vallaki", None)
+        locais = {
+            "vallaki": {
+                "gatilhos": {
+                    "proclama_festival": {"descricao": "teste", "sfx": None, "proximo": None}
+                }
+            }
+        }
+        changed = game.bootstrap_location_triggers(world_state_rpg, locais)
+        assert changed is True
+        assert "proclama_festival" in world_state_rpg["world_state"]["gatilhos_ativos"]["vallaki"]
+
+    def test_sync_act_with_location_upgrades_current_act(self, world_state_rpg):
+        world_state_rpg["world_state"]["current_location_key"] = "castelo_ravenloft"
+        world_state_rpg["player_character"]["current_act"] = 1
+        with patch("game.get_campaign_files", return_value={"locais": "fake_locais.json"}):
+            with patch("game.load_campaign_data", return_value={
+                "locais": {"castelo_ravenloft": {"ato_aparicao": 4}}
+            }):
+                changed = game.sync_act_with_location(world_state_rpg)
+        assert changed is True
+        assert world_state_rpg["player_character"]["current_act"] == 4
 
 
 # ─── get_story_master_narrative ───────────────────────────────────────────────

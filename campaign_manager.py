@@ -1,6 +1,8 @@
 import json
 import os
 
+FEATURED_CAMPAIGN_ID = "curse_of_strahd"
+
 def load_config() -> dict:
     """Carrega a configuração das campanhas."""
     try:
@@ -63,6 +65,12 @@ def list_available_campaigns() -> list:
             'name': campaign.get('name', key),
             'description': campaign.get('description', 'Sem descrição')
         })
+    campaigns.sort(
+        key=lambda c: (
+            0 if c.get("id") == FEATURED_CAMPAIGN_ID else 1,
+            (c.get("name") or "").lower(),
+        )
+    )
     return campaigns
 
 def switch_campaign(campaign_id: str) -> bool:

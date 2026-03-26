@@ -33,12 +33,14 @@
 - [Modo Contos Interativos](features/story-mode.md)
 
 ### API & Integrações
-- [Integração com IA (Gemini)](api/ai-integration.md)
+- [Integração com IA (OpenAI)](api/ai-integration.md)
 - [Sistema de Áudio (TTS/SFX)](api/audio-api.md)
 
 ### Campanhas
 - [O Lamento do Bardo](campaigns/lamento-do-bardo.md)
 - [A Busca pelo Cristal Perdido](campaigns/cristal-perdido.md)
+- [Curse of Strahd](campaigns/curse-of-strahd.md)
+- [Curse of Strahd — Evolução das Fases 1-7](campaigns/curse-of-strahd-evolucao-fases.md)
 
 ---
 
@@ -48,11 +50,11 @@
 |----------------|---------------------------------------------|
 | Nome           | Plataforma Ressoar                          |
 | Linguagem      | Python 3.8+                                 |
-| IA             | Google Gemini 1.5-Flash                     |
+| IA             | OpenAI GPT-4o-mini (personas por contexto)  |
 | TTS            | Google Cloud TTS (pt-BR Neural)             |
 | Audio Engine   | pygame                                      |
 | Modos          | RPG de mundo aberto + Contos Interativos    |
-| Campanhas      | 2 campanhas prontas, sistema extensível     |
+| Campanhas      | 3 campanhas prontas, sistema extensível     |
 | Contos         | 1 conto pronto (O Corvo — Poe)              |
 | Arquivos Audio | 15 efeitos sonoros MP3                      |
 | Entrada        | Texto e reconhecimento de voz               |

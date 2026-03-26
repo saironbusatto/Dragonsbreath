@@ -32,10 +32,15 @@ from game import (
     get_gm_narrative,
     clean_and_process_ai_response,
     load_game_context_for_act,
+    bootstrap_location_triggers,
+    sync_act_with_location,
     validate_player_action,
     is_inspection_action,
     get_player_eyes_response,
     resolve_action_roll,
+    PAUSE_BEAT_PROMPT_SECONDS,
+    start_resurrection_limbo,
+    resolve_resurrection_offering,
 )
 
 app = FastAPI(title="Ressoar")
@@ -384,6 +389,38 @@ def to_audio_response(text: str, voice_type: str = "master", speed: float = 1.0)
     return None
 
 
+def build_audio_payload(
+    text: str,
+    voice_type: str = "master",
+    speed: float = 1.0,
+    pause_segments: list[str] | None = None,
+    pause_ms: int = PAUSE_BEAT_PROMPT_SECONDS,
+) -> tuple[str | None, list[dict] | None]:
+    """
+    Retorna (audio_base64, audio_timeline).
+    - Sem pause beats: usa payload tradicional `audio`.
+    - Com pause beats: gera timeline com segmentos de áudio e pausas reais.
+    """
+    valid_segments = [
+        seg.strip() for seg in (pause_segments or [])
+        if isinstance(seg, str) and seg.strip()
+    ]
+
+    if len(valid_segments) > 1:
+        timeline: list[dict] = []
+        for idx, segment in enumerate(valid_segments):
+            clip = to_audio_response(segment, voice_type, speed)
+            if clip:
+                timeline.append({"type": "audio", "audio": clip})
+            if idx < len(valid_segments) - 1:
+                timeline.append({"type": "pause", "ms": pause_ms})
+
+        if timeline and any(item.get("type") == "audio" for item in timeline):
+            return None, timeline
+
+    return to_audio_response(text, voice_type, speed), None
+
+
 # ─── Modelos de request ───────────────────────────────────────────────────────
 
 class TranscribeRequest(BaseModel):
@@ -414,6 +451,9 @@ def _state_summary(world_state: dict) -> dict:
         "class": pc.get("class", ""),
         "hp": pc.get("status", {}).get("hp", 0),
         "max_hp": pc.get("status", {}).get("max_hp", 0),
+        "death_count": pc.get("death_count", 0),
+        "alignment": pc.get("alignment", "neutro"),
+        "resurrection_flaws": pc.get("resurrection_flaws", []),
         "inventory": pc.get("inventory", []),
         "max_slots": pc.get("max_slots", 10),
         "location": ws.get("current_location_key", ""),
@@ -511,7 +551,15 @@ def start_game(req: StartRequest):
 
     mood = world_state.get("narration_mood", "normal")
     tts_speed = _resolve_tts_speed(mood, tutorial_active=req.tutorial)
-    audio = to_audio_response(opening_clean, "master", tts_speed)
+    pause_segments = world_state.get("pause_beat_segments", [])
+    audio, audio_timeline = build_audio_payload(
+        opening_clean,
+        "master",
+        tts_speed,
+        pause_segments=pause_segments,
+    )
+    world_state["pause_beat_segments"] = []
+    world_state["pause_beat_count"] = 0
     sfx = detect_sfx_list(opening_clean)
     ambient_url = _get_ambient_for_act(current_act)
 
@@ -519,6 +567,7 @@ def start_game(req: StartRequest):
         "session_id": session_id,
         "narrative": opening_clean,
         "audio": audio,
+        "audio_timeline": audio_timeline,
         "sfx": sfx,
         "mood": mood,
         "ambient": {"url": ambient_url, "volume": 0.15} if ambient_url else None,
@@ -536,6 +585,41 @@ def take_action(req: ActionRequest):
     action = req.action.strip()
     if not action:
         raise HTTPException(400, "Ação não pode ser vazia")
+
+    resurrection_state = world_state.get("resurrection_state", {})
+    if isinstance(resurrection_state, dict) and resurrection_state.get("stage") == "awaiting_offering":
+        result = resolve_resurrection_offering(world_state, action)
+        roll_data = result.get("roll") or {}
+        narrative = result["narrative"]
+        mood = world_state.get("narration_mood", result.get("mood", "sad"))
+        tts_speed = _resolve_tts_speed(mood, tutorial_active=False)
+        pause_segments = world_state.get("pause_beat_segments", [])
+        audio, audio_timeline = build_audio_payload(
+            narrative,
+            "master",
+            tts_speed,
+            pause_segments=pause_segments,
+        )
+        world_state["pause_beat_segments"] = []
+        world_state["pause_beat_count"] = 0
+        sessions[req.session_id] = world_state
+
+        return {
+            "narrative": narrative,
+            "audio": audio,
+            "audio_timeline": audio_timeline,
+            "sfx": [],
+            "mood": mood,
+            "roll": result.get("roll"),
+            "roll_sfx": _get_dice_sfx() if result.get("roll") else None,
+            "critical_sfx": _get_critical_sfx() if roll_data.get("critical") else None,
+            "fumble_sfx": _get_fumble_sfx() if roll_data.get("fumble") else None,
+            "resurrection": True,
+            "resurrection_result": result.get("result_type"),
+            "valid": bool(result.get("ok", False)),
+            "state": _state_summary(world_state),
+            "tutorial_turn": world_state.get("tutorial_turn", 0),
+        }
 
     # HUD Narrativo — Agente "Olhos do Jogador" (não avança o tempo do jogo)
     if is_inspection_action(action):
@@ -564,6 +648,7 @@ def take_action(req: ActionRequest):
     # Processa ação no motor do jogo
     current_act = character.get("current_act", 1)
     game_context = load_game_context_for_act(current_act, world_state)
+    bootstrap_location_triggers(world_state, game_context.get("locais", {}))
 
     # Sistema de dados Shadowdark
     roll_result = resolve_action_roll(action, character)
@@ -579,6 +664,12 @@ def take_action(req: ActionRequest):
     gm_response = get_gm_narrative(world_state, action_with_trigger, game_context, roll_result)
     cleaned_narrative, world_state = clean_and_process_ai_response(gm_response, world_state)
     world_state = update_world_state(world_state, action_with_trigger, gm_response)
+    sync_act_with_location(world_state)
+
+    limbo_started, limbo_narrative = start_resurrection_limbo(world_state)
+    if limbo_started:
+        cleaned_narrative = limbo_narrative
+        world_state["narration_mood"] = "sad"
 
     recent = world_state.get("recent_narrations", [])
     recent.append(cleaned_narrative[:300])
@@ -595,12 +686,41 @@ def take_action(req: ActionRequest):
     ambient_url = _get_ambient_for_act(new_act) if new_act != current_act else None
     mood = world_state.get("narration_mood", "normal")
     tts_speed = _resolve_tts_speed(mood, tutorial_active=tutorial_turn > 0)
-    audio = to_audio_response(cleaned_narrative, "master", tts_speed)
+    hdywdtd = bool(world_state.get("hdywdtd_pending"))
+    hdywdtd_prompt = world_state.get("hdywdtd_prompt", "Como você quer fazer isso?") if hdywdtd else None
+    pause_segments = world_state.get("pause_beat_segments", [])
+    if hdywdtd:
+        dramatic_speed = min(tts_speed, 0.82)
+        if isinstance(pause_segments, list) and pause_segments:
+            spoken_segments = [seg for seg in pause_segments if isinstance(seg, str) and seg.strip()]
+            spoken_segments.append(hdywdtd_prompt)
+            spoken_text = " ".join(spoken_segments).strip()
+            audio, audio_timeline = build_audio_payload(
+                spoken_text,
+                "master",
+                dramatic_speed,
+                pause_segments=spoken_segments,
+            )
+        else:
+            spoken_text = f"{cleaned_narrative} ... {hdywdtd_prompt}" if cleaned_narrative else hdywdtd_prompt
+            audio, audio_timeline = build_audio_payload(spoken_text, "master", dramatic_speed)
+        world_state["hdywdtd_pending"] = False
+    else:
+        audio, audio_timeline = build_audio_payload(
+            cleaned_narrative,
+            "master",
+            tts_speed,
+            pause_segments=pause_segments,
+        )
+
+    world_state["pause_beat_segments"] = []
+    world_state["pause_beat_count"] = 0
     sfx = detect_sfx_list(cleaned_narrative)
 
     return {
         "narrative": cleaned_narrative,
         "audio": audio,
+        "audio_timeline": audio_timeline,
         "sfx": sfx,
         "mood": mood,
         "trigger_sfx": trigger_sfx_url,
@@ -608,6 +728,10 @@ def take_action(req: ActionRequest):
         "critical_sfx":  _get_critical_sfx() if roll_result and roll_result["critical"] else None,
         "fumble_sfx":    _get_fumble_sfx()   if roll_result and roll_result["fumble"]   else None,
         "roll": roll_result,
+        "hdywdtd": hdywdtd,
+        "hdywdtd_prompt": hdywdtd_prompt,
+        "resurrection": limbo_started,
+        "resurrection_result": "limbo" if limbo_started else None,
         "ambient": {"url": ambient_url, "volume": 0.15} if ambient_url else None,
         "state": _state_summary(world_state),
         "valid": True,
