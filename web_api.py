@@ -8,6 +8,7 @@ import re
 import base64
 import random
 import tempfile
+import concurrent.futures
 import requests as http_requests
 from fastapi import FastAPI, HTTPException
 from fastapi.staticfiles import StaticFiles
@@ -663,19 +664,47 @@ def take_action(req: ActionRequest):
 
     gm_response = get_gm_narrative(world_state, action_with_trigger, game_context, roll_result)
     cleaned_narrative, world_state = clean_and_process_ai_response(gm_response, world_state)
-    world_state = update_world_state(world_state, action_with_trigger, gm_response)
+
+    # Arquivista (update_world_state) e TTS rodam em paralelo — maior ganho de latência
+    mood_pre      = world_state.get("narration_mood", "normal")
+    tutorial_turn = world_state.get("tutorial_turn", 0)
+    tts_speed_pre = _resolve_tts_speed(mood_pre, tutorial_active=tutorial_turn > 0)
+    pause_segments_pre = world_state.get("pause_beat_segments", [])
+    hdywdtd_pre   = bool(world_state.get("hdywdtd_pending"))
+    hdywdtd_prompt_pre = world_state.get("hdywdtd_prompt", "Como você quer fazer isso?") if hdywdtd_pre else None
+
+    def _build_tts():
+        if hdywdtd_pre:
+            spd = min(tts_speed_pre, 0.82)
+            if isinstance(pause_segments_pre, list) and pause_segments_pre:
+                segs = [s for s in pause_segments_pre if isinstance(s, str) and s.strip()]
+                segs.append(hdywdtd_prompt_pre)
+                return build_audio_payload(" ".join(segs), "master", spd, pause_segments=segs)
+            txt = f"{cleaned_narrative} ... {hdywdtd_prompt_pre}" if cleaned_narrative else hdywdtd_prompt_pre
+            return build_audio_payload(txt, "master", spd)
+        return build_audio_payload(cleaned_narrative, "master", tts_speed_pre, pause_segments=pause_segments_pre)
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=2) as pool:
+        future_ws  = pool.submit(update_world_state, world_state, action_with_trigger, gm_response)
+        future_tts = pool.submit(_build_tts)
+        world_state        = future_ws.result()
+        audio, audio_timeline = future_tts.result()
+
+    if hdywdtd_pre:
+        world_state["hdywdtd_pending"] = False
+
     sync_act_with_location(world_state)
 
     limbo_started, limbo_narrative = start_resurrection_limbo(world_state)
     if limbo_started:
         cleaned_narrative = limbo_narrative
         world_state["narration_mood"] = "sad"
+        audio, audio_timeline = build_audio_payload(cleaned_narrative, "master", _resolve_tts_speed("sad"))
 
     recent = world_state.get("recent_narrations", [])
     recent.append(cleaned_narrative[:300])
     world_state["recent_narrations"] = recent[-2:]
 
-    # Decrementa contador do tutorial após cada ação regular
     tutorial_turn = world_state.get("tutorial_turn", 0)
     if tutorial_turn > 0:
         world_state["tutorial_turn"] = tutorial_turn - 1
@@ -684,34 +713,8 @@ def take_action(req: ActionRequest):
 
     new_act = world_state.get("player_character", {}).get("current_act", 1)
     ambient_url = _get_ambient_for_act(new_act) if new_act != current_act else None
-    mood = world_state.get("narration_mood", "normal")
-    tts_speed = _resolve_tts_speed(mood, tutorial_active=tutorial_turn > 0)
-    hdywdtd = bool(world_state.get("hdywdtd_pending"))
-    hdywdtd_prompt = world_state.get("hdywdtd_prompt", "Como você quer fazer isso?") if hdywdtd else None
-    pause_segments = world_state.get("pause_beat_segments", [])
-    if hdywdtd:
-        dramatic_speed = min(tts_speed, 0.82)
-        if isinstance(pause_segments, list) and pause_segments:
-            spoken_segments = [seg for seg in pause_segments if isinstance(seg, str) and seg.strip()]
-            spoken_segments.append(hdywdtd_prompt)
-            spoken_text = " ".join(spoken_segments).strip()
-            audio, audio_timeline = build_audio_payload(
-                spoken_text,
-                "master",
-                dramatic_speed,
-                pause_segments=spoken_segments,
-            )
-        else:
-            spoken_text = f"{cleaned_narrative} ... {hdywdtd_prompt}" if cleaned_narrative else hdywdtd_prompt
-            audio, audio_timeline = build_audio_payload(spoken_text, "master", dramatic_speed)
-        world_state["hdywdtd_pending"] = False
-    else:
-        audio, audio_timeline = build_audio_payload(
-            cleaned_narrative,
-            "master",
-            tts_speed,
-            pause_segments=pause_segments,
-        )
+    mood = world_state.get("narration_mood", mood_pre)
+    hdywdtd = hdywdtd_pre
 
     world_state["pause_beat_segments"] = []
     world_state["pause_beat_count"] = 0
@@ -729,7 +732,7 @@ def take_action(req: ActionRequest):
         "fumble_sfx":    _get_fumble_sfx()   if roll_result and roll_result["fumble"]   else None,
         "roll": roll_result,
         "hdywdtd": hdywdtd,
-        "hdywdtd_prompt": hdywdtd_prompt,
+        "hdywdtd_prompt": hdywdtd_prompt_pre,
         "resurrection": limbo_started,
         "resurrection_result": "limbo" if limbo_started else None,
         "ambient": {"url": ambient_url, "volume": 0.15} if ambient_url else None,

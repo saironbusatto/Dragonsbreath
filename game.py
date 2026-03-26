@@ -1014,7 +1014,7 @@ Gatilhos Narrativos Ativos: {json.dumps(game_context.get('gatilhos', []), indent
                 {"role": "user",   "content": user_content},
             ],
             temperature=0.75,
-            max_tokens=1024,
+            max_tokens=480,
         )
         return response.choices[0].message.content.strip()
     except Exception as e:
