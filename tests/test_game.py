@@ -182,6 +182,17 @@ class TestGetRealisticAlternative:
 # ─── clean_and_process_ai_response ───────────────────────────────────────────
 
 class TestCleanAndProcessAIResponse:
+    def test_extracts_mood_tag_and_removes_from_narrative(self, world_state_rpg):
+        text = "A névoa se fecha ao redor de você. [MOOD:tense]\nO que você faz?"
+        cleaned, updated = game.clean_and_process_ai_response(text, world_state_rpg)
+        assert "[MOOD:" not in cleaned
+        assert updated.get("narration_mood") == "tense"
+
+    def test_defaults_to_normal_mood_when_absent(self, world_state_rpg):
+        text = "Você observa o salão em silêncio. O que você faz?"
+        _, updated = game.clean_and_process_ai_response(text, world_state_rpg)
+        assert updated.get("narration_mood") == "normal"
+
     def test_removes_status_update_tag(self, world_state_rpg):
         text = 'Você é atingido. [STATUS_UPDATE] {"hp_change": -5}\nO que você faz?'
         cleaned, _ = game.clean_and_process_ai_response(text, world_state_rpg)

@@ -43,6 +43,22 @@ app = FastAPI(title="Ressoar")
 # Sessões em memória: { session_id: world_state }
 sessions: dict[str, dict] = {}
 
+_MOOD_TTS_SPEED = {
+    "combat": 1.45,
+    "tense": 1.15,
+    "dramatic": 0.85,
+    "sad": 0.80,
+    "relief": 0.92,
+    "normal": 1.0,
+}
+
+
+def _resolve_tts_speed(mood: str, tutorial_active: bool = False) -> float:
+    speed = _MOOD_TTS_SPEED.get((mood or "normal").lower(), 1.0)
+    if tutorial_active:
+        return max(speed, 1.3)
+    return speed
+
 
 # ─── SFX: Freesound.org (gratuito) com fallback local ────────────────────────
 
@@ -493,7 +509,8 @@ def start_game(req: StartRequest):
     session_id = str(uuid.uuid4())
     sessions[session_id] = world_state
 
-    tts_speed = 1.3 if req.tutorial else 1.0
+    mood = world_state.get("narration_mood", "normal")
+    tts_speed = _resolve_tts_speed(mood, tutorial_active=req.tutorial)
     audio = to_audio_response(opening_clean, "master", tts_speed)
     sfx = detect_sfx_list(opening_clean)
     ambient_url = _get_ambient_for_act(current_act)
@@ -503,6 +520,7 @@ def start_game(req: StartRequest):
         "narrative": opening_clean,
         "audio": audio,
         "sfx": sfx,
+        "mood": mood,
         "ambient": {"url": ambient_url, "volume": 0.15} if ambient_url else None,
         "state": _state_summary(world_state),
         "tutorial_turn": world_state.get("tutorial_turn", 0),
@@ -575,7 +593,8 @@ def take_action(req: ActionRequest):
 
     new_act = world_state.get("player_character", {}).get("current_act", 1)
     ambient_url = _get_ambient_for_act(new_act) if new_act != current_act else None
-    tts_speed = 1.3 if tutorial_turn > 0 else 1.0
+    mood = world_state.get("narration_mood", "normal")
+    tts_speed = _resolve_tts_speed(mood, tutorial_active=tutorial_turn > 0)
     audio = to_audio_response(cleaned_narrative, "master", tts_speed)
     sfx = detect_sfx_list(cleaned_narrative)
 
@@ -583,6 +602,7 @@ def take_action(req: ActionRequest):
         "narrative": cleaned_narrative,
         "audio": audio,
         "sfx": sfx,
+        "mood": mood,
         "trigger_sfx": trigger_sfx_url,
         "roll_sfx":      _get_dice_sfx()    if roll_result else None,
         "critical_sfx":  _get_critical_sfx() if roll_result and roll_result["critical"] else None,

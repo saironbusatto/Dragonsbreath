@@ -22,6 +22,8 @@ except ImportError:
 
 MAX_INVENTORY_SLOTS = 5
 QUEST_ITEM_KEYWORDS = ['moeda', 'chave', 'nota', 'mapa', 'pergaminho', 'cristal', 'símbolo', 'anel', 'diapasão']
+VALID_MOODS = ("combat", "tense", "dramatic", "sad", "relief", "normal")
+DEFAULT_MOOD = "normal"
 
 # Definições de habilidades por classe
 CLASS_ABILITIES = {
@@ -209,7 +211,8 @@ def validate_impossible_abilities(action_lower: str, character_class: str) -> tu
         'voar', 'voo', 'levitar', 'teletransportar', 'teleporte', 'teletransporto',
         'ficar invisível', 'me torno invisível', 'desaparecer magicamente',
         'controlar mente', 'ler mente', 'telepatia', 'ler a mente',
-        'parar tempo', 'parar o tempo', 'paro o tempo', 'acelerar tempo', 'viajar no tempo'
+        'parar tempo', 'parar o tempo', 'paro o tempo', 'acelerar tempo', 'viajar no tempo',
+        'bola de fogo', 'bolas de fogo'
     ]
 
     for keyword in impossible_keywords:
@@ -274,8 +277,13 @@ def trigger_contextual_sfx(narrative_text: str):
                 play_sfx(sfx_name)
                 return  # Toca apenas um efeito por narrativa para evitar sobreposição
 
-def _fmt_scene(scene: dict) -> str:
+def _fmt_scene(scene: dict | list) -> str:
     """Formata interactable_elements_in_scene como lista legível para o prompt do GM."""
+    if isinstance(scene, list):
+        return "Objetos/NPCs na cena: " + ", ".join(scene) if scene else "(cena ainda não mapeada — use julgamento narrativo)"
+    if not isinstance(scene, dict):
+        return "(cena ainda não mapeada — use julgamento narrativo)"
+
     parts = []
     if scene.get("objetos"):
         parts.append("Objetos: " + ", ".join(scene["objetos"]))
@@ -328,6 +336,23 @@ TAMANHO DA RESPOSTA é proporcional à ação:
 - Evento importante (combate, descoberta, mudança de local): 3-4 frases + "O que você faz?"
 NUNCA ultrapasse 4 frases de narração. Menos é mais.
 
+--- PORTÕES EMOCIONAIS (MOOD) ---
+Você deve escolher exatamente UM mood por resposta e escrevê-la nesse estilo.
+Moods válidos: combat, tense, dramatic, sad, relief, normal.
+Regras:
+- Inclua obrigatoriamente uma tag no FINAL da resposta: [MOOD:<mood>]
+- Exemplo: [MOOD:tense]
+- Use somente os moods válidos.
+- Não explique a tag; apenas inclua no fim.
+
+Perfis de escrita por mood:
+- combat: frases curtas, verbos de impacto, urgência e risco imediato.
+- tense: suspense, foco em sons/cheiros/silêncio, ameaça se aproximando.
+- dramatic: peso narrativo, solenidade, revelações e viradas importantes.
+- sad: tom melancólico, perdas, ritmo mais lento e fúnebre.
+- relief: tom quente, respiro emocional após tensão.
+- normal: exploração e progressão padrão.
+
 --- REGRAS FUNDAMENTAIS ---
 1. Narre APENAS o resultado imediato da ação do jogador. Não redescreva o cenário já conhecido.
 2. Use [STATUS_UPDATE] para mudanças de HP: [STATUS_UPDATE] {{"hp_change": -4}}
@@ -356,7 +381,7 @@ NUNCA ultrapasse 4 frases de narração. Menos é mais.
 {scene_list}
 19. SINÔNIMOS: Aceite variações semânticas naturais para os elementos acima — "menino"/"garoto"/"criança"/"corpo" podem ser o mesmo elemento; "caixa"/"caixote"/"baú pequeno" também. Use o contexto para identificar a intenção do jogador.
 20. ANTI-HACK: Se o jogador mencionar objeto, NPC ou item que NÃO consta na lista acima E NÃO está no inventário dele, narre imersivamente que ele procura mas não encontra. NUNCA invente elementos ausentes da cena.
-21. CENA VAZIA: Se a lista acima mostrar "(cena ainda não mapeada)", use julgamento narrativo normalmente — o Arquivista mapeará após este turno.""".format(scene_list=scene_list)
+21. CENA VAZIA: Se a lista acima mostrar "(cena ainda não mapeada)", use julgamento narrativo normalmente — o Arquivista mapeará após este turno."""
 
     # Bloco de dados Shadowdark (injetado quando há rolagem)
     dice_block = ""
@@ -480,6 +505,17 @@ def clean_and_process_ai_response(response_text: str, world_state: dict) -> tupl
     character = world_state.get('player_character', {})
     narrative = response_text
 
+    # Captura e remove tag de mood
+    mood_matches = re.findall(r'\[MOOD:([a-z_]+)\]', narrative, flags=re.IGNORECASE)
+    if mood_matches:
+        mood = mood_matches[-1].lower()
+        if mood not in VALID_MOODS:
+            mood = DEFAULT_MOOD
+    else:
+        mood = DEFAULT_MOOD
+    narrative = re.sub(r'\[MOOD:[a-z_]+\]', '', narrative, flags=re.IGNORECASE).strip()
+    world_state['narration_mood'] = mood
+
     # Processa comandos básicos
     inv_match = re.search(r'\[INVENTORY_UPDATE\]\s*(\{.*?\})', narrative, re.DOTALL)
     if inv_match:
@@ -510,6 +546,7 @@ def clean_and_process_ai_response(response_text: str, world_state: dict) -> tupl
             pass
         narrative = narrative.replace(status_match.group(0), '').strip()
     
+    narrative = re.sub(r'\n{3,}', '\n\n', narrative).strip()
     world_state['player_character'] = character
     return narrative, world_state
 

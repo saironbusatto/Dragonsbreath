@@ -29,7 +29,7 @@ REGRAS DE ATUALIZAÇÃO:
    - "saidas": lista de saídas e passagens (ex: ["porta norte", "escada", "beco lateral"])
    - "chao": itens abandonados ou caídos no chão (ex: ["moeda suja", "papel amassado"])
    REGRAS: Use [] para categorias sem elementos. Extraia APENAS o que foi explicitamente mencionado pelo Mestre neste turno. Ao mudar de local, limpe o mapa e recomece.
-   NOMES: Use o termo mais curto e natural. Quando um elemento tiver variações óbvias, registre-as entre parênteses. Ex: "menino (garoto, criança)", "caixa (caixote)", "figura encapuzada (homem, vulto)".
+   NOMES: Use o termo mais curto e natural. Quando um elemento tiver variações óbvias, registre-as entre parênteses. Ex: "menino (garoto, criança)", "caixa (caixote)", "figura encapuzada (homem, vulto)"."""
 
     # USER: o estado atual + o que acabou de acontecer
     archivista_user = f"""JSON DO ESTADO ATUAL:
