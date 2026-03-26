@@ -274,6 +274,26 @@ def trigger_contextual_sfx(narrative_text: str):
                 play_sfx(sfx_name)
                 return  # Toca apenas um efeito por narrativa para evitar sobreposição
 
+def _fmt_scene(scene: dict) -> str:
+    """Formata interactable_elements_in_scene como lista legível para o prompt do GM."""
+    parts = []
+    if scene.get("objetos"):
+        parts.append("Objetos: " + ", ".join(scene["objetos"]))
+    if scene.get("npcs"):
+        parts.append("NPCs/Criaturas: " + ", ".join(scene["npcs"]))
+    if scene.get("npc_itens"):
+        for npc, itens in scene["npc_itens"].items():
+            parts.append(f"  {npc} carrega: {', '.join(itens)}")
+    if scene.get("containers"):
+        for cont, conteudo in scene["containers"].items():
+            parts.append(f"  {cont} contém: {', '.join(conteudo)}")
+    if scene.get("chao"):
+        parts.append("No chão: " + ", ".join(scene["chao"]))
+    if scene.get("saidas"):
+        parts.append("Saídas: " + ", ".join(scene["saidas"]))
+    return "\n".join(parts) if parts else "(cena ainda não mapeada — use julgamento narrativo)"
+
+
 def get_gm_narrative(world_state: dict, player_action: str, game_context: dict, roll_result: dict | None = None) -> str:
     api_key = os.environ.get('OPENAI_API_KEY')
     if not api_key:
@@ -286,6 +306,9 @@ def get_gm_narrative(world_state: dict, player_action: str, game_context: dict, 
     character = world_state.get('player_character', {})
     character_class = character.get('class', 'Aventureiro')
     class_info = CLASS_ABILITIES.get(character_class, CLASS_ABILITIES['Aventureiro'])
+
+    ws = world_state.get("world_state", {})
+    scene_list = _fmt_scene(ws.get("interactable_elements_in_scene", {}))
 
     # SYSTEM: persona estável + regras que nunca mudam
     system_content = f"""Você é um Mestre de Jogo narrando "{campaign_name}". Narre sempre em segunda pessoa (você), no tempo presente.
@@ -326,7 +349,14 @@ NUNCA ultrapasse 4 frases de narração. Menos é mais.
 --- NARRAÇÃO SONORA (o jogo é totalmente por áudio) ---
 15. SONS DOS OBJETOS: Ao mencionar um objeto interativo, inclua o som que ele produz. Use palavras sonoras: ranger, chiar, murmurar, estalar, gotejar, uivar, sussurrar.
 16. ISCAS SONORAS: Para guiar o jogador, mencione o som ANTES do objeto. Ex: "Você ouve um gotejo perto da estante" — não descreva tudo de imediato.
-17. SONS DE AMBIENTE: Mencione som de fundo apenas ao entrar em local novo ou quando mudar a atmosfera da cena. Não repita o ambiente a cada turno."""
+17. SONS DE AMBIENTE: Mencione som de fundo apenas ao entrar em local novo ou quando mudar a atmosfera da cena. Não repita o ambiente a cada turno.
+
+--- CONTROLE DE CENA ---
+18. ELEMENTOS PRESENTES (ÚNICOS INTERATIVOS):
+{scene_list}
+19. SINÔNIMOS: Aceite variações semânticas naturais para os elementos acima — "menino"/"garoto"/"criança"/"corpo" podem ser o mesmo elemento; "caixa"/"caixote"/"baú pequeno" também. Use o contexto para identificar a intenção do jogador.
+20. ANTI-HACK: Se o jogador mencionar objeto, NPC ou item que NÃO consta na lista acima E NÃO está no inventário dele, narre imersivamente que ele procura mas não encontra. NUNCA invente elementos ausentes da cena.
+21. CENA VAZIA: Se a lista acima mostrar "(cena ainda não mapeada)", use julgamento narrativo normalmente — o Arquivista mapeará após este turno.""".format(scene_list=scene_list)
 
     # Bloco de dados Shadowdark (injetado quando há rolagem)
     dice_block = ""
