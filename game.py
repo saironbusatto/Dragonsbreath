@@ -1010,13 +1010,11 @@ Gatilhos Narrativos Ativos: {json.dumps(game_context.get('gatilhos', []), indent
 
         mood = world_state.get("narration_mood", "normal")
         is_critical = bool(roll_result and (roll_result.get("critical") or roll_result.get("fumble")))
-        is_dramatic  = mood in ("dramatic", "sad", "combat") or bool(world_state.get("hdywdtd_pending"))
-        if is_critical:
-            max_tok = 720   # crítico/fumble — cena memorável
-        elif is_dramatic:
-            max_tok = 580   # combate, clímax, tensão
-        else:
-            max_tok = 480   # turno normal — conciso
+        is_dramatic  = mood in ("dramatic", "sad", "combat", "tense") or bool(world_state.get("hdywdtd_pending"))
+        match (is_critical, is_dramatic):
+            case (True, _): max_tok = 720  # crítico/fumble — cena memorável
+            case (_, True): max_tok = 580  # dramático/tensão/combate
+            case _:         max_tok = 480  # turno normal
 
         response = client.chat.completions.create(
             model=model,
