@@ -124,7 +124,59 @@ Final 3: Ecos de uma Ordem Perdida
 
 
 --------------------------------------------------------------------------------
-10. Ganchos de Continuação (Pós-Campanha)
+10. Minigame do Tarokka — Arquitetura Técnica
+
+O Tarokka é um minigame de áudio interativo exclusivo desta campanha, implementado com arquitetura de zero acoplamento ao motor genérico.
+
+Arquivos:
+- `campanhas/curse_of_strahd/tarokka.py` — toda a lógica do minigame
+- `campanhas/curse_of_strahd/tarokka_deck.json` — 54 cartas (40 comuns + 14 altas)
+
+Fluxo de jogo:
+1. O gatilho `cartas_tarokka` em `locais.json` tem `"tipo": "campaign_event"` e `"handler": "tarokka"`.
+2. O motor detecta o tipo e chama `tarokka.on_trigger(world_state)` — que sorteia 5 cartas e grava em `world_state["tarokka_reading"]`.
+3. Nas rodadas seguintes, enquanto `campaign_event_state.stage` não for `"concluido"`, o loop principal intercepta a ação e a entrega a `tarokka.process_turn(world_state, action)`.
+4. Madam Eva revela uma carta por rodada. O jogador precisa pedir explicitamente para virar cada carta ("vire", "próxima", "mostre", etc.).
+5. Após 5 cartas, o stage vai para `"concluido"` e o loop normal retoma.
+
+Estado em `world_state`:
+```json
+"campaign_event_state": {
+  "handler": "tarokka",
+  "stage": "intro | carta_1 | carta_2 | carta_3 | carta_4 | carta_5 | concluido"
+},
+"tarokka_reading": {
+  "drawn": true,
+  "cards": {
+    "tomo_de_strahd":              { "nome": "...", "profecia": "...", "alvo_semantico": "..." },
+    "simbolo_sagrado_de_ravenkind":{ ... },
+    "espada_solar":                { ... },
+    "aliado":                      { ... },
+    "confronto":                   { ... }
+  },
+  "item_locations": {
+    "Tomo de Strahd":              "cemiterio_barovia",
+    "Símbolo Sagrado de Ravenkind":"castelo_ravenloft",
+    "Espada Solar":                "templo_de_ambar"
+  }
+}
+```
+
+Injeção no GM — `build_gm_context_block()` adiciona ao system prompt:
+```
+--- DESTINOS DO TAROKKA ---
+- Tomo de Strahd: escondido em 'cemiterio_barovia' (...)
+- Símbolo Sagrado de Ravenkind: escondido em 'castelo_ravenloft' (...)
+- Espada Solar: escondido em 'templo_de_ambar' (...)
+REGRA: O jogador SÓ encontra estes itens no local indicado.
+```
+
+HUD de profecias — o jogador pode dizer "profecias", "tarokka", "o que madam eva disse" etc. a qualquer momento. O motor retorna a leitura completa sem avançar o jogo.
+
+Para adicionar outros minigames a esta campanha: criar um `<nome>.py` na pasta da campanha com as mesmas funções públicas (`on_trigger`, `process_turn`, `get_inspect_response`, `build_gm_context_block`, `INSPECTION_KEYWORDS`). O motor os carregará automaticamente.
+
+--------------------------------------------------------------------------------
+11. Ganchos de Continuação (Pós-Campanha)
 
     A Ressurreição Obscura: Se o elfo do crepúsculo Kasimir tiver ressuscitado sua irmã, Patrina Velikovna (no Castelo Ravenloft), ela trairá seu irmão para ascender ao poder. Com a "morte" de Strahd, Patrina explora o Templo de Âmbar para se tornar a nova e impiedosa rainha arcana de Baróvia. Os jogadores devem retornar para impedir a ascensão dessa lich arquimaga.
     A Fuga das Crias: A destruição de Strahd quebra o controle sobre seus consortes (como o bardo vampiro Escher e as noivas). Libertados de seu mestre, eles se espalham pelo multiverso ou para outras regiões sombrias (como os Forgotten Realms), exigindo que os aventureiros assumam o manto de Van Richten e os cacem pelo mundo.

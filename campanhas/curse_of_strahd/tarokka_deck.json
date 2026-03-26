@@ -1,0 +1,426 @@
+{
+  "deck_comum": [
+    {
+      "id": "espadas_1", "suite": "espadas", "numero": 1,
+      "nome": "1 de Espadas — O Vingador",
+      "profecia": "Onde pedras inclinadas guardam nomes apagados e a névoa abraça os que nunca partiram, ali o destino plantou sua semente.",
+      "alvo_semantico": "cemiterio_barovia",
+      "alvo_descricao": "Cemitério da Vila de Baróvia"
+    },
+    {
+      "id": "espadas_2", "suite": "espadas", "numero": 2,
+      "nome": "2 de Espadas — O Paladino",
+      "profecia": "Nas ruínas de uma honra extinta, onde dragões de pedra vigiam promessas quebradas, o objeto aguarda mãos que entendam o peso do sacrifício.",
+      "alvo_semantico": "argynvostholt",
+      "alvo_descricao": "Mansão de Argynvostholt"
+    },
+    {
+      "id": "espadas_3", "suite": "espadas", "numero": 3,
+      "nome": "3 de Espadas — O Soldado",
+      "profecia": "Nas torres que rasgam as nuvens como garras, onde séculos de poder impregnaram cada pedra, lá está o que você procura.",
+      "alvo_semantico": "castelo_ravenloft",
+      "alvo_descricao": "Castelo Ravenloft"
+    },
+    {
+      "id": "espadas_4", "suite": "espadas", "numero": 4,
+      "nome": "4 de Espadas — O Mercenário",
+      "profecia": "Onde risos forçados e portões trancados escondem o medo sob disfarce de alegria obrigatória, alguém guarda o que é seu sem saber.",
+      "alvo_semantico": "vallaki",
+      "alvo_descricao": "Cidade de Vallaki"
+    },
+    {
+      "id": "espadas_5", "suite": "espadas", "numero": 5,
+      "nome": "5 de Espadas — O Mirmidão",
+      "profecia": "Onde rodas giram em silêncio e o cheiro adocicado cobre um odor de sangue antigo, algo que não deveria estar ali o aguarda.",
+      "alvo_semantico": "moinho_dos_ossos",
+      "alvo_descricao": "Moinho dos Ossos"
+    },
+    {
+      "id": "espadas_6", "suite": "espadas", "numero": 6,
+      "nome": "6 de Espadas — O Berserker",
+      "profecia": "Sob o telhado de quem serve dois mestres e sorri para os dois, o objeto descansa entre mentiras e poder emprestado.",
+      "alvo_semantico": "mansao_wachter",
+      "alvo_descricao": "Mansão Wachterhaus, Vallaki"
+    },
+    {
+      "id": "espadas_7", "suite": "espadas", "numero": 7,
+      "nome": "7 de Espadas — O Encapuzado",
+      "profecia": "Nas entranhas de pedra onde os ancestrais dormem com segredos que não podem ser esquecidos, ali jaz o que veio antes de você.",
+      "alvo_semantico": "cryptas_ravenloft",
+      "alvo_descricao": "Criptas do Castelo Ravenloft"
+    },
+    {
+      "id": "espadas_8", "suite": "espadas", "numero": 8,
+      "nome": "8 de Espadas — O Ditador",
+      "profecia": "Onde o âmbar aprisiona tentações milenares e vozes sussurram promessas que custam tudo, o objeto aguarda quem seja forte o bastante para resistir.",
+      "alvo_semantico": "templo_de_ambar",
+      "alvo_descricao": "Templo de Âmbar"
+    },
+    {
+      "id": "espadas_9", "suite": "espadas", "numero": 9,
+      "nome": "9 de Espadas — O Torturador",
+      "profecia": "No alto de uma torre solitária onde a lua é a única testemunha de dias longos e noites ainda mais longas, o destino o colocou ali.",
+      "alvo_semantico": "torre_baratok",
+      "alvo_descricao": "Torre solitária às margens do Lago Baratok"
+    },
+    {
+      "id": "espadas_10", "suite": "espadas", "numero": 10,
+      "nome": "10 de Espadas — O Mestre das Espadas",
+      "profecia": "Onde santos e aberrações partilham o mesmo altar sob um céu que esqueceu como sorrir, ali está escondido o que você busca.",
+      "alvo_semantico": "krezk_abadia",
+      "alvo_descricao": "Abadia de Saint Markovia, Krezk"
+    },
+    {
+      "id": "estrelas_1", "suite": "estrelas", "numero": 1,
+      "nome": "1 de Estrelas — O Transmutador",
+      "profecia": "Onde a luz morreu há séculos e o âmbar absorve almas como mel absorve moscas, o objeto transformou-se mas não desapareceu.",
+      "alvo_semantico": "templo_de_ambar",
+      "alvo_descricao": "Templo de Âmbar"
+    },
+    {
+      "id": "estrelas_2", "suite": "estrelas", "numero": 2,
+      "nome": "2 de Estrelas — A Adivinha",
+      "profecia": "A torre que aponta para o céu como dedo acusador guarda dentro de si aquilo que os videntes perderam — procure onde a solidão é mais espessa.",
+      "alvo_semantico": "torre_baratok",
+      "alvo_descricao": "Torre solitária às margens do Lago Baratok"
+    },
+    {
+      "id": "estrelas_3", "suite": "estrelas", "numero": 3,
+      "nome": "3 de Estrelas — O Encantador",
+      "profecia": "Onde encantamentos sociais mascaram lealdades podres, o objeto repousa em mãos que não sabem o que têm.",
+      "alvo_semantico": "mansao_wachter",
+      "alvo_descricao": "Mansão Wachterhaus, Vallaki"
+    },
+    {
+      "id": "estrelas_4", "suite": "estrelas", "numero": 4,
+      "nome": "4 de Estrelas — O Abjurador",
+      "profecia": "Protegido por paredes que viram guerras e perdas, nas profundezas onde nem os mortos ousam olhar, ali está o que você precisa.",
+      "alvo_semantico": "cryptas_ravenloft",
+      "alvo_descricao": "Criptas do Castelo Ravenloft"
+    },
+    {
+      "id": "estrelas_5", "suite": "estrelas", "numero": 5,
+      "nome": "5 de Estrelas — O Elementalista",
+      "profecia": "Onde as chamas de uma ordem extinta ainda fumegam nas paredes de pedra dos cavaleiros caídos, um poder antigo dorme junto com os mortos.",
+      "alvo_semantico": "argynvostholt",
+      "alvo_descricao": "Mansão de Argynvostholt"
+    },
+    {
+      "id": "estrelas_6", "suite": "estrelas", "numero": 6,
+      "nome": "6 de Estrelas — O Evocador",
+      "profecia": "Nas águas que refletem céus que não existem mais, onde a magia ecoou pela última vez sem resposta, o objeto afundou mas não se perdeu.",
+      "alvo_semantico": "lago_baratok",
+      "alvo_descricao": "Lago Baratok"
+    },
+    {
+      "id": "estrelas_7", "suite": "estrelas", "numero": 7,
+      "nome": "7 de Estrelas — O Ilusionista",
+      "profecia": "Onde a ilusão de paz cobre a realidade de prisão eterna, entre lápides que marcam aprisionados e não libertos, ali ele está.",
+      "alvo_semantico": "cemiterio_barovia",
+      "alvo_descricao": "Cemitério da Vila de Baróvia"
+    },
+    {
+      "id": "estrelas_8", "suite": "estrelas", "numero": 8,
+      "nome": "8 de Estrelas — O Necromante",
+      "profecia": "Nas torres negras onde séculos de magia sombria impregnaram cada pedra, algo que pertencia à vida sobrevive entre os mortos.",
+      "alvo_semantico": "castelo_ravenloft",
+      "alvo_descricao": "Castelo Ravenloft"
+    },
+    {
+      "id": "estrelas_9", "suite": "estrelas", "numero": 9,
+      "nome": "9 de Estrelas — O Conjurador",
+      "profecia": "Entre os muros que conjuram alegria de sua própria angústia, o objeto chegou ali por mãos que acharam estar fazendo o bem.",
+      "alvo_semantico": "vallaki",
+      "alvo_descricao": "Cidade de Vallaki"
+    },
+    {
+      "id": "estrelas_10", "suite": "estrelas", "numero": 10,
+      "nome": "10 de Estrelas — O Mestre das Estrelas",
+      "profecia": "No moinho que transforma o que não deveria ser transformado, entre engrenagens e grãos de significado oculto, o mestre das estrelas escondeu sua obra.",
+      "alvo_semantico": "moinho_dos_ossos",
+      "alvo_descricao": "Moinho dos Ossos"
+    },
+    {
+      "id": "moedas_1", "suite": "moedas", "numero": 1,
+      "nome": "1 de Moedas — O Espadachim",
+      "profecia": "Onde moedas trocam de mão e sorrisos valem tanto quanto ouro, o objeto aguarda em algum cofre esquecido atrás de transações falsas.",
+      "alvo_semantico": "vallaki",
+      "alvo_descricao": "Cidade de Vallaki"
+    },
+    {
+      "id": "moedas_2", "suite": "moedas", "numero": 2,
+      "nome": "2 de Moedas — O Filantropo",
+      "profecia": "A generosidade de quem dá com uma mão e toma com a outra guarda o objeto como troféu de um favor nunca cobrado.",
+      "alvo_semantico": "mansao_wachter",
+      "alvo_descricao": "Mansão Wachterhaus, Vallaki"
+    },
+    {
+      "id": "moedas_3", "suite": "moedas", "numero": 3,
+      "nome": "3 de Moedas — O Comerciante",
+      "profecia": "Rotas de comércio abandonadas levam a uma torre onde transações mais antigas da terra ainda ecoam nos corredores de pedra.",
+      "alvo_semantico": "torre_baratok",
+      "alvo_descricao": "Torre solitária às margens do Lago Baratok"
+    },
+    {
+      "id": "moedas_4", "suite": "moedas", "numero": 4,
+      "nome": "4 de Moedas — O Mercador",
+      "profecia": "O maior mercador cobra com vidas, não com ouro — onde ele fez seu melhor negócio, nas pedras frias que marcam a transação final.",
+      "alvo_semantico": "cemiterio_barovia",
+      "alvo_descricao": "Cemitério da Vila de Baróvia"
+    },
+    {
+      "id": "moedas_5", "suite": "moedas", "numero": 5,
+      "nome": "5 de Moedas — O Membro da Guilda",
+      "profecia": "Onde a guilda mais antiga desta terra caiu em silêncio mas não em esquecimento, um objeto de valor incalculável espera por quem reconheça seu preço.",
+      "alvo_semantico": "argynvostholt",
+      "alvo_descricao": "Mansão de Argynvostholt"
+    },
+    {
+      "id": "moedas_6", "suite": "moedas", "numero": 6,
+      "nome": "6 de Moedas — O Mendigo",
+      "profecia": "Onde até os mendigos da alma encontram abrigo, na casa que finge santidade às custas de coisas piores, o objeto repousa entre os esquecidos.",
+      "alvo_semantico": "krezk_abadia",
+      "alvo_descricao": "Abadia de Saint Markovia, Krezk"
+    },
+    {
+      "id": "moedas_7", "suite": "moedas", "numero": 7,
+      "nome": "7 de Moedas — O Ladrão",
+      "profecia": "O maior ladrão desta terra roubou mais do que vidas — nas câmaras onde ele armazena o que tomou, o objeto foi guardado como taça de vitória.",
+      "alvo_semantico": "castelo_ravenloft",
+      "alvo_descricao": "Castelo Ravenloft"
+    },
+    {
+      "id": "moedas_8", "suite": "moedas", "numero": 8,
+      "nome": "8 de Moedas — O Cobrador",
+      "profecia": "Onde cobranças são feitas em farinha de ossos e choro silencioso, entregue como pagamento por dívidas que nunca deveriam existir.",
+      "alvo_semantico": "moinho_dos_ossos",
+      "alvo_descricao": "Moinho dos Ossos"
+    },
+    {
+      "id": "moedas_9", "suite": "moedas", "numero": 9,
+      "nome": "9 de Moedas — O Avarento",
+      "profecia": "O mais avarento de todos não poupa ouro mas almas — onde tentações antigas são colecionadas como moedas raras, o objeto está entre os tesouros mais obscuros.",
+      "alvo_semantico": "templo_de_ambar",
+      "alvo_descricao": "Templo de Âmbar"
+    },
+    {
+      "id": "moedas_10", "suite": "moedas", "numero": 10,
+      "nome": "10 de Moedas — O Mestre das Moedas",
+      "profecia": "Nas margens de águas que não revelam seu fundo, onde fortunas foram apostadas e perdidas para as profundezas, o mestre das moedas escondeu sua riqueza mais real.",
+      "alvo_semantico": "lago_baratok",
+      "alvo_descricao": "Lago Baratok"
+    },
+    {
+      "id": "glifos_1", "suite": "glifos", "numero": 1,
+      "nome": "1 de Glifos — O Monge",
+      "profecia": "Onde os fiéis rezam a ouvidos que podem não mais existir, na abadia de pedra cinza que guarda segredo mais antigo que sua fé, ali está o objeto.",
+      "alvo_semantico": "krezk_abadia",
+      "alvo_descricao": "Abadia de Saint Markovia, Krezk"
+    },
+    {
+      "id": "glifos_2", "suite": "glifos", "numero": 2,
+      "nome": "2 de Glifos — O Missionário",
+      "profecia": "A missão fracassada de cavaleiros que morreram por uma causa perdida deixou marcas nas pedras — e junto com elas, o que nunca chegou a seu destino.",
+      "alvo_semantico": "argynvostholt",
+      "alvo_descricao": "Mansão de Argynvostholt"
+    },
+    {
+      "id": "glifos_3", "suite": "glifos", "numero": 3,
+      "nome": "3 de Glifos — O Curandeiro",
+      "profecia": "Onde curandeiros tratam feridas físicas enquanto a alma de toda a cidade sangra, o objeto chegou como remédio e ficou como veneno esquecido.",
+      "alvo_semantico": "vallaki",
+      "alvo_descricao": "Cidade de Vallaki"
+    },
+    {
+      "id": "glifos_4", "suite": "glifos", "numero": 4,
+      "nome": "4 de Glifos — O Pastor",
+      "profecia": "À beira das águas onde um pastor perdeu seu rebanho para as trevas, onde a névoa é mais espessa ao amanhecer, ali o objeto repousa submerso.",
+      "alvo_semantico": "lago_baratok",
+      "alvo_descricao": "Lago Baratok"
+    },
+    {
+      "id": "glifos_5", "suite": "glifos", "numero": 5,
+      "nome": "5 de Glifos — O Druida",
+      "profecia": "Onde a natureza insiste em crescer entre lápides como ato de desafio, onde raízes tocam caixões e flores brotam de tragédia, ali o objeto aguarda.",
+      "alvo_semantico": "cemiterio_barovia",
+      "alvo_descricao": "Cemitério da Vila de Baróvia"
+    },
+    {
+      "id": "glifos_6", "suite": "glifos", "numero": 6,
+      "nome": "6 de Glifos — O Anarquista",
+      "profecia": "Onde a ordem mais antiga desta terra foi subvertida por poder sem lei, onde o caos tomou forma de âmbar dourado, ali o objeto vive em desordem perfeita.",
+      "alvo_semantico": "templo_de_ambar",
+      "alvo_descricao": "Templo de Âmbar"
+    },
+    {
+      "id": "glifos_7", "suite": "glifos", "numero": 7,
+      "nome": "7 de Glifos — O Charlatão",
+      "profecia": "O maior mentiroso da terra construiu sua torre com palavras falsas — nela, entre ilusões e mistificações, o objeto genuíno se esconde entre as falsificações.",
+      "alvo_semantico": "torre_baratok",
+      "alvo_descricao": "Torre solitária às margens do Lago Baratok"
+    },
+    {
+      "id": "glifos_8", "suite": "glifos", "numero": 8,
+      "nome": "8 de Glifos — O Bispo",
+      "profecia": "Onde o poder espiritual se curva ao poder temporal há séculos, nas câmaras mais profundas onde até bispos curvaram o joelho, ali repousa o objeto sagrado.",
+      "alvo_semantico": "cryptas_ravenloft",
+      "alvo_descricao": "Criptas do Castelo Ravenloft"
+    },
+    {
+      "id": "glifos_9", "suite": "glifos", "numero": 9,
+      "nome": "9 de Glifos — O Traidor",
+      "profecia": "A casa da traição mais calculada desta terra guarda mais segredos do que aparenta — entre lealdades vendidas e alianças proibidas, o objeto espera quem seja digno.",
+      "alvo_semantico": "mansao_wachter",
+      "alvo_descricao": "Mansão Wachterhaus, Vallaki"
+    },
+    {
+      "id": "glifos_10", "suite": "glifos", "numero": 10,
+      "nome": "10 de Glifos — O Mestre dos Glifos",
+      "profecia": "O mestre dos glifos inscreveu sua sabedoria nas pedras de um moinho que transforma mais do que grãos — os símbolos nas paredes guardam o caminho.",
+      "alvo_semantico": "moinho_dos_ossos",
+      "alvo_descricao": "Moinho dos Ossos"
+    }
+  ],
+  "deck_alto": [
+    {
+      "id": "alto_0", "numero": 0,
+      "nome": "O Louco",
+      "profecia_aliado": "Seu aliado virá de onde você menos espera — procure aquele que todos descartaram como louco, pois apenas quem perdeu o medo pode verdadeiramente guiá-lo.",
+      "alvo_aliado": "npc_louco_barovia",
+      "aliado_descricao": "Um habitante aparentemente demente que guarda sabedoria oculta",
+      "profecia_confronto": "O confronto final chegará onde a sanidade é irrelevante e o caos reina — nas ruas onde o primeiro grito desta terra ainda ressoa.",
+      "alvo_confronto": "vila_barovia",
+      "confronto_descricao": "Nas ruas da Vila de Baróvia"
+    },
+    {
+      "id": "alto_1", "numero": 1,
+      "nome": "O Mágico",
+      "profecia_aliado": "Um estudioso do oculto, marcado por cicatrizes de batalhas com o sobrenatural, aguarda escondido mas pronto para guiar seus passos com sabedoria duramente conquistada.",
+      "alvo_aliado": "van_richten",
+      "aliado_descricao": "O caçador de monstros Van Richten, em esconderijo",
+      "profecia_confronto": "Onde a magia se eleva em pedra solitária e o eco de feitiços perdidos ainda vibra nas paredes — ali seu destino final será escrito.",
+      "alvo_confronto": "torre_baratok",
+      "confronto_descricao": "Torre solitária às margens do Lago Baratok"
+    },
+    {
+      "id": "alto_2", "numero": 2,
+      "nome": "A Alta Sacerdotisa",
+      "profecia_aliado": "Uma mulher de fé inabalável, cujas orações foram respondidas e ignoradas em igual medida, reservou sua lealdade para o momento em que o bem precisasse de um campeão.",
+      "alvo_aliado": "madre_markovia",
+      "aliado_descricao": "Um servo da fé ainda puro em Krezk ou arredores",
+      "profecia_confronto": "Onde santos caíram e aberrações rezam em seu lugar, na abadia que esqueceu o propósito de sua fundação, ali o ciclo final se fecha.",
+      "alvo_confronto": "krezk_abadia",
+      "confronto_descricao": "Abadia de Saint Markovia, Krezk"
+    },
+    {
+      "id": "alto_3", "numero": 3,
+      "nome": "A Imperatriz",
+      "profecia_aliado": "Ela carrega um peso maior do que imagina — uma alma que atravessou séculos e que o próprio Conde reconhece. Proteja-a, pois ela é tanto chave quanto arma.",
+      "alvo_aliado": "ireena",
+      "aliado_descricao": "Ireena Kolyana, reencarnação de Tatyana",
+      "profecia_confronto": "Nas profundezas onde os ancestrais do Conde dormem em pedra fria, onde o sangue de linhagens extintas ainda ecoa, ali você o encontrará em sua forma mais vulnerável.",
+      "alvo_confronto": "cryptas_ravenloft",
+      "confronto_descricao": "Criptas do Castelo Ravenloft"
+    },
+    {
+      "id": "alto_4", "numero": 4,
+      "nome": "O Imperador",
+      "profecia_aliado": "Um homem marcado pela vergonha de não ter protegido o que amava buscará redenção ao seu lado — sua lealdade é inquestionável, mesmo que seu poder seja limitado.",
+      "alvo_aliado": "ismark",
+      "aliado_descricao": "Ismark Kolyanovich, irmão de Ireena",
+      "profecia_confronto": "Onde o poder absoluto se senta em pedra esculpida, onde gerações de conquistados curvaram o joelho, ali você desafiará o que domina esta terra.",
+      "alvo_confronto": "castelo_ravenloft",
+      "confronto_descricao": "Salão do Trono do Castelo Ravenloft"
+    },
+    {
+      "id": "alto_5", "numero": 5,
+      "nome": "O Hierofante",
+      "profecia_aliado": "Um guardião de conhecimentos proibidos, que serviu a forças maiores que ele por tempo demais, oferecerá orientação quando você provar ser digno de carregá-la.",
+      "alvo_aliado": "abade_krezk",
+      "aliado_descricao": "O Abade de Krezk, um ser ambíguo com poder e segredos",
+      "profecia_confronto": "Onde o âmbar aprisiona pecados milenares e a tentação sussurra em cada canto, ali o Conde vai quando precisa renovar seu pacto com as trevas.",
+      "alvo_confronto": "templo_de_ambar",
+      "confronto_descricao": "Templo de Âmbar"
+    },
+    {
+      "id": "alto_6", "numero": 6,
+      "nome": "Os Amantes",
+      "profecia_aliado": "O amor que transcende gerações será sua maior arma — aquela que carrega a chama de uma alma amada pelo inimigo estará ao seu lado quando mais precisar.",
+      "alvo_aliado": "ireena",
+      "aliado_descricao": "Ireena Kolyana, alma perseguida pelo Conde",
+      "profecia_confronto": "Onde flores mortas decoram pedra e amores impossíveis foram testemunhados por gárgulas sem expressão, ali o confronto final assumirá sua forma mais pessoal.",
+      "alvo_confronto": "castelo_ravenloft",
+      "confronto_descricao": "Jardins ou câmaras pessoais do Castelo Ravenloft"
+    },
+    {
+      "id": "alto_7", "numero": 7,
+      "nome": "A Carruagem",
+      "profecia_aliado": "Um povo nômade que conhece cada centímetro desta terra amaldiçoada guardará seu aliado mais valioso — busque a fogueira que nunca se apaga na névoa.",
+      "alvo_aliado": "vistani_davian",
+      "aliado_descricao": "Davian Martikov ou líder Vistani aliado",
+      "profecia_confronto": "Na estrada onde o destino de todos que entram nesta terra é selado, onde a névoa primeiro fechou seus braços ao redor de uma nova vítima — ali o círculo se fecha.",
+      "alvo_confronto": "estrada_svalich",
+      "confronto_descricao": "Estrada de Svalich, entrada em Baróvia"
+    },
+    {
+      "id": "alto_8", "numero": 8,
+      "nome": "A Força",
+      "profecia_aliado": "Um cavaleiro que a morte não quis receber completo aguarda em ruínas de honra — sua força vem de uma promessa não cumprida que o mantém de pé onde mortais caem.",
+      "alvo_aliado": "cavaleiro_revenant",
+      "aliado_descricao": "Um cavaleiro revenante de Argynvostholt",
+      "profecia_confronto": "Onde uma ordem de cavaleiros caiu mas não se curvou, onde pedras guardam a memória de uma resistência que o Conde nunca conseguiu apagar, ali ele se tornará vulnerável.",
+      "alvo_confronto": "argynvostholt",
+      "confronto_descricao": "Mansão de Argynvostholt"
+    },
+    {
+      "id": "alto_9", "numero": 9,
+      "nome": "O Eremita",
+      "profecia_aliado": "Um sábio que escolheu o exílio ao invés da derrota preservou sua sabedoria em isolamento — nos limites desta terra amaldiçoada, ele espera por quem tenha coragem para encontrá-lo.",
+      "alvo_aliado": "van_richten",
+      "aliado_descricao": "Van Richten, o caçador de monstros em isolamento",
+      "profecia_confronto": "Nas margens de um lago que reflete estrelas de céus que este lugar jamais viu, onde um eremita de poder imenso estudou o inimigo por anos, ali o destino reservou um palco.",
+      "alvo_confronto": "lago_baratok",
+      "confronto_descricao": "Margens do Lago Baratok"
+    },
+    {
+      "id": "alto_10", "numero": 10,
+      "nome": "A Roda da Fortuna",
+      "profecia_aliado": "A fortuna coloca ao seu lado aquele que a própria fortuna abandonou — um nobre caído que ainda carrega influência suficiente para virar a mesa quando menos se espera.",
+      "alvo_aliado": "noble_aliado_inesperado",
+      "aliado_descricao": "Um nobre ou figura de influência em posição precária",
+      "profecia_confronto": "Onde um aristocrata traidor tece seus planos sob lustre de normalidade, onde a roda da fortuna girou para o lado errado desta família — ali o Conde terá um encontro inesperado.",
+      "alvo_confronto": "mansao_wachter",
+      "confronto_descricao": "Mansão Wachterhaus, Vallaki"
+    },
+    {
+      "id": "alto_11", "numero": 11,
+      "nome": "A Justiça",
+      "profecia_aliado": "A justiça desta terra foi silenciada mas não morta — um guardião da ordem que sobreviveu aos séculos aguarda o momento de pesar as almas e encontrar o Conde em falta.",
+      "alvo_aliado": "cavaleiro_revenante_lider",
+      "aliado_descricao": "O líder dos cavaleiros revenantes de Argynvostholt",
+      "profecia_confronto": "Nas câmaras onde o julgamento deveria ter sido proferido há séculos e nunca foi, ali a balança da justiça pendurará seu veredito final.",
+      "alvo_confronto": "castelo_ravenloft",
+      "confronto_descricao": "Câmaras do tribunal do Castelo Ravenloft"
+    },
+    {
+      "id": "alto_12", "numero": 12,
+      "nome": "O Enforcado",
+      "profecia_aliado": "Um sacrifício que ainda anda — alguém que trocou parte de si por conhecimento do inimigo carrega essa transação como fardo e como dádiva ao mesmo tempo.",
+      "alvo_aliado": "npc_arrependido",
+      "aliado_descricao": "Um aliado marcado por um custo pessoal para obter informação vital",
+      "profecia_confronto": "Onde os mortos que resistiram foram pendurados como aviso para os vivos, o cemitério guarda não apenas corpos mas também a memória de resistências que ainda podem vencer.",
+      "alvo_confronto": "cemiterio_barovia",
+      "confronto_descricao": "Cemitério da Vila de Baróvia"
+    },
+    {
+      "id": "alto_13", "numero": 13,
+      "nome": "A Morte",
+      "profecia_aliado": "O aliado mais improvável virá vestido de ameaça — olhe além do terror para enxergar quem ainda mantém uma centelha de livre-arbítrio dentro de uma existência forçada pelas trevas.",
+      "alvo_aliado": "aliado_das_trevas",
+      "aliado_descricao": "Uma criatura das trevas com livre-arbítrio residual que pode ser aliada",
+      "profecia_confronto": "Nas profundezas mais fundas, onde os mortos mais antigos de uma linhagem milenar dormem em câmaras que nunca viram luz natural, ali a morte encontrará o senhor da morte.",
+      "alvo_confronto": "cryptas_ravenloft",
+      "confronto_descricao": "As criptas mais profundas do Castelo Ravenloft"
+    }
+  ]
+}

@@ -1,5 +1,6 @@
 import json
 import os
+import random
 import re
 import unicodedata
 from openai import OpenAI
@@ -478,6 +479,8 @@ def _preserve_runtime_state(old_state: dict, new_state: dict) -> dict:
         "pause_beat_segments",
         "resurrection_state",
         "tutorial_turn",
+        "campaign_event_state",
+        "tarokka_reading",
     ):
         if key in old_state and key not in new_state:
             new_state[key] = old_state[key]

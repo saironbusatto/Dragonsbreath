@@ -15,8 +15,11 @@ campanhas/
     ├── npcs.json            # Personagens não-jogadores
     ├── locais.json          # Localizações e gatilhos
     ├── itens_magicos.json   # Itens com propriedades mágicas
-    └── itens_comuns.json    # Itens mundanos e consumíveis
+    ├── itens_comuns.json    # Itens mundanos e consumíveis
+    └── <handler>.py         # (Opcional) Módulo de evento de campanha
 ```
+
+Arquivos `<handler>.py` são carregados dinamicamente pelo motor quando um gatilho do tipo `campaign_event` dispara. Cada campanha pode ter zero ou mais handlers.
 
 ---
 
@@ -83,6 +86,35 @@ Carrega localizações e seus gatilhos narrativos.
 
 ### `load_items(campaign_id) → tuple[list, list]`
 Retorna `(itens_magicos, itens_comuns)`.
+
+---
+
+### `load_campaign_handler(handler_name: str) → module | None`
+
+Carrega dinamicamente um módulo Python de evento da campanha atual.
+
+```python
+# Exemplo: handler_name="tarokka"
+# Carrega: campanhas/curse_of_strahd/tarokka.py
+mod = load_campaign_handler("tarokka")
+```
+
+Retorna o módulo Python ou `None` se não encontrado. Usa `importlib.util` para carregamento por caminho. O diretório base é inferido a partir do campo `files.npcs` da campanha ativa em `config.json`.
+
+---
+
+### `get_campaign_inspection_patterns() → dict[str, list[str]]`
+
+Varre todos os arquivos `.py` da pasta da campanha atual e agrega o dicionário `INSPECTION_KEYWORDS` de cada handler encontrado.
+
+```python
+# Retorno típico (curse_of_strahd com tarokka.py):
+{
+    "prophecies": ["profecias", "tarokka", "cartas de madam eva", ...]
+}
+```
+
+Usado por `game.py` para estender o sistema de inspeção HUD sem hardcodar padrões de campanha no motor.
 
 ---
 
@@ -193,3 +225,40 @@ Para adicionar uma nova campanha sem alterar código:
 ```
 
 A campanha aparecerá automaticamente no menu de seleção.
+
+---
+
+## Padrão de Handler de Evento de Campanha
+
+Para criar um minigame ou evento interativo exclusivo da campanha, adicione um arquivo `<nome>.py` na pasta da campanha com a seguinte interface:
+
+```python
+# Interface pública esperada pelo motor
+INSPECTION_KEYWORDS: dict[str, list[str]]  # padrões para o HUD
+
+def on_trigger(world_state: dict) -> dict:
+    """Chamado quando um gatilho com tipo='campaign_event' e handler='<nome>' dispara."""
+
+def process_turn(world_state: dict, player_action: str) -> dict:
+    """Processa uma rodada dentro do evento. Retorna {"narrative", "mood", "completed"}."""
+
+def get_inspect_response(world_state: dict) -> str:
+    """Resposta do HUD quando o jogador usar uma keyword de inspeção do handler."""
+
+def build_gm_context_block(world_state: dict) -> str:
+    """Bloco de texto injetado no system prompt do GM para cada turno."""
+```
+
+Para disparar o handler, registre o gatilho em `locais.json` com:
+```json
+"meu_evento": {
+  "tipo": "campaign_event",
+  "handler": "nome_do_arquivo",
+  "descricao": "...",
+  "sfx": "magia"
+}
+```
+
+O motor (`game.py`) detecta `tipo == "campaign_event"`, carrega o módulo via `load_campaign_handler()` e despacha. Nenhuma alteração em `game.py` é necessária.
+
+**Exemplo implementado:** `campanhas/curse_of_strahd/tarokka.py` — minigame de leitura de cartas com Madam Eva (5 cartas, estado persistido, injeção de localizações no GM).

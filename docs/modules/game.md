@@ -6,7 +6,7 @@
 
 ---
 
-## Atualizações Recentes (Curse of Strahd — Fases 1-7)
+## Atualizações Recentes (Curse of Strahd — Fases 1-7+)
 
 Principais evoluções incorporadas ao módulo:
 
@@ -20,6 +20,7 @@ Principais evoluções incorporadas ao módulo:
   - DC progressiva (12/15/18);
   - persistência de `death_count`, `resurrection_flaws` e `alignment`.
 - Ajustes para coerência de classe (vantagem/desvantagem contextual no Shadowdark).
+- **Arquitetura de eventos de campanha:** `game.py` despacha para handlers externos via `campaign_manager`. Zero código de campanha específica no motor.
 
 Referência detalhada por fase:
 - `docs/campaigns/curse-of-strahd-evolucao-fases.md`
@@ -68,6 +69,20 @@ Inicializa o modo RPG para novo jogo ou continuação.
 
 ---
 
+### `_build_campaign_gm_block(world_state) → str`
+
+Função auxiliar que despacha para `handler_mod.build_gm_context_block(world_state)` do handler ativo da campanha. Retorna string vazia se não houver handler ou leitura. O resultado é injetado ao final do system prompt do GM.
+
+---
+
+### `is_inspection_action(action) → str | None`
+
+Detecta ações de inspeção do HUD (inventário, status, etc.) e retorna o tipo da inspeção ou `None`.
+
+Além dos padrões base (`"inventory"`, `"status"`, `"location"`), verifica padrões registrados pelos handlers da campanha via `get_campaign_inspection_patterns()`. Para padrões de campanha, retorna `"campaign:<tipo>"` (ex: `"campaign:prophecies"`).
+
+---
+
 ### `new_game_loop(world_state, campaign_data)`
 **Loop principal do modo RPG.** Executa indefinidamente até `chikito`.
 
@@ -76,32 +91,57 @@ while True:
     # 1. Capturar input
     action = input() ou speech_to_text()
 
-    # 2. Checar comandos especiais
-    if action in ["inventário", "status", "chikito"]:
-        execute_command(action)
+    # 2. Checar comandos especiais / inspeção HUD
+    inspection_type = is_inspection_action(action)
+    if inspection_type:
+        # "campaign:prophecies" → handler.get_inspect_response()
+        # "inventory", "status" → respostas base
+        response = get_player_eyes_response(inspection_type, world_state)
+        print(response); narrator_speech(response)
         continue
 
-    # 3. Validar ação
+    if action in ["chikito"]:
+        break
+
+    # 3. Checar evento de campanha ativo (ex: minigame Tarokka)
+    campaign_event_state = world_state.get("campaign_event_state", {})
+    if campaign_event_state.get("stage") not in (None, "concluido"):
+        handler_mod = load_campaign_handler(campaign_event_state["handler"])
+        if handler_mod:
+            result = handler_mod.process_turn(world_state, action)
+            # exibir result["narrative"], sfx, áudio, salvar estado
+            continue
+
+    # 4. Validar ação
     objects = extract_objects_from_action(action)
     if not validate_player_action(objects, world_state):
         print(error_msg)
         continue
 
-    # 4. Verificar gatilhos
-    trigger_text = check_and_fire_trigger(world_state)
+    # 5. Verificar gatilhos
+    gatilho_id, gatilho_texto = check_and_fire_trigger(world_state)
 
-    # 5. Chamar Gemini Mestre
-    narrative = get_gm_narrative(world_state, campaign_data, action, trigger_text)
+    # 5a. Gatilho do tipo campaign_event?
+    if gatilho_id:
+        trigger_data = gatilhos_definidos.get(gatilho_id, {})
+        if trigger_data.get("tipo") == "campaign_event":
+            handler_mod = load_campaign_handler(trigger_data["handler"])
+            if handler_mod:
+                world_state = handler_mod.on_trigger(world_state)
+            gatilho_id = None  # suprime narrativa de gatilho padrão
 
-    # 6. Parsear updates
+    # 6. Chamar Mestre (GM)
+    narrative = get_gm_narrative(world_state, campaign_data, action, gatilho_texto)
+
+    # 7. Parsear updates
     parse_status_update(narrative, world_state)
     parse_inventory_update(narrative, world_state)
 
-    # 7. Áudio
+    # 8. Áudio
     trigger_contextual_sfx(narrative)
     narrator_speech(narrative)
 
-    # 8. Atualizar estado
+    # 9. Atualizar estado
     update_world_state(world_state, narrative)
     save_world_state(world_state)
     play_chime()
@@ -142,6 +182,7 @@ Constrói o prompt e chama o modelo para gerar a narrativa do Mestre.
 - Dados do contexto do ato (NPCs, locais, itens)
 - Regras da classe (habilidades e restrições)
 - Resultado de dados Shadowdark (quando aplicável)
+- Bloco de contexto do handler ativo via `_build_campaign_gm_block(world_state)` (ex: localizações dos itens do Tarokka)
 
 **Instruções chave no prompt:**
 - Narrar consequências da ação

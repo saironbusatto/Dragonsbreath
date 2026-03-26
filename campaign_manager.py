@@ -1,3 +1,4 @@
+import importlib.util
 import json
 import os
 
@@ -72,6 +73,54 @@ def list_available_campaigns() -> list:
         )
     )
     return campaigns
+
+def load_campaign_handler(handler_name: str):
+    """
+    Carrega dinamicamente um módulo de evento da campanha atual.
+    Ex.: handler_name="tarokka" → carrega campanhas/curse_of_strahd/tarokka.py
+    Retorna o módulo Python ou None se não existir.
+    """
+    files = get_campaign_files()
+    base_path = files.get("npcs", "")
+    if not base_path:
+        return None
+    campaign_dir = os.path.dirname(base_path)
+    module_path = os.path.join(campaign_dir, f"{handler_name}.py")
+    if not os.path.exists(module_path):
+        return None
+    try:
+        spec = importlib.util.spec_from_file_location(handler_name, module_path)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        return module
+    except Exception:
+        return None
+
+
+def get_campaign_inspection_patterns() -> dict:
+    """
+    Retorna padrões de inspeção do HUD registrados pela campanha atual.
+    Cada módulo de handler pode expor INSPECTION_KEYWORDS: dict[str, list[str]].
+    Agrega todos os handlers ativos encontrados na pasta da campanha.
+    """
+    files = get_campaign_files()
+    base_path = files.get("npcs", "")
+    if not base_path:
+        return {}
+    campaign_dir = os.path.dirname(base_path)
+    patterns: dict = {}
+    try:
+        for fname in os.listdir(campaign_dir):
+            if not fname.endswith(".py"):
+                continue
+            handler_name = fname[:-3]
+            mod = load_campaign_handler(handler_name)
+            if mod and hasattr(mod, "INSPECTION_KEYWORDS"):
+                patterns.update(mod.INSPECTION_KEYWORDS)
+    except Exception:
+        pass
+    return patterns
+
 
 def switch_campaign(campaign_id: str) -> bool:
     """Troca para uma campanha específica."""

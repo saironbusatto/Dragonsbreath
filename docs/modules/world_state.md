@@ -6,7 +6,7 @@ Módulo responsável por criar, carregar, salvar e atualizar o estado completo d
 
 ---
 
-## Campos Persistentes Recentes (Fases 2-7)
+## Campos Persistentes Recentes (Fases 2-7+)
 
 Além do estado base, o sistema agora preserva:
 
@@ -17,12 +17,15 @@ Além do estado base, o sistema agora preserva:
 - `world_state.combat_state`
 - `world_state.emotional_pacing`
 - `world_state.scene_npc_signatures`
+- `campaign_event_state` (runtime, estado da máquina de eventos de campanha)
+- `tarokka_reading` (runtime, cartas sorteadas e localizações dos itens sagrados)
 
 Isso garante continuidade entre sessões para:
 
 - atuação consistente de NPCs;
 - clímax e ritmo de combate;
-- custo narrativo de morte e retorno.
+- custo narrativo de morte e retorno;
+- minigames de campanha (ex: leitura do Tarokka) não perdem estado entre turnos.
 
 ---
 

@@ -62,6 +62,8 @@
       "ato_aparicao": 2,
       "gatilhos": {
         "cartas_tarokka": {
+          "tipo": "campaign_event",
+          "handler": "tarokka",
           "descricao": "Madam Eva vira uma carta e seu nome parece vibrar no ar.",
           "sfx": "magia",
           "proximo": null

@@ -10,7 +10,13 @@ from world_state_manager import (
     save_world_state,
     ensure_npc_signature_memory,
 )
-from campaign_manager import get_campaign_files, load_campaign_data, get_current_campaign
+from campaign_manager import (
+    get_campaign_files,
+    load_campaign_data,
+    get_current_campaign,
+    load_campaign_handler,
+    get_campaign_inspection_patterns,
+)
 
 # Import audio manager for text-to-speech and sound effects
 try:
@@ -733,6 +739,18 @@ def resolve_resurrection_offering(world_state: dict, offering_text: str) -> dict
     }
 
 
+def _build_campaign_gm_block(world_state: dict) -> str:
+    """Agrega blocos de contexto de todos os handlers de campanha ativos."""
+    event_state = world_state.get("campaign_event_state", {})
+    handler_name = event_state.get("handler", "") if isinstance(event_state, dict) else ""
+    if not handler_name:
+        return ""
+    handler_mod = load_campaign_handler(handler_name)
+    if handler_mod and hasattr(handler_mod, "build_gm_context_block"):
+        return handler_mod.build_gm_context_block(world_state)
+    return ""
+
+
 def get_gm_narrative(world_state: dict, player_action: str, game_context: dict, roll_result: dict | None = None) -> str:
     api_key = os.environ.get('OPENAI_API_KEY')
     if not api_key:
@@ -890,7 +908,7 @@ Use isso para validar agência sem prometer sucesso.
 27. Respeite regras de atuação específicas dos NPCs listados abaixo.
 
 Assinaturas ativas:
-{npc_signature_list}"""
+{npc_signature_list}{_build_campaign_gm_block(world_state)}"""
 
     # Bloco de dados Shadowdark (injetado quando há rolagem)
     dice_block = ""
@@ -1434,12 +1452,15 @@ _INSPECTION_PATTERNS = {
 def is_inspection_action(action: str) -> str | None:
     """
     Detecta se a ação é uma consulta de inspeção (não avança o tempo do jogo).
-    Retorna o tipo: 'inventory', 'health', 'environment', ou None.
+    Retorna o tipo: 'inventory', 'health', 'environment', 'campaign:<type>', ou None.
     """
     action_lower = action.lower().strip()
     for inspect_type, keywords in _INSPECTION_PATTERNS.items():
         if any(kw in action_lower for kw in keywords):
             return inspect_type
+    for inspect_type, keywords in get_campaign_inspection_patterns().items():
+        if any(kw in action_lower for kw in keywords):
+            return f"campaign:{inspect_type}"
     return None
 
 
@@ -1476,6 +1497,17 @@ def get_player_eyes_response(player_action: str, world_state: dict) -> str:
             "cena": ws.get("interactable_elements_in_scene", {}),
             "narrações_recentes": world_state.get("recent_narrations", []),
         }
+    elif inspect_type and inspect_type.startswith("campaign:"):
+        campaign_query_type = inspect_type[len("campaign:"):]
+        event_state = world_state.get("campaign_event_state", {})
+        handler_name = event_state.get("handler", "") if isinstance(event_state, dict) else ""
+        if not handler_name:
+            # Tenta inferir o handler pelo tipo de query (ex: "prophecies" → "tarokka")
+            handler_name = campaign_query_type
+        handler_mod = load_campaign_handler(handler_name)
+        if handler_mod and hasattr(handler_mod, "get_inspect_response"):
+            return handler_mod.get_inspect_response(world_state)
+        return "Não há informação de campanha disponível no momento."
     else:
         inv = pc.get("inventory", [])
         context = {
@@ -1538,6 +1570,24 @@ def new_game_loop(world_state: dict, save_filepath: str, game_context: dict):
             save_world_state(world_state, save_filepath)
             print("\nJogo salvo. Obrigado por jogar Dragon's Breath!")
             break
+
+        # ── Máquina de estados de eventos de campanha (ex: minigame Tarokka) ──
+        campaign_event_state = world_state.get("campaign_event_state", {})
+        if (isinstance(campaign_event_state, dict)
+                and campaign_event_state.get("stage") not in (None, "concluido")):
+            handler_name = campaign_event_state.get("handler", "")
+            handler_mod  = load_campaign_handler(handler_name) if handler_name else None
+            if handler_mod and hasattr(handler_mod, "process_turn"):
+                result   = handler_mod.process_turn(world_state, player_action)
+                narrative = result.get("narrative", "")
+                if narrative:
+                    print(f"\n{narrative}\n")
+                    trigger_contextual_sfx(narrative)
+                    if AUDIO_ENABLED:
+                        master_speech(narrative)
+                        play_chime()
+                save_world_state(world_state, save_filepath)
+                continue
 
         resurrection_state = world_state.get("resurrection_state", {})
         if isinstance(resurrection_state, dict) and resurrection_state.get("stage") == RESURRECTION_STAGE_AWAITING_OFFERING:
@@ -1602,6 +1652,15 @@ def new_game_loop(world_state: dict, save_filepath: str, game_context: dict):
             
             # Reset contador
             world_state["rodadas_sem_gatilho"] = 0
+
+            # ── Trigger especial: evento de campanha ───────────────────────
+            trigger_data = gatilhos_definidos.get(gatilho_id, {})
+            if trigger_data.get("tipo") == "campaign_event":
+                handler_name = trigger_data.get("handler", "")
+                handler_mod  = load_campaign_handler(handler_name) if handler_name else None
+                if handler_mod and hasattr(handler_mod, "on_trigger"):
+                    world_state = handler_mod.on_trigger(world_state)
+                gatilho_escolhido = None  # O evento tem seu próprio fluxo
         else:
             # Não ativou: incrementa
             world_state["rodadas_sem_gatilho"] = world_state.get("rodadas_sem_gatilho", 0) + 1
