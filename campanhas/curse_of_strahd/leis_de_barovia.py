@@ -10,6 +10,8 @@ Interface pública (campaign_manager hooks):
   get_inspect_response   — resposta HUD para queries do jogador
 """
 
+import json
+import os
 import random
 import re
 
@@ -148,6 +150,10 @@ _TAG_AWARENESS     = re.compile(r"\[STRAHD_AWARENESS:\+(\d+)\]", re.IGNORECASE)
 _TAG_VISTANI_CURSE = re.compile(r"\[VISTANI_CURSE:([^\]]+)\]",   re.IGNORECASE)
 _TAG_RAVEN         = re.compile(r"\[RAVEN_ATTACKED\]",           re.IGNORECASE)
 _TAG_NPC_USED      = re.compile(r"\[NPC_USED:([^\]]+)\]",        re.IGNORECASE)
+_TAG_GOTHIC_LOOT   = re.compile(r"\[GOTHIC_LOOT_REQUESTED\]",    re.IGNORECASE)
+
+_TRINKETS_PATH     = os.path.join(os.path.dirname(__file__), "gothic_trinkets.json")
+_MAX_INVENTORY_SLOTS = 10
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # HELPERS PRIVADOS
@@ -178,6 +184,14 @@ def _replenish_pool(world_state: dict) -> None:
 def _gender_pt(gender: str) -> str:
     return "ele" if gender == "m" else "ela"
 
+
+def _load_trinkets() -> list:
+    try:
+        with open(_TRINKETS_PATH, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError):
+        return []
+
 # ═══════════════════════════════════════════════════════════════════════════════
 # INSPECTION KEYWORDS
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -205,6 +219,10 @@ INSPECTION_KEYWORDS = {
     "raven_rule": [
         "corvos guardiões", "keepers of the feather",
         "inimigo dos corvos", "posso atacar corvos",
+    ],
+    "gothic_trinkets": [
+        "bugiganga", "treco", "item estranho", "objeto macabro",
+        "o que encontrei", "meus itens", "inventário gótico",
     ],
 }
 
@@ -339,7 +357,15 @@ def build_gm_context_block(world_state: dict) -> str:
             "recusam abrigo, informação e qualquer ajuda. Narre hostilidade se encontrados."
         )
 
-    # ── 7. Viagem — encontro pendente ─────────────────────────────────────────
+    # ── 7. Bugigangas Góticas ─────────────────────────────────────────────────
+    lines.append(
+        "BUGIGANGAS GÓTICAS: Se o jogador buscar/investigar/vasculhar (verbos de exploração) "
+        "e rolar >= DC 12 (sucesso Shadowdark), e o local não tiver item de missão específico, "
+        "inclua [GOTHIC_LOOT_REQUESTED] ao final da resposta para sortear uma bugiganga macabra. "
+        "Não nomeie o item — o sistema fará isso na próxima resposta."
+    )
+
+    # ── 8. Viagem — encontro pendente ─────────────────────────────────────────
     encounter = world_state.get("travel_encounter_pending")
     if encounter:
         lines.append(
@@ -347,7 +373,18 @@ def build_gm_context_block(world_state: dict) -> str:
             "Narre AGORA antes de descrever a chegada. O jogador resolve antes de prosseguir."
         )
 
-    # ── 8. Magia e Luz ────────────────────────────────────────────────────────
+    # ── 8. Gothic Loot pendente ───────────────────────────────────────────────
+    gothic_pending = world_state.get("gothic_loot_pending")
+    if gothic_pending:
+        item = gothic_pending.get("item", "")
+        lines.append(
+            f"⚠ GOTHIC LOOT PRIORITÁRIO: O jogador encontrou um item macabro. "
+            f"Narre a descoberta de '{item}' com dois parágrafos de atmosfera gótica sombria. "
+            f"Inclua obrigatoriamente: [INVENTORY_UPDATE] {{\"add\": [\"{item}\"]}} "
+            f"e [MOOD:tense] na sua resposta."
+        )
+
+    # ── 9. Magia e Luz ────────────────────────────────────────────────────────
     lines.append(
         "MAGIA E LUZ: Luz do dia não é solar real — vampiros não sofrem dano solar. "
         "Escape planar (Teleport, Plane Shift para fora) FALHA — sem [STATUS_UPDATE]. "
@@ -396,6 +433,27 @@ def post_narrative_hook(world_state: dict, gm_narrative: str) -> dict:
     # ── Corvo atacado ─────────────────────────────────────────────────────────
     if _TAG_RAVEN.search(gm_narrative):
         world_state["raven_enemy"] = True
+
+    # ── Gothic Loot ───────────────────────────────────────────────────────────
+    # Limpa pending após 1 turno (GM já narrou na resposta anterior)
+    if world_state.get("gothic_loot_pending"):
+        world_state["gothic_loot_pending"] = None
+
+    if _TAG_GOTHIC_LOOT.search(gm_narrative):
+        inventory = world_state.get("player_character", {}).get("inventory", [])
+        slots_used = len(inventory) if isinstance(inventory, list) else 0
+        if slots_used < _MAX_INVENTORY_SLOTS:
+            used_trinkets = world_state.get("gothic_trinkets_used", [])
+            all_trinkets  = _load_trinkets()
+            available     = [t for t in all_trinkets if t not in used_trinkets]
+            if not available:
+                # pool esgotado — reutiliza tudo
+                available = all_trinkets
+                world_state["gothic_trinkets_used"] = []
+            if available:
+                chosen = random.choice(available)
+                world_state.setdefault("gothic_trinkets_used", []).append(chosen)
+                world_state["gothic_loot_pending"] = {"item": chosen}
 
     # ── Limpa encontro pendente após 1 turno de resolução ────────────────────
     if world_state.get("travel_encounter_pending") and not world_state.get("in_mists"):
