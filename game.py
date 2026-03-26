@@ -389,25 +389,30 @@ NUNCA ultrapasse 4 frases de narração. Menos é mais.
     if tutorial_turn == 3:
         tutorial_block = (
             "\n\n[MODO TUTORIAL — TURNO 1 DE 3]\n"
-            "Este é o primeiro turno do jogador. Ele está aprendendo a jogar.\n"
-            "Após narrar a cena de abertura normalmente, termine com uma dica sussurrada "
-            "entre parênteses sugerindo uma ação concreta E mencionando que pode pressionar H para ver atalhos de teclado. "
-            "Ex: '(Dica: tente dizer \"examino o [objeto]\" ou \"falo com o [personagem]\" · pressione H para ver os atalhos do jogo)'\n"
-            "A dica deve mencionar algo que você acabou de descrever na cena."
+            "Este é o primeiro turno do jogador. Ele está aprendendo a jogar e pode ser deficiente visual — "
+            "portanto as dicas PRECISAM ser ditas em voz alta, não podem depender de texto na tela.\n"
+            "Após narrar a cena de abertura normalmente, fale em voz alta uma dica como parte da narração. "
+            "Use um tom de voz íntimo e sussurrado, como uma consciência falando. Exemplo:\n"
+            "\"(Uma voz suave sussurra: fale sua ação em voz alta — tente dizer: examino o [objeto] "
+            "ou: falo com o [personagem]. Pressione a tecla H a qualquer momento para ouvir todos os comandos disponíveis.)\"\n"
+            "A dica deve mencionar algo concreto da cena que você acabou de descrever."
         )
     elif tutorial_turn == 2:
         tutorial_block = (
             "\n\n[MODO TUTORIAL — TURNO 2 DE 3]\n"
-            "O jogador está aprendendo. Após narrar o resultado da ação, "
-            "sugira discretamente que ele pode pegar itens do ambiente ou explorar. "
-            "Ex: '(Dica: você pode dizer \"pego o [item]\" ou \"olho ao redor\")'"
+            "O jogador está aprendendo. As dicas precisam ser narradas em voz alta — não dependem de texto na tela.\n"
+            "Após narrar o resultado da ação, acrescente em voz alta: "
+            "\"(Voz suave: você também pode pegar o que está ao seu redor — diga: pego o [item]. "
+            "Pressione I para consultar seu inventário, ou S para ver sua saúde, a qualquer momento.)\""
         )
     elif tutorial_turn == 1:
         tutorial_block = (
             "\n\n[MODO TUTORIAL — TURNO 3 DE 3]\n"
-            "Último turno guiado. Narre normalmente e encerre com: "
-            "'(Dica: diga \"status\" para ver sua saúde, ou \"inventário\" para ver seus itens — a qualquer momento.)' "
-            "Após isso, o jogo segue sem mais dicas."
+            "Último turno guiado. As dicas precisam ser narradas — não dependem de texto na tela.\n"
+            "Narre normalmente e encerre com esta fala em voz alta: "
+            "\"(Voz suave: diga 'status' para ouvir sua saúde, ou 'inventário' para ouvir seus itens — "
+            "em qualquer momento do jogo. Pressione H para ouvir a lista completa de comandos. "
+            "A partir de agora você está por conta própria. Boa sorte.)\""
         )
 
     # USER: contexto dinâmico que muda a cada turno
