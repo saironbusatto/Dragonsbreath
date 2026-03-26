@@ -321,39 +321,38 @@ def detect_sfx_list(narrative_text: str) -> list[dict]:
 # ─── TTS server-side (retorna bytes MP3) ─────────────────────────────────────
 
 def synthesize_speech(text: str, voice_type: str = "master") -> bytes | None:
-    """Chama Google Cloud TTS e retorna os bytes MP3, ou None se indisponível."""
-    creds_path = os.environ.get("GOOGLE_APPLICATION_CREDENTIALS", "")
-    creds_json = os.environ.get("GOOGLE_CREDENTIALS_JSON", "")
-    print(f"[TTS] GOOGLE_APPLICATION_CREDENTIALS={creds_path!r}")
-    print(f"[TTS] GOOGLE_CREDENTIALS_JSON set={bool(creds_json)}")
+    """Chama OpenAI TTS e retorna os bytes MP3, ou None se indisponível.
+
+    Vozes configuráveis via env:
+      OPENAI_TTS_VOICE_MASTER   (padrão: onyx)
+      OPENAI_TTS_VOICE_NARRATOR (padrão: nova)
+    Modelo configurável via OPENAI_TTS_MODEL (padrão: tts-1).
+    """
+    api_key = os.environ.get("OPENAI_API_KEY")
+    if not api_key:
+        print("[TTS] OPENAI_API_KEY não configurada")
+        return None
+
+    if voice_type == "narrator":
+        voice = os.getenv("OPENAI_TTS_VOICE_NARRATOR", "nova")
+    else:
+        voice = os.getenv("OPENAI_TTS_VOICE_MASTER", "onyx")
+
+    model = os.getenv("OPENAI_TTS_MODEL", "tts-1")
+    print(f"[TTS] Sintetizando com voz={voice} modelo={model}, texto={text[:60]!r}...")
 
     try:
-        from google.cloud import texttospeech
-
-        if voice_type == "narrator":
-            voice_name = os.getenv("GOOGLE_TTS_VOICE_NARRATOR", "pt-BR-Neural2-A")
-            gender = texttospeech.SsmlVoiceGender.FEMALE
-        else:
-            voice_name = os.getenv("GOOGLE_TTS_VOICE_MASTER", "pt-BR-Neural2-B")
-            gender = texttospeech.SsmlVoiceGender.MALE
-
-        print(f"[TTS] Sintetizando com voz={voice_name}, texto={text[:60]!r}...")
-        client = texttospeech.TextToSpeechClient()
-        response = client.synthesize_speech(
-            input=texttospeech.SynthesisInput(text=text),
-            voice=texttospeech.VoiceSelectionParams(
-                language_code="pt-BR",
-                name=voice_name,
-                ssml_gender=gender,
-            ),
-            audio_config=texttospeech.AudioConfig(
-                audio_encoding=texttospeech.AudioEncoding.MP3,
-                speaking_rate=1.0,
-                pitch=0.0,
-            ),
+        from openai import OpenAI as _OpenAI
+        client = _OpenAI(api_key=api_key)
+        response = client.audio.speech.create(
+            model=model,
+            voice=voice,
+            input=text,
+            response_format="mp3",
         )
-        print(f"[TTS] OK — {len(response.audio_content)} bytes")
-        return response.audio_content
+        audio_bytes = response.content
+        print(f"[TTS] OK — {len(audio_bytes)} bytes")
+        return audio_bytes
     except Exception as e:
         print(f"[TTS] ERRO: {e}")
         return None
