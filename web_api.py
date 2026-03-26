@@ -155,6 +155,25 @@ _SFX_LOCAL_FALLBACK = {
 # Cache: query → URL (evita chamadas repetidas ao Freesound)
 _sfx_cache: dict[str, str] = {}
 
+# Música de abertura (buscada uma vez, cacheada para toda a sessão do servidor)
+_intro_music_url: str | None = None
+
+def _get_intro_music() -> str | None:
+    global _intro_music_url
+    if _intro_music_url:
+        return _intro_music_url
+    for query in [
+        "epic orchestral fanfare fantasy opening",
+        "majestic brass fanfare heroic intro",
+        "orchestral sting medieval heroic",
+    ]:
+        url = _search_freesound(query, duration_filter="duration:[4 TO 20]")
+        if url:
+            _intro_music_url = url
+            print(f"[INTRO] Música de abertura: {url}")
+            return url
+    return None
+
 # Som de dissonância para ação inválida
 _sfx_error_url: str | None = None
 
@@ -553,16 +572,18 @@ def start_game(req: StartRequest):
     mood = world_state.get("narration_mood", "normal")
     tts_speed = _resolve_tts_speed(mood, tutorial_active=req.tutorial)
     pause_segments = world_state.get("pause_beat_segments", [])
-    audio, audio_timeline = build_audio_payload(
-        opening_clean,
-        "master",
-        tts_speed,
-        pause_segments=pause_segments,
-    )
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=3) as pool:
+        future_tts     = pool.submit(build_audio_payload, opening_clean, "master", tts_speed, pause_segments)
+        future_ambient = pool.submit(_get_ambient_for_act, current_act)
+        future_intro   = pool.submit(_get_intro_music)
+        audio, audio_timeline = future_tts.result()
+        ambient_url           = future_ambient.result()
+        intro_music_url       = future_intro.result()
+
     world_state["pause_beat_segments"] = []
     world_state["pause_beat_count"] = 0
     sfx = detect_sfx_list(opening_clean)
-    ambient_url = _get_ambient_for_act(current_act)
 
     return {
         "session_id": session_id,
@@ -571,6 +592,7 @@ def start_game(req: StartRequest):
         "audio_timeline": audio_timeline,
         "sfx": sfx,
         "mood": mood,
+        "intro_music": intro_music_url,
         "ambient": {"url": ambient_url, "volume": 0.15} if ambient_url else None,
         "state": _state_summary(world_state),
         "tutorial_turn": world_state.get("tutorial_turn", 0),

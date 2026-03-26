@@ -734,7 +734,7 @@
       updateTutorialHint(tutorialTurn);
 
       // Intro majestosa antes do tutorial começar
-      await playMajesticIntro();
+      await playIntroMusic(data.intro_music);
 
       // Inicia loop de ambiente do ato 1
       if (data.ambient) setAmbient(data.ambient.url, data.ambient.volume);
@@ -1093,7 +1093,19 @@
     });
   }
 
-  // ── Intro majestosa (Web Audio, sem arquivo externo) ─────────────────────
+  // ── Intro: URL do Freesound (com fallback para síntese Web Audio) ─────────
+  function playIntroMusic(url) {
+    if (!url) return playMajesticIntro();
+    return new Promise(resolve => {
+      const audio = new Audio(url);
+      audio.volume = 0.75;
+      audio.onended = resolve;
+      audio.onerror = () => playMajesticIntro().then(resolve);
+      audio.play().catch(() => playMajesticIntro().then(resolve));
+    });
+  }
+
+  // ── Intro majestosa — fallback Web Audio (sem arquivo externo) ────────────
   function playMajesticIntro() {
     return new Promise(resolve => {
       const ctx = new (window.AudioContext || window.webkitAudioContext)();
