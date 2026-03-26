@@ -486,6 +486,9 @@ def _preserve_runtime_state(old_state: dict, new_state: dict) -> dict:
         "time_of_day_counter",
         "npc_soul_cache",
         "travel_encounter_pending",
+        "vistani_curse",
+        "raven_enemy",
+        "npc_pool",
     ):
         if key in old_state and key not in new_state:
             new_state[key] = old_state[key]
