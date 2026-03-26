@@ -283,7 +283,11 @@
       color: #3a2a3a;
       letter-spacing: 1px;
       text-align: center;
+      opacity: 0;
+      transition: opacity 0.8s;
+      pointer-events: none;
     }
+    #hint.visible { opacity: 1; }
 
     /* Toast de erro */
     #toast {
@@ -1065,7 +1069,8 @@
 
   // ── Tutorial hint ─────────────────────────────────────────────────────────
   function updateTutorialHint(turn) {
-    const el = document.getElementById('tutorial-hint');
+    const el   = document.getElementById('tutorial-hint');
+    const hint = document.getElementById('hint');
     const hints = {
       3: 'dica: fale com um personagem ou examine algo ao seu redor · pressione H para ver todos os atalhos',
       2: 'dica: você pode pegar itens — tente dizer "pego o [item]" · I = inventário · S = status',
@@ -1074,8 +1079,10 @@
     if (hints[turn]) {
       el.textContent = hints[turn];
       el.classList.add('visible');
+      hint.classList.add('visible');
     } else {
       el.classList.remove('visible');
+      hint.classList.remove('visible');
     }
   }
 
