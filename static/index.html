@@ -1204,6 +1204,7 @@
   let _selectedClassIdx = -1;
   let _classScreenActive = false;
   let _classRecording   = false;
+  let _classProcessing  = false; // impede onstops concorrentes (sobreposição de voz)
   let _classMediaRecorder = null;
   let _classChunks      = [];
   let _classTTSAudio    = null; // áudio atual de narração de classe
@@ -1376,7 +1377,7 @@
   }
 
   async function startClassRecording() {
-    if (_classRecording || !_classScreenActive) return;
+    if (_classRecording || _classProcessing || !_classScreenActive) return;
     // Interrompe narração para ouvir
     if (_classTTSAudio) { _classTTSAudio.pause(); _classTTSAudio = null; }
 
@@ -1396,13 +1397,14 @@
       _classMediaRecorder.ondataavailable = e => { if (e.data.size > 0) _classChunks.push(e.data); };
       _classMediaRecorder.onstop = async () => {
         _classRecording = false;
+        _classProcessing = true; // bloqueia novos onstops concorrentes até terminar
         btn.classList.remove('listening');
         btn.setAttribute('aria-label', 'Falar para escolher classe');
         document.getElementById('class-voice-hint').textContent =
           'ESPAÇO · FALE O NÚMERO · TECLE 1-4 · SETAS PARA NAVEGAR';
         stream.getTracks().forEach(t => t.stop());
 
-        if (!_classChunks.length || !_classScreenActive) return;
+        if (!_classChunks.length || !_classScreenActive) { _classProcessing = false; return; }
         try {
           const blob = new Blob(_classChunks, { type: mimeType });
           const b64  = await blobToBase64(blob);
@@ -1412,7 +1414,12 @@
             body: JSON.stringify({ audio: b64, mime_type: mimeType }),
           });
           const { text } = await res.json();
-          if (!text) { await playClassListing(); startClassRecording(); return; }
+          if (!text) {
+            _classProcessing = false;
+            await playClassListing();
+            startClassRecording();
+            return;
+          }
           const idx = parseClassChoice(text);
           if (idx >= 0 && idx < _classDetails.length) {
             await selectClass(idx);
@@ -1421,7 +1428,11 @@
             await playClassListing();
             startClassRecording();
           }
-        } catch { showToast('Erro ao transcrever. Tente Espaço de novo.'); }
+        } catch {
+          showToast('Erro ao transcrever. Tente Espaço de novo.');
+        } finally {
+          _classProcessing = false;
+        }
       };
 
       _classMediaRecorder.start(100);
@@ -1518,6 +1529,7 @@
     if (e.key === 'Escape') {
       e.preventDefault();
       _classScreenActive = false;
+      _classProcessing = false;
       if (_classTTSAudio) { _classTTSAudio.pause(); _classTTSAudio = null; }
       if (_classMediaRecorder?.state === 'recording') _classMediaRecorder.stop();
       document.getElementById('class-screen').classList.add('hidden');
@@ -2444,8 +2456,10 @@
     Clerk.addListener(async ({ user }) => {
       if (user) {
         authScreen.classList.add('hidden');
+        const classScreenEl = document.getElementById('class-screen');
         if (savesScreen.classList.contains('hidden') &&
             setupScreen.style.display !== 'flex' &&
+            classScreenEl.classList.contains('hidden') &&
             document.getElementById('game-screen').style.display !== 'flex') {
           await showSavesScreen();
         }
