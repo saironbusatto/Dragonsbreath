@@ -349,10 +349,17 @@ class TestCurseOfStrahdNarrativeQA:
         """Bardo deve ter vantagem social; Aventureiro sofre desvantagem em persuasão."""
         action = "tento persuadir o aldeão baroviano desconfiado a contar a verdade"
 
-        with patch("game.random.randint", side_effect=[5, 18]):
-            bard_roll = game.resolve_action_roll(action, world_state_rpg["player_character"])
-        with patch("game.random.randint", side_effect=[5, 18]):
-            adventurer_roll = game.resolve_action_roll(action, world_state_aventureiro["player_character"])
+        mock_campaign = {
+            "class_templates": {
+                "Bardo":       {"roll_advantages": ["persuad", "convenc"], "roll_disadvantages": []},
+                "Aventureiro": {"roll_advantages": [], "roll_disadvantages": ["persuad", "convenc"]},
+            }
+        }
+        with patch("game.get_current_campaign", return_value=mock_campaign):
+            with patch("game.random.randint", side_effect=[5, 18]):
+                bard_roll = game.resolve_action_roll(action, world_state_rpg["player_character"])
+            with patch("game.random.randint", side_effect=[5, 18]):
+                adventurer_roll = game.resolve_action_roll(action, world_state_aventureiro["player_character"])
 
         assert bard_roll["modifier"] == "advantage"
         assert bard_roll["success"] is True
@@ -422,16 +429,24 @@ class TestCurseOfStrahdNarrativeQA:
             result3 = game.resolve_resurrection_offering(world_state_rpg, offering)
         assert result3["result_type"] == "success"
 
+        mock_campaign = {
+            "resurrection": {
+                "dark_gifts": [
+                    ("asas de osso", "você precisa mastigar terra de cemitério toda madrugada.")
+                ]
+            }
+        }
         world_state_rpg["player_character"]["status"]["hp"] = 0
         started, _ = game.start_resurrection_limbo(world_state_rpg)
         assert started is True
         assert world_state_rpg["resurrection_state"]["dc"] == 18
-        with patch("game.random.randint", return_value=1):
-            with patch(
-                "game.random.choice",
-                return_value=("asas de osso", "você precisa mastigar terra de cemitério toda madrugada."),
-            ):
-                result4 = game.resolve_resurrection_offering(world_state_rpg, offering)
+        with patch("game.get_current_campaign", return_value=mock_campaign):
+            with patch("game.random.randint", return_value=1):
+                with patch(
+                    "game.random.choice",
+                    return_value=("asas de osso", "você precisa mastigar terra de cemitério toda madrugada."),
+                ):
+                    result4 = game.resolve_resurrection_offering(world_state_rpg, offering)
         assert result4["result_type"] == "critical_failure"
         assert world_state_rpg["player_character"]["death_count"] == 4
         assert world_state_rpg["player_character"]["alignment"] == "maligno"

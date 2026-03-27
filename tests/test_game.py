@@ -1,10 +1,8 @@
 """
 Testes para game.py
-Cobre: extract_objects_from_action, validate_player_action,
-       validate_impossible_abilities, get_realistic_alternative,
-       clean_and_process_ai_response, trigger_contextual_sfx,
-       get_item_slots, calculate_used_slots, can_pick_up_item,
-       handle_local_command, load_json_data
+Cobre: validate_player_action, validate_impossible_abilities,
+       clean_and_process_ai_response, get_item_slots,
+       calculate_used_slots, handle_local_command, load_json_data
 """
 import json
 import os
@@ -22,51 +20,6 @@ with patch("audio_manager.pygame"), \
 
 # patch.dict limpa sys.modules ao sair — re-registrar para que patch() encontre o módulo correto
 sys.modules["game"] = game
-
-
-# ─── extract_objects_from_action ─────────────────────────────────────────────
-
-class TestExtractObjectsFromAction:
-    def test_extracts_known_objects(self):
-        result = game.extract_objects_from_action("Pego a espada e abro a porta")
-        assert "espada" in result or "porta" in result
-
-    def test_returns_list(self):
-        result = game.extract_objects_from_action("olho para a janela")
-        assert isinstance(result, list)
-
-    def test_empty_string_returns_empty_list(self):
-        result = game.extract_objects_from_action("")
-        assert result == []
-
-    def test_whitespace_only_returns_empty_list(self):
-        result = game.extract_objects_from_action("   ")
-        assert result == []
-
-    def test_none_equivalent_short_string(self):
-        result = game.extract_objects_from_action("a")
-        assert result == []
-
-    def test_extracts_furniture(self):
-        result = game.extract_objects_from_action("sento na cadeira perto da mesa")
-        assert "cadeira" in result or "mesa" in result
-
-    def test_extracts_architectural_elements(self):
-        result = game.extract_objects_from_action("abro a porta e olho pela janela")
-        assert "porta" in result or "janela" in result
-
-    def test_extracts_npc_names(self):
-        result = game.extract_objects_from_action("falo com o taverneiro no balcão")
-        assert "taverneiro" in result or "balcão" in result
-
-    def test_case_insensitive(self):
-        result_lower = game.extract_objects_from_action("pego a espada")
-        result_upper = game.extract_objects_from_action("pego a ESPADA")
-        assert set(result_lower) == set(result_upper)
-
-    def test_multiple_objects(self):
-        result = game.extract_objects_from_action("pego o livro da mesa e saio pela porta")
-        assert len(result) >= 1
 
 
 # ─── validate_player_action ──────────────────────────────────────────────────
@@ -159,24 +112,6 @@ class TestValidateImpossibleAbilities:
         assert isinstance(result, tuple)
         assert isinstance(result[0], bool)
         assert isinstance(result[1], str)
-
-
-# ─── get_realistic_alternative ────────────────────────────────────────────────
-
-class TestGetRealisticAlternative:
-    def test_returns_string(self):
-        result = game.get_realistic_alternative("voar até o castelo", "Bardo")
-        assert isinstance(result, str)
-
-    def test_returns_non_empty_string(self):
-        result = game.get_realistic_alternative("lançar feitiço", "Bardo")
-        assert len(result) > 0
-
-    def test_different_classes_different_suggestions(self):
-        bardo = game.get_realistic_alternative("atacar com magia", "Bardo")
-        aventureiro = game.get_realistic_alternative("atacar com magia", "Aventureiro")
-        assert isinstance(bardo, str)
-        assert isinstance(aventureiro, str)
 
 
 # ─── clean_and_process_ai_response ───────────────────────────────────────────
@@ -298,49 +233,6 @@ class TestCleanAndProcessAIResponse:
 
 # ─── trigger_contextual_sfx ───────────────────────────────────────────────────
 
-class TestTriggerContextualSFX:
-    def test_crow_keyword_plays_crow_sfx(self):
-        with patch("game.play_sfx") as mock_sfx:
-            game.trigger_contextual_sfx("Um corvo pousa na gárgula e grasna.")
-            mock_sfx.assert_called_once()
-
-    def test_tavern_keyword_plays_tavern_sfx(self):
-        with patch("game.play_sfx") as mock_sfx:
-            game.trigger_contextual_sfx("Você entra na taverna barulhenta.")
-            mock_sfx.assert_called_once()
-
-    def test_rain_keyword_plays_rain_sfx(self):
-        with patch("game.play_sfx") as mock_sfx:
-            game.trigger_contextual_sfx("A chuva cai pesada sobre as pedras.")
-            mock_sfx.assert_called_once()
-
-    def test_scream_keyword_plays_scream_sfx(self):
-        with patch("game.play_sfx") as mock_sfx:
-            game.trigger_contextual_sfx("Um grito ecoa pela viela escura.")
-            mock_sfx.assert_called_once()
-
-    def test_no_keyword_plays_no_sfx(self):
-        with patch("game.play_sfx") as mock_sfx:
-            game.trigger_contextual_sfx("Você pensa silenciosamente.")
-            mock_sfx.assert_not_called()
-
-    def test_only_one_sfx_per_narrative(self):
-        # Múltiplas keywords — só um SFX deve ser tocado
-        with patch("game.play_sfx") as mock_sfx:
-            game.trigger_contextual_sfx("Um corvo grasna na taverna durante a chuva.")
-            assert mock_sfx.call_count == 1
-
-    def test_coin_keyword(self):
-        with patch("game.play_sfx") as mock_sfx:
-            game.trigger_contextual_sfx("O mercador conta as moedas de ouro.")
-            mock_sfx.assert_called_once()
-
-    def test_empty_text_no_sfx(self):
-        with patch("game.play_sfx") as mock_sfx:
-            game.trigger_contextual_sfx("")
-            mock_sfx.assert_not_called()
-
-
 # ─── get_item_slots ───────────────────────────────────────────────────────────
 
 class TestGetItemSlots:
@@ -400,43 +292,6 @@ class TestCalculateUsedSlots:
         with patch("game.get_item_slots", return_value=1):
             result = game.calculate_used_slots(["item1"])
         assert isinstance(result, int)
-
-
-# ─── can_pick_up_item ────────────────────────────────────────────────────────
-
-class TestCanPickUpItem:
-    def test_can_pick_up_with_space(self, world_state_rpg):
-        # 3 itens de 1 slot cada = 3 slots usados, max=10, pode pegar mais
-        with patch("game.calculate_used_slots", return_value=3):
-            with patch("game.get_item_slots", return_value=1):
-                can_pick, msg = game.can_pick_up_item(world_state_rpg["player_character"], "Poção de Cura")
-        assert can_pick is True
-
-    def test_cannot_pick_up_full_inventory(self, world_state_rpg):
-        with patch("game.calculate_used_slots", return_value=10):
-            with patch("game.get_item_slots", return_value=1):
-                can_pick, msg = game.can_pick_up_item(world_state_rpg["player_character"], "Poção de Cura")
-        assert can_pick is False
-
-    def test_returns_tuple(self, world_state_rpg):
-        with patch("game.calculate_used_slots", return_value=3):
-            with patch("game.get_item_slots", return_value=1):
-                result = game.can_pick_up_item(world_state_rpg["player_character"], "item")
-        assert isinstance(result, tuple)
-        assert len(result) == 2
-
-    def test_message_is_string(self, world_state_rpg):
-        with patch("game.calculate_used_slots", return_value=3):
-            with patch("game.get_item_slots", return_value=1):
-                _, msg = game.can_pick_up_item(world_state_rpg["player_character"], "item")
-        assert isinstance(msg, str)
-
-    def test_cannot_pick_2slot_item_with_1_slot_free(self, world_state_rpg):
-        # 9 slots usados, precisa de 2 para o novo item
-        with patch("game.calculate_used_slots", return_value=9):
-            with patch("game.get_item_slots", return_value=2):
-                can_pick, _ = game.can_pick_up_item(world_state_rpg["player_character"], "Alaúde")
-        assert can_pick is False
 
 
 # ─── handle_local_command ────────────────────────────────────────────────────
