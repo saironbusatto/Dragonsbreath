@@ -185,6 +185,56 @@ def _get_intro_music() -> str | None:
             return url
     return None
 
+# ── Menu ambient + temas de classe ────────────────────────────────────────────
+_menu_ambient_url: str | None = None
+_class_theme_cache: dict[str, str | None] = {}
+
+_CLASS_THEME_QUERIES: dict[str, list[str]] = {
+    "bardo":      ["medieval lute bard folk music", "lute medieval bard music fantasy"],
+    "inquisidor": ["church organ dark sacred medieval", "gregorian chant organ cathedral dark"],
+    "mago":       ["arcane mystical magic ambient fantasy", "mysterious sorcery arcane ambient"],
+    "guerreiro":  ["epic medieval battle drums warrior", "battle drums war medieval"],
+    "ladino":     ["dark medieval tavern sneaky ambient", "sneaky dark thief medieval"],
+    "clerigo":    ["sacred choir healing divine fantasy", "divine healing choir ambient"],
+    "ranger":     ["forest nature outdoor medieval", "nature forest ambient outdoor"],
+    "druida":     ["mystical forest druid nature ambient", "forest mystical nature ambient"],
+}
+
+
+def _get_menu_ambient() -> str | None:
+    global _menu_ambient_url
+    if _menu_ambient_url is not None:
+        return _menu_ambient_url or None
+    for query in [
+        "dark gothic haunted castle ambience",
+        "medieval dark dungeon atmosphere ambient",
+        "dark fantasy ambient drone atmosphere",
+    ]:
+        url = _search_freesound(query, duration_filter=None)
+        if url:
+            _menu_ambient_url = url
+            print(f"[MENU] Ambient: {url}")
+            return url
+    _menu_ambient_url = ""
+    return None
+
+
+def _get_class_theme(class_id: str) -> str | None:
+    import unicodedata
+    key = unicodedata.normalize("NFD", class_id.lower().strip())
+    key = "".join(c for c in key if unicodedata.category(c) != "Mn")
+    if key in _class_theme_cache:
+        return _class_theme_cache[key]
+    for query in _CLASS_THEME_QUERIES.get(key, []):
+        url = _search_freesound(query, duration_filter=None)
+        if url:
+            _class_theme_cache[key] = url
+            print(f"[CLASS THEME] {class_id}: {url}")
+            return url
+    _class_theme_cache[key] = None
+    return None
+
+
 # Som de dissonância para ação inválida
 _sfx_error_url: str | None = None
 
@@ -558,6 +608,17 @@ def transcribe_audio(req: TranscribeRequest):
 @app.get("/api/campaigns")
 def get_campaigns():
     return {"campaigns": list_available_campaigns()}
+
+
+@app.get("/api/menu_assets")
+def get_menu_assets():
+    """Retorna ambient do menu + temas por classe (cacheados no servidor)."""
+    ambient = _get_menu_ambient()
+    known = list(_CLASS_THEME_QUERIES.keys())
+    with concurrent.futures.ThreadPoolExecutor(max_workers=4) as pool:
+        futures = {cls: pool.submit(_get_class_theme, cls) for cls in known}
+        themes = {cls: url for cls, url in ((c, f.result()) for c, f in futures.items()) if url}
+    return {"menu_ambient": ambient or None, "class_themes": themes}
 
 
 # ─── Auth / config endpoints ──────────────────────────────────────────────────

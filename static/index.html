@@ -966,6 +966,10 @@
   let currentAudio = null;
   let ambientAudio = null;
   let currentAmbientUrl = null;
+  let menuAmbientAudio = null;
+  let menuAmbientCurrentUrl = null;
+  let menuAmbientUrl = null;
+  let classThemeUrls = {};
   let tutorialTurn = 0;
   let playbackToken = 0;
   let campaignsCache = [];
@@ -1147,6 +1151,7 @@
       document.getElementById('class-screen').classList.add('hidden');
       document.getElementById('setup-screen').style.display = 'none';
       document.getElementById('game-screen').style.display = 'flex';
+      stopMenuAmbient();
 
       updateStatus(data.state);
       updateTutorialHint(tutorialTurn);
@@ -1219,6 +1224,8 @@
     _classFocusIdx     = 0;
     _classScreenActive = true;
 
+    startMenuAmbient(menuAmbientUrl); // mantém o ambient enquanto escolhe
+
     const screen = document.getElementById('class-screen');
     screen.classList.remove('hidden');
     document.getElementById('class-confirm-btn').disabled = true;
@@ -1256,6 +1263,13 @@
           <span class="class-stat">❤️ ${cls.hp}</span>
           <span class="class-stat">🎒 ${cls.slots}/${cls.max_slots}</span>
         </div>`;
+      // Hover: prévia do tema da classe (usuários com mouse)
+      card.addEventListener('mouseenter', () => {
+        const key = (cls.id || '').toLowerCase()
+          .normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+        const url = classThemeUrls[key];
+        if (url) startMenuAmbient(url);
+      });
       // Clique: suporte para quem enxerga
       card.addEventListener('click', () => selectClass(i));
       grid.appendChild(card);
@@ -1286,6 +1300,13 @@
     document.getElementById('class-confirm-btn').disabled = false;
 
     const cls = _classDetails[idx];
+
+    // Tema musical da classe selecionada
+    const themeKey = (cls.id || '').toLowerCase()
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    const themeUrl = classThemeUrls[themeKey];
+    startMenuAmbient(themeUrl || menuAmbientUrl);
+
     const descPanel = document.getElementById('class-desc-panel');
     descPanel.style.opacity = '0';
     descPanel.textContent = cls.description || '';
@@ -1808,6 +1829,55 @@
     _sfxTimers = [];
   }
 
+  // ── Ambient do menu (auth / saves / seleção de classe) ────────────────────
+  async function fetchMenuAssets() {
+    try {
+      const data = await fetch(`${API}/api/menu_assets`).then(r => r.json());
+      menuAmbientUrl = data.menu_ambient || null;
+      classThemeUrls = data.class_themes || {};
+      // Se alguma tela de menu já estiver visível, inicia agora
+      if (!authScreen.classList.contains('hidden') ||
+          !savesScreen.classList.contains('hidden')) {
+        startMenuAmbient(menuAmbientUrl);
+      }
+    } catch {}
+  }
+
+  function startMenuAmbient(url) {
+    if (!url || url === menuAmbientCurrentUrl) return;
+    menuAmbientCurrentUrl = url;
+
+    if (menuAmbientAudio) {
+      const old = menuAmbientAudio;
+      const fo = setInterval(() => {
+        if (old.volume > 0.01) old.volume = Math.max(0, old.volume - 0.01);
+        else { clearInterval(fo); old.pause(); }
+      }, 80);
+    }
+
+    const a = new Audio(url);
+    a.loop = true;
+    a.volume = 0;
+    a.play().catch(() => {});
+    menuAmbientAudio = a;
+    const target = 0.13;
+    const fi = setInterval(() => {
+      if (a.volume < target - 0.004) a.volume = Math.min(target, a.volume + 0.005);
+      else { a.volume = target; clearInterval(fi); }
+    }, 80);
+  }
+
+  function stopMenuAmbient() {
+    if (!menuAmbientAudio) return;
+    const old = menuAmbientAudio;
+    menuAmbientAudio = null;
+    menuAmbientCurrentUrl = null;
+    const fo = setInterval(() => {
+      if (old.volume > 0.01) old.volume = Math.max(0, old.volume - 0.015);
+      else { clearInterval(fo); old.pause(); }
+    }, 60);
+  }
+
   // ── Loop de ambiente por ato ───────────────────────────────────────────────
   function setAmbient(url, targetVol) {
     if (!url || url === currentAmbientUrl) return;
@@ -2202,6 +2272,7 @@
 
   // ── Tela de saves ──────────────────────────────────────────────────────────
   async function showSavesScreen() {
+    startMenuAmbient(menuAmbientUrl);
     const username = Clerk.user?.firstName
       || Clerk.user?.username
       || Clerk.user?.emailAddresses?.[0]?.emailAddress
@@ -2281,6 +2352,7 @@
       sessionId = data.session_id;
       savesScreen.classList.add('hidden');
       document.getElementById('game-screen').style.display = 'flex';
+      stopMenuAmbient();
       updateStatus(data.state);
 
       const t = document.getElementById('transcript');
@@ -2316,6 +2388,9 @@
 
   // ── Init ────────────────────────────────────────────────────────────────────
   async function initClerk() {
+    // 0. Pré-carrega assets de áudio do menu em paralelo (fire & forget)
+    fetchMenuAssets();
+
     // 1. Busca as chaves do servidor
     let clerkPublishableKey, clerkFrontendApi;
     try {
@@ -2380,6 +2455,7 @@
         document.getElementById('game-screen').style.display = 'none';
         authScreen.classList.remove('hidden');
         Clerk.mountSignIn(document.getElementById('clerk-signin'));
+        startMenuAmbient(menuAmbientUrl);
       }
     });
 
@@ -2389,6 +2465,7 @@
     } else {
       authScreen.classList.remove('hidden');
       Clerk.mountSignIn(document.getElementById('clerk-signin'));
+      startMenuAmbient(menuAmbientUrl); // pode ser null se fetchMenuAssets ainda não voltou
       if (isFirstVisit) runPrologue();
     }
 
