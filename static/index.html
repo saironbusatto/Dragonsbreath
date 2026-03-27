@@ -2370,6 +2370,7 @@
       if (user) {
         authScreen.classList.add('hidden');
         if (savesScreen.classList.contains('hidden') &&
+            setupScreen.style.display !== 'flex' &&
             document.getElementById('game-screen').style.display !== 'flex') {
           await showSavesScreen();
         }
