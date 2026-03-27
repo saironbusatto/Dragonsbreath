@@ -92,21 +92,158 @@
       },
       "player_template": {
         "class": "Aventureiro",
-        "starting_hp": 24,
+        "starting_hp": 25,
         "max_slots": 10,
+        "slots_iniciais": 10,
         "starting_inventory": [
-          "Estaca de Freixo",
-          "Água Benta",
-          "Mapa Riscado de Baróvia",
-          "Tocha Encharcada",
-          "Poção de Cura"
+          "Espada Longa",
+          "Escudo de Madeira",
+          "Armadura de Couro",
+          "Mochila de Aventureiro",
+          "Corda de Cânhamo",
+          "Kit de Viagem",
+          "Kit de Sobrevivência"
+        ]
+      },
+      "class_templates": {
+        "Bardo": {
+          "starting_hp": 20,
+          "max_slots": 10,
+          "slots_iniciais": 6,
+          "starting_inventory": [
+            "Alaúde de Viagem",
+            "Adaga de Apresentação",
+            "Mochila de Couro",
+            "Kit de Viagem",
+            "Kit de Iluminação"
+          ],
+          "tagline": "O Infiltrado das Sombras",
+          "icon": "🎭",
+          "voice_intro": "Bardo — o infiltrado das sombras",
+          "description": "Você é ágil, charmoso e perigosamente persuasivo. Com vinte pontos de vida e apenas seis espaços de inventário, você carrega pouco — mas enxerga muito. Sua vantagem está em ações de charme, furtividade e engano: portas que outros arrombam, você abre com um sorriso. Você detecta armadilhas e rotas secretas antes dos outros. Em combate físico pesado, porém, você sangra fácil. Baróvia guarda segredos que só uma língua afiada consegue arrancar.",
+          "allowed_actions": ["tocar música", "cantar", "contar histórias", "persuadir", "enganar", "investigar", "procurar pistas", "conversar", "negociar", "inspirar", "entreter", "recordar conhecimento", "ler", "escrever", "dançar", "atuar", "imitar", "seduzir com palavras", "acalmar com música"],
+          "forbidden_actions": ["voar", "levitar", "teletransportar", "lançar bolas de fogo", "lançar raios", "curar magicamente", "ressuscitar", "transformar-se", "ficar invisível", "atravessar paredes", "controlar mentes", "invocar criaturas", "criar ilusões visuais", "manipular elementos", "parar o tempo"],
+          "limited_magic": ["pequenos truques musicais", "inspirar coragem através da música", "acalmar animais com música", "memorizar perfeitamente melodias e histórias"],
+          "physical_limits": ["força humana normal", "resistência humana normal", "não pode voar", "não pode respirar debaixo d'água", "precisa dormir e comer", "pode se machucar e morrer", "limitado pela gravidade"],
+          "offering_hints": ["canção", "musica", "melodia", "lembran", "promessa", "amor", "verso", "poema", "esposa", "familia", "coração", "coracao"],
+          "offering_success_message": "Sua oferenda ecoa como uma canção de memória e vínculo.",
+          "offering_failure_message": "Você oferece sentimento real, mas sem a cadência plena da sua arte.",
+          "roll_advantages": ["convenc", "persuad", "mentir", "minto", "enganar", "engano", "seduz", "blef", "disfarç", "negoci", "tocar", "toco", "cantar", "canto", "músic", "melodia", "inspirar", "acalmar", "investigar", "investigo", "decifrar", "traduz"],
+          "roll_disadvantages": ["empurrar", "empurro", "arromb", "escal", "lutando", "atacar", "ataco", "golpe", "derrub", "arremess", "trepar"]
+        },
+        "Aventureiro": {
+          "starting_hp": 25,
+          "max_slots": 10,
+          "slots_iniciais": 10,
+          "starting_inventory": [
+            "Espada Longa",
+            "Escudo de Madeira",
+            "Armadura de Couro",
+            "Mochila de Aventureiro",
+            "Corda de Cânhamo",
+            "Kit de Viagem",
+            "Kit de Sobrevivência"
+          ],
+          "tagline": "O Desbravador",
+          "icon": "⚔️",
+          "voice_intro": "Aventureiro — o desbravador",
+          "description": "Você é resistente, equilibrado e pronto para qualquer coisa. Com vinte e cinco pontos de vida — o máximo disponível — e dez espaços de inventário completos, você carrega tudo e aguenta o tranco. Sem habilidades mágicas e sem truques, mas sem fraquezas gritantes. Cada ação que você tenta vai depender do seu julgamento e dos dados. Se é sua primeira vez em Baróvia, o Aventureiro vai te deixar vivo tempo suficiente para aprender as regras desta terra.",
+          "allowed_actions": ["lutar com armas", "explorar", "escalar", "nadar", "correr", "saltar", "rastrear", "sobreviver na natureza", "usar ferramentas", "primeiros socorros básicos"],
+          "forbidden_actions": ["voar", "levitar", "teletransportar", "lançar magias", "curar magicamente", "ressuscitar", "transformar-se", "ficar invisível", "atravessar paredes"],
+          "limited_magic": [],
+          "physical_limits": ["força humana normal", "resistência humana normal", "não pode voar", "não pode respirar debaixo d'água", "precisa dormir e comer", "pode se machucar e morrer", "limitado pela gravidade"],
+          "offering_hints": ["vingan", "promessa", "jurar", "determina", "combate", "lutar", "proteger", "honra", "sobreviver", "missao", "missão", "dever", "companheiro"],
+          "offering_success_message": "Sua vontade de luta ancora sua alma com firmeza brutal.",
+          "offering_failure_message": "A coragem existe, mas falta uma âncora nítida de propósito.",
+          "roll_advantages": ["empurrar", "empurro", "arromb", "escal", "lutando", "atacar", "ataco", "golpe", "derrub", "arremess", "trepar", "intimidar", "intimido", "sobreviv", "rastrear", "caçar"],
+          "roll_disadvantages": ["convenc", "persuad", "mentir", "minto", "enganar", "engano", "seduz", "blef", "disfarç", "músic", "tocar", "cantar", "decifrar", "traduz", "furtand", "esgueirar"]
+        },
+        "Ocultista": {
+          "starting_hp": 15,
+          "max_slots": 10,
+          "slots_iniciais": 4,
+          "starting_inventory": [
+            "Cajado Arcano",
+            "Grimório das Sombras",
+            "Bolsa de Componentes Arcanos",
+            "Lanterna de Bolso"
+          ],
+          "tagline": "O Estudioso do Arcano",
+          "icon": "📖",
+          "voice_intro": "Ocultista — o estudioso do arcano",
+          "description": "Você enxerga o que os outros não veem. Com apenas quinze pontos de vida e quatro espaços de inventário, você é frágil e carrega quase nada. Mas seu olhar arcano detecta inscrições ocultas, ativações mágicas e passagens invisíveis que outras classes nunca encontrariam. Livros trancados se abrem para você. Armadilhas arcanas revelam seus mecanismos. Sua magia é real e poderosa — mas seu corpo é uma folha ao vento. Fuja do combate. Sempre.",
+          "allowed_actions": ["lançar feitiços arcanos básicos", "criar fogo arcano pequeno", "projetar luz mágica", "evocar escudo arcano temporário", "decifrar textos e runas antigas", "sentir presença mágica no ambiente", "investigar artefatos com conhecimento arcano", "ler e escrever em linguagens antigas", "atacar à distância com projéteis de força", "analisar feitiços e maldições"],
+          "forbidden_actions": ["voar", "levitar", "teletransportar", "curar ferimentos físicos", "ressuscitar", "usar armas pesadas ou armaduras", "realizar feitos de força bruta", "controlar mentes", "parar o tempo", "invocar criaturas poderosas"],
+          "limited_magic": ["chamas arcanas controladas (fogo pequeno, não incêndios)", "luz mágica estável", "escudo de força passageiro (1 ataque)", "projétil de força arcana (dano moderado)"],
+          "physical_limits": ["corpo frágil, sem treinamento físico", "não pode usar armaduras pesadas", "não pode usar espadas longas ou machados de guerra", "precisa dormir e comer", "pode se machucar e morrer facilmente", "limitado pela gravidade"],
+          "offering_hints": ["conhecimento", "segredo", "pacto", "arcano", "busca", "saber", "descobrir", "grimório", "grimorio", "runa", "magia", "feitiço", "feiticio", "mistério", "misterio", "promessa", "inacabado", "revelar", "verdade oculta"],
+          "offering_success_message": "Seu pacto com o conhecimento proibido pulsa como âncora nas brumas.",
+          "offering_failure_message": "A mente está presente, mas o pacto que ancora a alma ainda é vago.",
+          "roll_advantages": ["decifrar", "traduz", "investigar", "investigo", "lançar", "lanço", "conjurar", "conjuro", "invocar", "invoco", "detectar", "detecto", "sentir", "sinto", "decod", "ler runa", "ler o", "analisar", "analiso"],
+          "roll_disadvantages": ["empurrar", "empurro", "arromb", "escal", "lutando", "atacar", "ataco", "golpe", "derrub", "arremess", "trepar", "sobreviv", "rastrear"]
+        },
+        "Inquisidor": {
+          "starting_hp": 22,
+          "max_slots": 10,
+          "slots_iniciais": 8,
+          "starting_inventory": [
+            "Maça Sacra",
+            "Armadura de Cota de Malha",
+            "Símbolo Sagrado",
+            "Kit de Cura",
+            "Água Benta",
+            "Livro de Orações"
+          ],
+          "tagline": "O Caçador de Trevas",
+          "icon": "✝️",
+          "voice_intro": "Inquisidor — o caçador de trevas",
+          "description": "Você foi feito para Baróvia. Com vinte e dois pontos de vida e oito espaços de inventário, você é resistente e bem equipado. Seu instinto sagrado detecta mortos-vivos e criaturas das trevas antes que ataquem — um aviso que pode ser a diferença entre viver e morrer. A água benta em suas mãos é uma arma real nesta terra. O símbolo sagrado afasta o que a espada não alcança. Você não veio explorar Baróvia. Você veio purificá-la.",
+          "allowed_actions": ["expulsar mortos-vivos com símbolo sagrado", "realizar curas básicas com toque divino", "detectar presença do mal próximo", "sintonizar com artefatos sagrados", "resistir a maldições e medos sobrenaturais", "abençoar água e objetos", "lutar em combate corpo a corpo contra criaturas das trevas", "invocar luz divina breve", "recitar orações protetoras"],
+          "forbidden_actions": ["voar", "levitar", "teletransportar", "lançar magia arcana ou ilusória", "enganar, mentir ou roubar", "agir com furtividade intencional", "ressuscitar mortos", "transformar-se", "atravessar paredes"],
+          "limited_magic": ["cura divina básica (pequenos ferimentos)", "luz sagrada breve", "expulsão de mortos-vivos (DC dependente da criatura)", "bênção protetora temporária"],
+          "physical_limits": ["força humana normal mesmo com armadura", "não pode voar", "não pode respirar debaixo d'água", "precisa dormir e comer", "pode se machucar e morrer", "limitado pela gravidade"],
+          "offering_hints": ["fé", "fe", "fé inabalável", "juramento", "sagrado", "dever sagrado", "redenção", "redencao", "inocente", "proteger os fracos", "luz", "divino", "oração", "oracao", "missão sagrada", "missao sagrada", "purificar", "honra divina"],
+          "offering_success_message": "Sua fé inabalável resiste às brumas como chama sagrada no vento.",
+          "offering_failure_message": "A vontade existe, mas o juramento sagrado precisa ser mais claro.",
+          "roll_advantages": ["expulsar", "expulso", "rezar", "reza", "orar", "oro", "curar", "curo", "abençoar", "abençoo", "consagrar", "consagro", "detectar", "detecto", "resistir", "resisto", "atacar", "ataco", "golpear", "golpeio", "intimidar", "intimido"],
+          "roll_disadvantages": ["esgueirar", "esgueiro", "infiltrar", "infiltro", "furtand", "me esconder", "mentir", "minto", "enganar", "engano", "blef", "disfarç"]
+        }
+      },
+      "resurrection": {
+        "limbo_text": "O mundo se dissolve em névoa fria, e sua alma deriva sem peso pelas brumas de Baróvia. Aqui, nenhuma alma parte em paz, apenas se perde. Uma presença antiga cobra seu preço: o que prende sua alma a este mundo? Faça sua oferenda emocional.",
+        "dark_gifts": [
+          ["olhos de fumaça", "Você passa a desconfiar de qualquer gesto de compaixão."],
+          ["sangue negro como piche", "Você sente prazer frio ao ver o medo alheio."],
+          ["sombra que se move sozinha", "Você evita vínculos por acreditar que todos vão trair você."],
+          ["voz dupla em sussurro", "Você responde à dor com crueldade calculada."]
         ]
       },
       "world_template": {
-        "initial_description": "Você desperta na névoa e encontra a Vila de Baróvia sob um céu morto e silencioso.",
-        "initial_quest": "Escoltar Ireena com segurança e reunir as relíquias para enfrentar Strahd",
-        "initial_location": "vila_barovia",
+        "initial_description": "O personagem estava viajando por uma estrada de terra comum quando o ar esfriou subitamente. Uma névoa espessa, cinzenta e antinatural rastejou pelo chão e engoliu a floresta, bloqueando a luz do sol e qualquer caminho de volta. A névoa parece viva e empurra o personagem inexoravelmente para frente, forçando-o a continuar andando pela velha Estrada de Svalich até chegar à sombria Vila de Baróvia.",
+        "initial_quest": "Descobrir onde está e encontrar uma saída — ou um propósito — nesta terra amaldiçoada",
+        "initial_location": "old_svalich_road",
         "initial_triggers": {
+          "old_svalich_road": [
+            "nevoa_engole"
+          ],
+          "village_of_barovia_streets": [
+            "rose_e_thorn"
+          ],
+          "death_house_exterior": [
+            "portao_rangendo"
+          ],
+          "death_house_1f_hall": [
+            "porta_batendo"
+          ],
+          "death_house_2f_library": [
+            "livro_falso_secreto"
+          ],
+          "death_house_dungeon_access": [
+            "ouvir_cantico"
+          ],
+          "death_house_dungeon_ritual": [
+            "recusa_sacrificio"
+          ],
           "vila_barovia": [
             "choro_de_mary",
             "sombra_ravenloft"

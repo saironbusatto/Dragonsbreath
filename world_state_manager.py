@@ -6,6 +6,7 @@ import unicodedata
 from openai import OpenAI
 from campaign_manager import (
     get_campaign_files,
+    get_class_template,
     get_player_template,
     get_world_template,
     load_campaign_data,
@@ -535,7 +536,12 @@ REGRAS DE ATUALIZAÇÃO:
    - "saidas": lista de saídas e passagens (ex: ["porta norte", "escada", "beco lateral"])
    - "chao": itens abandonados ou caídos no chão (ex: ["moeda suja", "papel amassado"])
    REGRAS: Use [] para categorias sem elementos. Extraia APENAS o que foi explicitamente mencionado pelo Mestre neste turno. Ao mudar de local, limpe o mapa e recomece.
-   NOMES: Use o termo mais curto e natural. Quando um elemento tiver variações óbvias, registre-as entre parênteses. Ex: "menino (garoto, criança)", "caixa (caixote)", "figura encapuzada (homem, vulto)"."""
+   NOMES: Use o termo mais curto e natural. Quando um elemento tiver variações óbvias, registre-as entre parênteses. Ex: "menino (garoto, criança)", "caixa (caixote)", "figura encapuzada (homem, vulto)".
+8. CONTEXTO DE ROLAGEM: Adicione o campo "roll_context" no nível raiz do JSON com um destes valores:
+   - "advantage" — se a situação atual favorece claramente a classe do personagem para a próxima ação de risco (ex: Bardo em negociação social, Inquisidor confrontando morto-vivo)
+   - "disadvantage" — se a situação desfavorece (ex: Bardo em combate físico direto, Ocultista em tarefa de força bruta)
+   - "normal" — padrão; nenhum fator contextual determinante
+   Baseie-se na classe em player_character.class e no contexto atual da cena."""
 
     # USER: o estado atual + o que acabou de acontecer
     archivista_user = f"""JSON DO ESTADO ATUAL:
@@ -579,22 +585,27 @@ def get_openai_response_archivista(system_content: str, user_content: str) -> st
     except Exception:
         return "{}"
 
-def create_initial_world_state(character_name: str) -> dict:
+def create_initial_world_state(character_name: str, player_class: str | None = None) -> dict:
     """Cria o estado inicial do mundo para um novo jogo."""
     player_template = get_player_template()
     world_template = get_world_template()
-    
+
+    resolved_class = player_class or player_template.get("class", "Aventureiro")
+    class_tpl = get_class_template(resolved_class) if player_class else None
+    source = class_tpl if class_tpl else player_template
+
     state = {
         "player_character": {
             "name": character_name,
-            "class": player_template.get("class", "Aventureiro"),
+            "class": resolved_class,
             "current_act": 1,
             "status": {
-                "hp": player_template.get("starting_hp", 20),
-                "max_hp": player_template.get("starting_hp", 20)
+                "hp": source.get("starting_hp", 20),
+                "max_hp": source.get("starting_hp", 20)
             },
-            "max_slots": player_template.get("max_slots", 10),
-            "inventory": player_template.get("starting_inventory", []),
+            "max_slots": source.get("max_slots", 10),
+            "slots_iniciais": source.get("slots_iniciais", len(source.get("starting_inventory", []))),
+            "inventory": source.get("starting_inventory", []),
             "desejo": world_template.get("initial_quest", "Explorar o mundo"),
             "death_count": 0,
             "resurrection_flaws": [],

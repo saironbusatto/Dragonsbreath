@@ -6,6 +6,10 @@
   <title>Ressoar</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;900&family=Crimson+Text:ital,wght@0,400;1,400&display=swap" rel="stylesheet" />
+
+  <!-- Clerk CDN — carregado dinamicamente via JS após buscar as chaves do servidor -->
+  <script id="clerk-ui-script"></script>
+  <script id="clerk-js-script"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -474,11 +478,385 @@
       outline-offset: 3px;
       border-radius: 4px;
     }
+
+    /* ── Tela de autenticação (Clerk monta o UI aqui) ── */
+    #auth-screen {
+      position: fixed;
+      inset: 0;
+      background: rgba(8,5,8,0.98);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 60;
+    }
+    #auth-screen.hidden { display: none; }
+
+    /* Clerk UI — fundo transparente para combinar com o tema escuro */
+    #clerk-signin {
+      display: flex;
+      justify-content: center;
+    }
+    :root { --clerk-font-family: 'Crimson Text', Georgia, serif; }
+
+    /* ── Tela de seleção de classe ── */
+    #class-screen {
+      position: fixed;
+      inset: 0;
+      background: rgba(8,5,8,0.98);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 52;
+      padding: 24px;
+      gap: 24px;
+    }
+    #class-screen.hidden { display: none; }
+
+    .class-screen-title {
+      font-family: 'Cinzel', serif;
+      font-size: clamp(0.75rem, 2.5vw, 1rem);
+      letter-spacing: 6px;
+      color: #5a4a3a;
+      text-transform: uppercase;
+      text-align: center;
+    }
+
+    .class-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      width: 100%;
+      max-width: 560px;
+    }
+
+    .class-card {
+      background: #0e0a0f;
+      border: 1px solid #2a1a2a;
+      border-radius: 8px;
+      padding: 18px 16px 14px;
+      cursor: pointer;
+      transition: border-color 0.25s, box-shadow 0.25s, transform 0.15s;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      position: relative;
+      user-select: none;
+    }
+    .class-card:hover {
+      border-color: #5a4a3a;
+      transform: translateY(-2px);
+    }
+    .class-card.selected {
+      border-color: var(--gold);
+      box-shadow: 0 0 24px rgba(201,168,76,0.25), inset 0 0 12px rgba(201,168,76,0.05);
+    }
+
+    .class-num {
+      position: absolute;
+      top: 10px;
+      right: 12px;
+      font-family: 'Cinzel', serif;
+      font-size: 0.65rem;
+      color: #3a2a3a;
+      letter-spacing: 1px;
+    }
+    .class-card.selected .class-num { color: var(--gold); }
+
+    .class-icon {
+      font-size: 1.6rem;
+      line-height: 1;
+      filter: grayscale(0.6);
+      transition: filter 0.25s;
+    }
+    .class-card.selected .class-icon { filter: grayscale(0); }
+
+    .class-name {
+      font-family: 'Cinzel', serif;
+      font-size: clamp(0.8rem, 2.5vw, 1rem);
+      color: #c0a870;
+      font-weight: 600;
+      letter-spacing: 1px;
+    }
+    .class-card.selected .class-name { color: var(--gold); }
+
+    .class-tagline {
+      font-style: italic;
+      font-size: 0.78rem;
+      color: #5a4a3a;
+      line-height: 1.3;
+    }
+    .class-card.selected .class-tagline { color: #8a7a5a; }
+
+    .class-stats {
+      display: flex;
+      gap: 10px;
+      margin-top: 4px;
+    }
+    .class-stat {
+      font-size: 0.65rem;
+      color: #3a2a3a;
+      font-family: 'Cinzel', serif;
+      letter-spacing: 1px;
+    }
+    .class-card.selected .class-stat { color: #6a5a3a; }
+
+    /* Painel de descrição da classe selecionada */
+    .class-description-panel {
+      max-width: 560px;
+      width: 100%;
+      min-height: 3.5em;
+      font-style: italic;
+      font-size: 0.9rem;
+      color: #7a6a58;
+      line-height: 1.6;
+      text-align: center;
+      transition: opacity 0.4s;
+    }
+
+    /* Controles de voz + confirmar */
+    .class-controls {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      max-width: 560px;
+      width: 100%;
+      justify-content: center;
+    }
+
+    #class-listen-btn {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 38% 38%, #3a2040, #0e0810);
+      border: 1px solid #3a2a3a;
+      cursor: pointer;
+      font-size: 1.2rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: box-shadow 0.3s, border-color 0.3s;
+      flex-shrink: 0;
+    }
+    #class-listen-btn.listening {
+      border-color: #8b2020;
+      box-shadow: 0 0 20px rgba(139,26,26,0.6);
+      animation: pulse-red 1.2s ease-in-out infinite;
+    }
+
+    #class-confirm-btn {
+      flex: 1;
+      max-width: 260px;
+      background: none;
+      border: 1px solid var(--gold);
+      color: var(--gold);
+      padding: 12px 24px;
+      font-family: 'Cinzel', serif;
+      font-size: 0.8rem;
+      letter-spacing: 4px;
+      cursor: pointer;
+      border-radius: 4px;
+      transition: background 0.3s, color 0.3s;
+    }
+    #class-confirm-btn:hover:not(:disabled) { background: var(--gold); color: #080508; }
+    #class-confirm-btn:disabled { opacity: 0.2; cursor: not-allowed; }
+
+    #class-voice-hint {
+      font-size: 0.65rem;
+      color: #3a2a3a;
+      font-family: 'Cinzel', serif;
+      letter-spacing: 2px;
+      text-align: center;
+    }
+
+    /* ── Tela de personagens salvos ── */
+    #saves-screen {
+      position: fixed;
+      inset: 0;
+      background: rgba(8,5,8,0.98);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 55;
+    }
+    #saves-screen.hidden { display: none; }
+
+    .saves-card {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 20px;
+      max-width: 480px;
+      width: 92vw;
+    }
+
+    .saves-header {
+      text-align: center;
+    }
+    .saves-header .logo { font-size: clamp(1.2rem, 4vw, 1.8rem); }
+    .saves-subtitle {
+      font-size: 0.72rem;
+      letter-spacing: 2px;
+      color: #5a4a3a;
+      font-family: 'Cinzel', serif;
+      text-transform: uppercase;
+    }
+
+    .saves-list {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      max-height: 50vh;
+      overflow-y: auto;
+    }
+
+    .save-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #110d11;
+      border: 1px solid #2a1a2a;
+      border-radius: 6px;
+      padding: 12px 16px;
+      gap: 12px;
+    }
+    .save-item:hover { border-color: #3a2a3a; }
+
+    .save-info { flex: 1; min-width: 0; }
+    .save-name {
+      font-family: 'Cinzel', serif;
+      font-size: 0.85rem;
+      color: var(--gold);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .save-meta {
+      font-size: 0.72rem;
+      color: #5a4a3a;
+      margin-top: 2px;
+    }
+
+    .save-actions { display: flex; gap: 8px; flex-shrink: 0; }
+
+    .btn-continue {
+      background: none;
+      border: 1px solid var(--gold);
+      color: var(--gold);
+      padding: 6px 14px;
+      font-family: 'Cinzel', serif;
+      font-size: 0.62rem;
+      letter-spacing: 2px;
+      cursor: pointer;
+      border-radius: 3px;
+      transition: background 0.2s, color 0.2s;
+      white-space: nowrap;
+    }
+    .btn-continue:hover { background: var(--gold); color: #080508; }
+
+    .btn-delete-save {
+      background: none;
+      border: 1px solid #3a1a1a;
+      color: #5a2a2a;
+      padding: 6px 10px;
+      font-size: 0.75rem;
+      cursor: pointer;
+      border-radius: 3px;
+      transition: border-color 0.2s, color 0.2s;
+    }
+    .btn-delete-save:hover { border-color: #8b2020; color: #8b2020; }
+
+    .saves-empty {
+      text-align: center;
+      color: #4a3a4a;
+      font-style: italic;
+      padding: 20px 0;
+      font-size: 0.9rem;
+    }
+
+    .saves-footer {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      width: 100%;
+    }
+
+    #new-adventure-btn {
+      background: none;
+      border: 1px solid var(--gold);
+      color: var(--gold);
+      padding: 12px 40px;
+      font-family: 'Cinzel', serif;
+      font-size: 0.85rem;
+      letter-spacing: 4px;
+      cursor: pointer;
+      border-radius: 4px;
+      transition: background 0.3s, color 0.3s;
+      width: 100%;
+    }
+    #new-adventure-btn:hover { background: var(--gold); color: #080508; }
+
+    .saves-user-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+    }
+    .saves-username {
+      font-size: 0.68rem;
+      letter-spacing: 2px;
+      color: #4a3a4a;
+      font-family: 'Cinzel', serif;
+    }
+    #logout-btn {
+      background: none;
+      border: none;
+      color: #3a2a3a;
+      font-family: 'Cinzel', serif;
+      font-size: 0.62rem;
+      letter-spacing: 2px;
+      cursor: pointer;
+      padding: 4px 8px;
+      text-transform: uppercase;
+      transition: color 0.2s;
+    }
+    #logout-btn:hover { color: #8b2020; }
   </style>
 </head>
 <body>
 
 <canvas id="bg-canvas"></canvas>
+
+<!-- Tela de autenticação (Clerk monta o UI aqui) -->
+<div id="auth-screen" class="hidden" role="dialog" aria-modal="true" aria-label="Entrar no Ressoar">
+  <div class="setup-card" style="align-items:center">
+    <div class="logo" aria-label="Ressoar">RESSOAR</div>
+    <p class="tagline" style="margin-bottom:8px">Existe um som que só você pode emitir.</p>
+    <div id="clerk-signin" style="width:100%"></div>
+  </div>
+</div>
+
+<!-- Tela de personagens salvos -->
+<div id="saves-screen" class="hidden" role="region" aria-label="Seus Personagens">
+  <div class="saves-card">
+    <div class="saves-header">
+      <div class="logo">RESSOAR</div>
+      <p class="saves-subtitle">Seus Personagens</p>
+    </div>
+    <div class="saves-list" id="saves-list" aria-live="polite">
+      <p class="saves-empty">Carregando...</p>
+    </div>
+    <div class="saves-footer">
+      <button id="new-adventure-btn">NOVA AVENTURA</button>
+      <div class="saves-user-row">
+        <span class="saves-username" id="saves-username"></span>
+        <button id="logout-btn" aria-label="Sair da conta">SAIR</button>
+      </div>
+    </div>
+  </div>
+</div>
 
 <!-- Prólogo (primeira visita) -->
 <div id="prologue-screen" role="dialog" aria-modal="true" aria-label="Introdução ao Ressoar" class="hidden">
@@ -491,8 +869,20 @@
   <p id="prologue-skip" aria-hidden="true">esc · clique · qualquer tecla</p>
 </div>
 
-<!-- Tela de configuração -->
-<div id="setup-screen" role="region" aria-label="Configuração do jogo">
+<!-- Tela de seleção de classe -->
+<div id="class-screen" class="hidden" role="dialog" aria-modal="true" aria-label="Escolha sua classe" aria-describedby="class-voice-hint">
+  <p class="class-screen-title" aria-hidden="true">Escolha sua Classe</p>
+  <div class="class-grid" id="class-grid" role="listbox" aria-label="Classes disponíveis"></div>
+  <div class="class-description-panel" id="class-desc-panel" aria-live="polite" aria-atomic="true"></div>
+  <div class="class-controls">
+    <button id="class-listen-btn" aria-label="Falar para escolher classe">🎙</button>
+    <button id="class-confirm-btn" disabled aria-describedby="class-voice-hint">COMEÇAR AVENTURA</button>
+  </div>
+  <p id="class-voice-hint" role="note" aria-live="polite">ESPAÇO · FALE O NÚMERO · TECLE 1-4 · SETAS PARA NAVEGAR</p>
+</div>
+
+<!-- Tela de configuração (inicialmente oculta — aparece após auth) -->
+<div id="setup-screen" role="region" aria-label="Configuração do jogo" style="display:none">
   <div class="setup-card">
     <div class="logo" aria-label="Ressoar">RESSOAR</div>
     <p class="tagline">Existe um som que só você pode emitir.<br>O que o mundo vai escutar de você?</p>
@@ -514,6 +904,11 @@
       <input id="player-name" type="text" placeholder="Como te chamam, viajante?" maxlength="40" autocomplete="off" aria-required="true" />
     </div>
 
+    <div class="field" id="class-field">
+      <label for="player-class">Classe</label>
+      <select id="player-class"></select>
+    </div>
+
     <button id="begin-btn" disabled aria-label="Entrar no jogo">ENTRAR</button>
   </div>
 </div>
@@ -521,7 +916,10 @@
 <!-- Tela de jogo -->
 <div id="game-screen" role="main" aria-label="Jogo Ressoar">
   <div id="status-bar" role="status" aria-label="Status do personagem" aria-live="polite">
-    <div id="char-info" style="font-size:0.65rem;letter-spacing:3px;opacity:0.4" aria-label="Personagem">RESSOAR</div>
+    <div style="display:flex;align-items:center;gap:10px">
+      <div id="char-info" style="font-size:0.65rem;letter-spacing:3px;opacity:0.4" aria-label="Personagem">RESSOAR</div>
+      <div id="clerk-user-button" style="display:none"></div>
+    </div>
     <div class="hp-wrap" aria-label="Pontos de vida">
       <span class="hp-label" aria-hidden="true">HP</span>
       <div class="hp-track" aria-hidden="true"><div class="hp-fill" id="hp-fill" style="width:100%"></div></div>
@@ -572,6 +970,17 @@
   let playbackToken = 0;
   let campaignsCache = [];
   const isFirstVisit = !localStorage.getItem('ressoar_visited');
+
+  // ── Clerk auth state ────────────────────────────────────────────────────────
+  let clerkReady = false;
+
+  async function getAuthHeaders() {
+    if (typeof Clerk === 'undefined' || !Clerk.session) return {};
+    try {
+      const token = await Clerk.session.getToken();
+      return token ? { 'Authorization': `Bearer ${token}` } : {};
+    } catch { return {}; }
+  }
 
   const orb       = document.getElementById('orb');
   const orbIcon   = document.getElementById('orb-icon');
@@ -679,7 +1088,14 @@
       const data = await res.json();
       campaignsCache = Array.isArray(data.campaigns) ? data.campaigns : [];
       renderCampaignOptions(document.getElementById('campaign-search').value);
+      updateClassOptions();
     } catch(e) { showToast('Erro ao carregar campanhas.'); }
+  }
+
+  function updateClassOptions() {
+    // O <select> de classe agora só é fallback — a tela de seleção visual o substitui.
+    // Mantemos oculto sempre.
+    document.getElementById('class-field').style.display = 'none';
   }
 
   function updateDesc() {
@@ -697,6 +1113,7 @@
 
   document.getElementById('campaign-select').addEventListener('change', () => {
     updateDesc();
+    updateClassOptions();
     updateBeginButtonState();
   });
   document.getElementById('campaign-search').addEventListener('input', (event) => {
@@ -704,21 +1121,21 @@
   });
   document.getElementById('player-name').addEventListener('input', updateBeginButtonState);
 
-  // ── Iniciar jogo ───────────────────────────────────────────────────────────
-  document.getElementById('begin-btn').addEventListener('click', async () => {
-    const playerName = document.getElementById('player-name').value.trim();
-    const campaignId = document.getElementById('campaign-select').value;
-    if (!playerName || !campaignId) return;
-
-    const btn = document.getElementById('begin-btn');
-    btn.disabled = true;
-    btn.textContent = '...';
-
+  // ── Iniciar jogo (chamado pelo CONFIRMAR na tela de classe) ──────────────────
+  async function startGame(playerName, campaignId, playerClass) {
     try {
+      const clerkToken = (typeof Clerk !== 'undefined' && Clerk.session)
+        ? await Clerk.session.getToken() : null;
       const res = await fetch(`${API}/api/start`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ player_name: playerName, campaign_id: campaignId, tutorial: isFirstVisit }),
+        body: JSON.stringify({
+          player_name: playerName,
+          campaign_id: campaignId,
+          tutorial: isFirstVisit,
+          player_class: playerClass,
+          token: clerkToken,
+        }),
       });
       if (!res.ok) throw new Error((await res.json()).detail || 'Erro');
       const data = await res.json();
@@ -727,16 +1144,13 @@
       tutorialTurn = data.tutorial_turn || 0;
       localStorage.setItem('ressoar_visited', '1');
 
+      document.getElementById('class-screen').classList.add('hidden');
       document.getElementById('setup-screen').style.display = 'none';
       document.getElementById('game-screen').style.display = 'flex';
 
       updateStatus(data.state);
       updateTutorialHint(tutorialTurn);
-
-      // Intro majestosa antes do tutorial começar
       await playIntroMusic(data.intro_music);
-
-      // Inicia loop de ambiente do ato 1
       if (data.ambient) setAmbient(data.ambient.url, data.ambient.volume);
 
       if (data.audio_timeline) {
@@ -745,11 +1159,350 @@
         await playAudio(data.audio, data.sfx || []);
       }
     } catch (e) {
-      btn.disabled = false;
-      btn.textContent = 'ENTRAR';
       showToast('Erro: ' + e.message);
+      document.getElementById('class-confirm-btn').disabled = false;
+      document.getElementById('class-confirm-btn').textContent = 'COMEÇAR AVENTURA';
     }
+  }
+
+  // ── begin-btn: abre a tela de seleção de classe ───────────────────────────
+  document.getElementById('begin-btn').addEventListener('click', async () => {
+    const playerName = document.getElementById('player-name').value.trim();
+    const campaignId = document.getElementById('campaign-select').value;
+    if (!playerName || !campaignId) return;
+
+    const campaign = campaignsCache.find(c => c.id === campaignId);
+    const classDetails = campaign?.class_details || [];
+
+    // Campanha sem múltiplas classes: começa direto
+    if (classDetails.length <= 1) {
+      const btn = document.getElementById('begin-btn');
+      btn.disabled = true; btn.textContent = '...';
+      const cls = classDetails[0]?.id || 'Aventureiro';
+      await startGame(playerName, campaignId, cls);
+      btn.disabled = false; btn.textContent = 'ENTRAR';
+      return;
+    }
+
+    // Abre tela de seleção de classe
+    document.getElementById('setup-screen').style.display = 'none';
+    openClassScreen(playerName, campaignId, classDetails);
   });
+
+  // ── Tela de seleção de classe ─────────────────────────────────────────────
+  // Premissa: usuário pode ser cego. Voz é primário. Teclado é completo.
+  // Clique é suporte visual secundário — nunca obrigatório.
+
+  let _classPlayerName  = '';
+  let _classCampaignId  = '';
+  let _classDetails     = [];
+  let _selectedClassIdx = -1;
+  let _classScreenActive = false;
+  let _classRecording   = false;
+  let _classMediaRecorder = null;
+  let _classChunks      = [];
+  let _classTTSAudio    = null; // áudio atual de narração de classe
+
+  // Índice de foco de teclado (navegação por setas — independente da seleção)
+  let _classFocusIdx = 0;
+
+  function _classScreenIsOpen() {
+    return _classScreenActive;
+  }
+
+  // ─── Abertura ──────────────────────────────────────────────────────────────
+  async function openClassScreen(playerName, campaignId, classDetails) {
+    _classPlayerName   = playerName;
+    _classCampaignId   = campaignId;
+    _classDetails      = classDetails;
+    _selectedClassIdx  = -1;
+    _classFocusIdx     = 0;
+    _classScreenActive = true;
+
+    const screen = document.getElementById('class-screen');
+    screen.classList.remove('hidden');
+    document.getElementById('class-confirm-btn').disabled = true;
+    document.getElementById('class-desc-panel').textContent = '';
+    document.getElementById('class-voice-hint').textContent =
+      'ESPAÇO · FALE O NÚMERO · TECLE 1-4 · SETAS PARA NAVEGAR';
+
+    renderClassCards();
+    _focusClassCard(0);
+
+    // Narra as opções e depois inicia escuta automática
+    await playClassListing();
+    startClassRecording(); // ouve logo após narrar
+  }
+
+  // ─── Cards (visuais) ───────────────────────────────────────────────────────
+  function renderClassCards() {
+    const grid = document.getElementById('class-grid');
+    grid.innerHTML = '';
+    _classDetails.forEach((cls, i) => {
+      const card = document.createElement('div');
+      card.className = 'class-card';
+      card.dataset.idx = i;
+      card.setAttribute('role', 'option');
+      card.setAttribute('tabindex', i === 0 ? '0' : '-1');
+      card.setAttribute('aria-selected', 'false');
+      card.setAttribute('aria-label',
+        `${i + 1}: ${cls.id}, ${cls.tagline}. Vida: ${cls.hp}. Espaços: ${cls.slots} de ${cls.max_slots}.`);
+      card.innerHTML = `
+        <span class="class-num" aria-hidden="true">${i + 1}</span>
+        <span class="class-icon" aria-hidden="true">${cls.icon || '⚔️'}</span>
+        <span class="class-name">${cls.id}</span>
+        <span class="class-tagline">${cls.tagline || ''}</span>
+        <div class="class-stats" aria-hidden="true">
+          <span class="class-stat">❤️ ${cls.hp}</span>
+          <span class="class-stat">🎒 ${cls.slots}/${cls.max_slots}</span>
+        </div>`;
+      // Clique: suporte para quem enxerga
+      card.addEventListener('click', () => selectClass(i));
+      grid.appendChild(card);
+    });
+  }
+
+  function _focusClassCard(idx) {
+    _classFocusIdx = idx;
+    const cards = document.querySelectorAll('.class-card');
+    cards.forEach((c, i) => {
+      c.tabIndex = i === idx ? 0 : -1;
+    });
+    cards[idx]?.focus();
+  }
+
+  // ─── Seleção ───────────────────────────────────────────────────────────────
+  async function selectClass(idx) {
+    if (idx < 0 || idx >= _classDetails.length) return;
+    _selectedClassIdx = idx;
+    _classFocusIdx    = idx;
+
+    document.querySelectorAll('.class-card').forEach((c, i) => {
+      c.classList.toggle('selected', i === idx);
+      c.setAttribute('aria-selected', i === idx ? 'true' : 'false');
+      c.tabIndex = i === idx ? 0 : -1;
+    });
+
+    document.getElementById('class-confirm-btn').disabled = false;
+
+    const cls = _classDetails[idx];
+    const descPanel = document.getElementById('class-desc-panel');
+    descPanel.style.opacity = '0';
+    descPanel.textContent = cls.description || '';
+    requestAnimationFrame(() => { descPanel.style.opacity = '1'; });
+
+    // Narra a descrição e depois avisa que pode confirmar
+    await playClassDescription(cls);
+    await playNarratorTTS('Pressione Enter para começar a aventura. Ou Espaço para ouvir outras classes.');
+  }
+
+  // ─── TTS ───────────────────────────────────────────────────────────────────
+  async function playClassListing() {
+    const NUMS = ['Um', 'Dois', 'Três', 'Quatro'];
+    const lines = _classDetails.map((cls, i) =>
+      `${NUMS[i] || i + 1}: ${cls.voice_intro || cls.id}.`
+    ).join(' ');
+    await playNarratorTTS(`Escolha sua classe. ${lines}`);
+  }
+
+  async function playClassDescription(cls) {
+    if (cls.description) await playNarratorTTS(cls.description);
+  }
+
+  async function playNarratorTTS(text) {
+    // Interrompe narração anterior se houver
+    if (_classTTSAudio) { _classTTSAudio.pause(); _classTTSAudio = null; }
+    try {
+      const res = await fetch(`${API}/api/tts`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text, voice_type: 'narrator' }),
+      });
+      const data = await res.json();
+      if (!data.audio) return;
+      const blob = base64ToBlob(data.audio, 'audio/mp3');
+      const url  = URL.createObjectURL(blob);
+      const a    = new Audio(url);
+      _classTTSAudio = a;
+      a.play().catch(() => {});
+      await new Promise(r => {
+        a.onended = () => { URL.revokeObjectURL(url); _classTTSAudio = null; r(); };
+        a.onerror = r;
+      });
+    } catch {}
+  }
+
+  // ─── Gravação de voz ───────────────────────────────────────────────────────
+  const _NUM_WORDS = {
+    'um': 0, 'hum': 0, '1': 0,
+    'dois': 1, '2': 1,
+    'três': 2, 'tres': 2, '3': 2,
+    'quatro': 3, '4': 3,
+  };
+
+  function parseClassChoice(text) {
+    const norm = text.toLowerCase().trim()
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    for (const [word, idx] of Object.entries(_NUM_WORDS)) {
+      if (norm.includes(word)) return idx;
+    }
+    for (let i = 0; i < _classDetails.length; i++) {
+      const name = _classDetails[i].id.toLowerCase()
+        .normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+      if (norm.includes(name)) return i;
+    }
+    return -1;
+  }
+
+  async function startClassRecording() {
+    if (_classRecording || !_classScreenActive) return;
+    // Interrompe narração para ouvir
+    if (_classTTSAudio) { _classTTSAudio.pause(); _classTTSAudio = null; }
+
+    _classRecording = true;
+    const btn = document.getElementById('class-listen-btn');
+    btn.classList.add('listening');
+    btn.setAttribute('aria-label', 'Ouvindo...');
+    document.getElementById('class-voice-hint').textContent = 'OUVINDO...';
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
+        ? 'audio/webm;codecs=opus' : 'audio/webm';
+      _classMediaRecorder = new MediaRecorder(stream, { mimeType });
+      _classChunks = [];
+
+      _classMediaRecorder.ondataavailable = e => { if (e.data.size > 0) _classChunks.push(e.data); };
+      _classMediaRecorder.onstop = async () => {
+        _classRecording = false;
+        btn.classList.remove('listening');
+        btn.setAttribute('aria-label', 'Falar para escolher classe');
+        document.getElementById('class-voice-hint').textContent =
+          'ESPAÇO · FALE O NÚMERO · TECLE 1-4 · SETAS PARA NAVEGAR';
+        stream.getTracks().forEach(t => t.stop());
+
+        if (!_classChunks.length || !_classScreenActive) return;
+        try {
+          const blob = new Blob(_classChunks, { type: mimeType });
+          const b64  = await blobToBase64(blob);
+          const res  = await fetch(`${API}/api/transcribe`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ audio: b64, mime_type: mimeType }),
+          });
+          const { text } = await res.json();
+          if (!text) { await playClassListing(); startClassRecording(); return; }
+          const idx = parseClassChoice(text);
+          if (idx >= 0 && idx < _classDetails.length) {
+            await selectClass(idx);
+          } else {
+            await playNarratorTTS(`Não entendi. ${text}. Diga um número: um, dois, três ou quatro.`);
+            await playClassListing();
+            startClassRecording();
+          }
+        } catch { showToast('Erro ao transcrever. Tente Espaço de novo.'); }
+      };
+
+      _classMediaRecorder.start(100);
+      // Silêncio prolongado: para após 5s
+      setTimeout(() => {
+        if (_classMediaRecorder?.state === 'recording') _classMediaRecorder.stop();
+      }, 5000);
+    } catch {
+      _classRecording = false;
+      btn.classList.remove('listening');
+      showToast('Microfone indisponível. Use as teclas 1-4.');
+    }
+  }
+
+  // Botão 🎙 — também ativável por Enter/Espaço no foco
+  document.getElementById('class-listen-btn').addEventListener('click', () => {
+    if (_classRecording) return;
+    startClassRecording();
+  });
+
+  // ─── Confirmar ─────────────────────────────────────────────────────────────
+  async function confirmClass() {
+    if (_selectedClassIdx < 0) {
+      await playNarratorTTS('Escolha uma classe primeiro. Diga o número.');
+      startClassRecording();
+      return;
+    }
+    const btn = document.getElementById('class-confirm-btn');
+    btn.disabled = true;
+    btn.textContent = '...';
+    _classScreenActive = false;
+    const cls = _classDetails[_selectedClassIdx];
+    await startGame(_classPlayerName, _classCampaignId, cls.id);
+  }
+
+  document.getElementById('class-confirm-btn').addEventListener('click', confirmClass);
+
+  // ─── Teclado global para a tela de classe ─────────────────────────────────
+  // Registrado em keydown, intercepta antes do handler global do jogo.
+  document.addEventListener('keydown', async function classKeyHandler(e) {
+    if (!_classScreenActive) return;
+
+    // Não propaga para o handler global do jogo
+    e.stopImmediatePropagation();
+
+    // Números 1-4: seleção direta
+    if (['1','2','3','4'].includes(e.key)) {
+      e.preventDefault();
+      const idx = parseInt(e.key) - 1;
+      if (idx < _classDetails.length) await selectClass(idx);
+      return;
+    }
+
+    // Setas: navega entre cards (sem selecionar)
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+      e.preventDefault();
+      _focusClassCard((_classFocusIdx + 1) % _classDetails.length);
+      return;
+    }
+    if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      _focusClassCard((_classFocusIdx - 1 + _classDetails.length) % _classDetails.length);
+      return;
+    }
+
+    // Enter: confirma se já selecionou, senão seleciona o card em foco
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      const focused = document.activeElement;
+      if (focused?.classList.contains('class-card')) {
+        await selectClass(_classFocusIdx);
+      } else {
+        await confirmClass();
+      }
+      return;
+    }
+
+    // Espaço: inicia gravação de voz
+    if (e.key === ' ') {
+      e.preventDefault();
+      startClassRecording();
+      return;
+    }
+
+    // R: repetir listagem
+    if (e.key === 'r' || e.key === 'R') {
+      e.preventDefault();
+      await playClassListing();
+      startClassRecording();
+      return;
+    }
+
+    // Escape: volta para o setup
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      _classScreenActive = false;
+      if (_classTTSAudio) { _classTTSAudio.pause(); _classTTSAudio = null; }
+      if (_classMediaRecorder?.state === 'recording') _classMediaRecorder.stop();
+      document.getElementById('class-screen').classList.add('hidden');
+      document.getElementById('setup-screen').style.display = 'flex';
+    }
+  }, true); // capture=true → intercepta antes do handler global
 
   // ── Orb: clique e teclado ─────────────────────────────────────────────────
   orb.addEventListener('click', () => {
@@ -1349,6 +2102,9 @@
       return;
     }
 
+    // Tela de classe ativa: o handler de classe (capture=true) já tratou tudo
+    if (_classScreenActive) return;
+
     // Help overlay aberto: só Escape fecha
     if (!helpOverlay.classList.contains('hidden')) {
       if (e.key === 'Escape') closeHelp();
@@ -1439,9 +2195,206 @@
     }
   }
 
-  // ── Init ───────────────────────────────────────────────────────────────────
-  loadCampaigns();
-  if (isFirstVisit) runPrologue();
+  // ── Auth + Saves (Clerk) ────────────────────────────────────────────────────
+  const authScreen  = document.getElementById('auth-screen');
+  const savesScreen = document.getElementById('saves-screen');
+  const setupScreen = document.getElementById('setup-screen');
+
+  // ── Tela de saves ──────────────────────────────────────────────────────────
+  async function showSavesScreen() {
+    const username = Clerk.user?.firstName
+      || Clerk.user?.username
+      || Clerk.user?.emailAddresses?.[0]?.emailAddress
+      || '';
+    document.getElementById('saves-username').textContent = username;
+    savesScreen.classList.remove('hidden');
+    setupScreen.style.display = 'none';
+    authScreen.classList.add('hidden');
+
+    // Monta UserButton no status bar (fica visível durante o jogo)
+    const ubDiv = document.getElementById('clerk-user-button');
+    if (ubDiv && !ubDiv.dataset.mounted) {
+      Clerk.mountUserButton(ubDiv);
+      ubDiv.dataset.mounted = '1';
+      ubDiv.style.display = 'block';
+    }
+
+    await renderSavesList();
+  }
+
+  async function renderSavesList() {
+    const listEl = document.getElementById('saves-list');
+    listEl.innerHTML = '<p class="saves-empty">Carregando...</p>';
+    try {
+      const headers = await getAuthHeaders();
+      const res = await fetch(`${API}/api/saves`, { headers });
+      if (!res.ok) { listEl.innerHTML = '<p class="saves-empty">Erro ao carregar personagens.</p>'; return; }
+      const data = await res.json();
+      const saves = data.saves || [];
+
+      if (saves.length === 0) {
+        listEl.innerHTML = '<p class="saves-empty">Nenhum personagem ainda.<br>Comece uma nova aventura!</p>';
+        return;
+      }
+
+      listEl.innerHTML = '';
+      saves.forEach(save => {
+        const date = new Date(save.updated_at + 'Z').toLocaleDateString('pt-BR', {
+          day: '2-digit', month: '2-digit', year: '2-digit',
+        });
+        const item = document.createElement('div');
+        item.className = 'save-item';
+        item.innerHTML = `
+          <div class="save-info">
+            <div class="save-name">${escapeHtml(save.character_name)}</div>
+            <div class="save-meta">${escapeHtml(save.character_class)} · ${escapeHtml(save.campaign_id)} · ${date}</div>
+          </div>
+          <div class="save-actions">
+            <button class="btn-continue" data-id="${save.id}">CONTINUAR</button>
+            <button class="btn-delete-save" data-id="${save.id}" aria-label="Excluir personagem">✕</button>
+          </div>`;
+        listEl.appendChild(item);
+      });
+
+      listEl.querySelectorAll('.btn-continue').forEach(btn => {
+        btn.addEventListener('click', () => loadSave(parseInt(btn.dataset.id)));
+      });
+      listEl.querySelectorAll('.btn-delete-save').forEach(btn => {
+        btn.addEventListener('click', () => deleteSave(parseInt(btn.dataset.id)));
+      });
+    } catch {
+      listEl.innerHTML = '<p class="saves-empty">Erro ao carregar personagens.</p>';
+    }
+  }
+
+  function escapeHtml(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  async function loadSave(saveId) {
+    try {
+      const headers = await getAuthHeaders();
+      const res = await fetch(`${API}/api/load/${saveId}`, { method: 'POST', headers });
+      if (!res.ok) { showToast('Erro ao carregar personagem.'); return; }
+      const data = await res.json();
+
+      sessionId = data.session_id;
+      savesScreen.classList.add('hidden');
+      document.getElementById('game-screen').style.display = 'flex';
+      updateStatus(data.state);
+
+      const t = document.getElementById('transcript');
+      t.textContent = data.last_narrative || '';
+      t.style.color = '';
+      setOrbState('idle', '🎙', 'toque para falar');
+    } catch (e) {
+      showToast('Erro ao retomar aventura: ' + e.message);
+    }
+  }
+
+  async function deleteSave(saveId) {
+    try {
+      const headers = await getAuthHeaders();
+      const res = await fetch(`${API}/api/saves/${saveId}`, { method: 'DELETE', headers });
+      if (!res.ok) { showToast('Erro ao excluir.'); return; }
+      await renderSavesList();
+    } catch {
+      showToast('Erro ao excluir personagem.');
+    }
+  }
+
+  document.getElementById('new-adventure-btn').addEventListener('click', () => {
+    savesScreen.classList.add('hidden');
+    setupScreen.style.display = 'flex';
+  });
+
+  // logout via UserButton do Clerk (o botão de sair é do próprio Clerk)
+  // o listener onSignOut já cuida do redirecionamento
+  document.getElementById('logout-btn').addEventListener('click', async () => {
+    await Clerk.signOut();
+  });
+
+  // ── Init ────────────────────────────────────────────────────────────────────
+  async function initClerk() {
+    // 1. Busca as chaves do servidor
+    let clerkPublishableKey, clerkFrontendApi;
+    try {
+      const cfg = await fetch(`${API}/api/config`).then(r => r.json());
+      clerkPublishableKey = cfg.clerk_publishable_key;
+      clerkFrontendApi    = cfg.clerk_frontend_api;
+    } catch {
+      showToast('Erro ao carregar configuração do servidor.');
+      return;
+    }
+
+    if (!clerkPublishableKey) {
+      showToast('CLERK_PUBLISHABLE_KEY não configurada no servidor.');
+      return;
+    }
+
+    // 2. Carrega a UI bundle do Clerk
+    await new Promise((resolve, reject) => {
+      const s = document.getElementById('clerk-ui-script');
+      s.crossOrigin = 'anonymous';
+      s.src = `${clerkFrontendApi}/npm/@clerk/ui@1/dist/ui.browser.js`;
+      s.onload = resolve;
+      s.onerror = () => reject(new Error('Falha ao carregar Clerk UI'));
+      // trigger load
+      const tmp = document.createElement('script');
+      tmp.crossOrigin = 'anonymous';
+      tmp.src = s.src;
+      tmp.onload = resolve;
+      tmp.onerror = s.onerror;
+      document.head.appendChild(tmp);
+    });
+
+    // 3. Carrega o Clerk JS
+    await new Promise((resolve, reject) => {
+      const s = document.createElement('script');
+      s.crossOrigin = 'anonymous';
+      s.setAttribute('data-clerk-publishable-key', clerkPublishableKey);
+      s.src = `${clerkFrontendApi}/npm/@clerk/clerk-js@6/dist/clerk.browser.js`;
+      s.onload = resolve;
+      s.onerror = () => reject(new Error('Falha ao carregar Clerk JS'));
+      document.head.appendChild(s);
+    });
+
+    // 4. Inicializa
+    await Clerk.load({
+      ui: { ClerkUI: window.__internal_ClerkUICtor },
+    });
+    clerkReady = true;
+
+    // 5. Listener de mudança de estado
+    Clerk.addListener(async ({ user }) => {
+      if (user) {
+        authScreen.classList.add('hidden');
+        if (savesScreen.classList.contains('hidden') &&
+            document.getElementById('game-screen').style.display !== 'flex') {
+          await showSavesScreen();
+        }
+      } else {
+        savesScreen.classList.add('hidden');
+        setupScreen.style.display = 'none';
+        document.getElementById('game-screen').style.display = 'none';
+        authScreen.classList.remove('hidden');
+        Clerk.mountSignIn(document.getElementById('clerk-signin'));
+      }
+    });
+
+    // 6. Estado inicial
+    if (Clerk.isSignedIn) {
+      await showSavesScreen();
+    } else {
+      authScreen.classList.remove('hidden');
+      Clerk.mountSignIn(document.getElementById('clerk-signin'));
+      if (isFirstVisit) runPrologue();
+    }
+
+    await loadCampaigns();
+  }
+
+  initClerk();
 </script>
 </body>
 </html>

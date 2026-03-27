@@ -122,6 +122,44 @@
       "tipo": "antagonista_secundaria",
       "dificuldade_descoberta": "médio",
       "ato_aparicao": 3
+    },
+    "rose_durst": {
+      "nome": "Rosavalda 'Rose' Durst",
+      "tipo": "crianca_assustada_ilusao",
+      "dificuldade_descoberta": "difícil",
+      "ato_aparicao": 1,
+      "aparencia_facil": "Uma menina de 10 anos vestindo roupas de época um tanto antiquadas. Ela parece exausta, mas tenta manter uma postura corajosa para proteger o irmãozinho.",
+      "verdade_oculta": "É uma manifestação ilusória da casa projetada para atrair aventureiros para a morte. A verdadeira Rose morreu de inanição trancada no sótão pelos próprios pais. Ela não sabe que está morta ou que é uma ilusão.",
+      "assinatura_narrativa": {
+        "moral_tonalidade": "inocente",
+        "arquetipo_social": "irma_protetora",
+        "motivacao_principal": "Fazer com que o aventureiro entre na casa para salvar seu irmãozinho Walter do 'monstro' que vive no porão.",
+        "intencao_na_interacao": "Implorar por ajuda heroica, recusando-se a voltar para dentro da casa.",
+        "linguagem_corporal": "Fica na frente de Thorn para protegê-lo. Aponta com as mãos trêmulas para as janelas escuras.",
+        "voz_textual": "Infantil, assustada, mas cheia de uma urgência desesperada.",
+        "camada_externa": "Uma criança perdida e apavorada precisando de um herói.",
+        "camada_oculta": "A isca trágica de uma entidade maligna sedenta por sangue.",
+        "aliases": ["Rose", "Rosavalda"]
+      }
+    },
+    "thorn_durst": {
+      "nome": "Thornboldt 'Thorn' Durst",
+      "tipo": "crianca_chorona_ilusao",
+      "dificuldade_descoberta": "difícil",
+      "ato_aparicao": 1,
+      "aparencia_facil": "Um menino de 7 anos, de bochechas sujas de lágrimas, abraçando com muita força um boneco de pelúcia encardido.",
+      "verdade_oculta": "Assim como sua irmã, é uma projeção da Casa da Morte. Seu pequeno esqueleto repousa no andar mais alto da casa.",
+      "assinatura_narrativa": {
+        "moral_tonalidade": "inocente",
+        "arquetipo_social": "vitima_indefesa",
+        "motivacao_principal": "Chorar e demonstrar terror absoluto da própria casa.",
+        "intencao_na_interacao": "Evocar pena e instinto de proteção no jogador.",
+        "linguagem_corporal": "Esconde-se atrás da irmã, aperta o boneco de pelúcia, funga e treme incontrolavelmente.",
+        "voz_textual": "Voz embargada, soluços constantes, poucas frases completas.",
+        "camada_externa": "O puro retrato do pavor infantil.",
+        "camada_oculta": "O eco eterno da negligência e da tortura que sofreu em vida.",
+        "aliases": ["Thorn", "Thornboldt"]
+      }
     }
   }
 }

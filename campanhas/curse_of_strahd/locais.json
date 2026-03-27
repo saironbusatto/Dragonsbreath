@@ -1,5 +1,385 @@
 {
   "locais": {
+    "old_svalich_road": {
+      "nome": "Estrada Velha de Svalich",
+      "descricao": "Uma estrada de terra ladeada por árvores gigantescas cujos galhos parecem garras. O ar é denso, frio e cheira a terra úmida. O silêncio aqui tem o peso de um túmulo esquecido.",
+      "ato_aparicao": 1,
+      "gatilhos": {
+        "nevoa_engole": {
+          "descricao": "A névoa se ergue como uma parede sólida e gelada nas suas costas, impossibilitando qualquer retorno. Ela avança ameaçadoramente, forçando você a seguir adiante até que a terra ceda lugar a paralelepípedos úmidos.",
+          "sfx": "vento",
+          "proximo": null
+        }
+      }
+    },
+    "village_of_barovia_streets": {
+      "nome": "Ruas da Vila de Baróvia",
+      "descricao": "Formas altas emergem da névoa espessa, revelando-se como casas escuras que se erguem como lápides gigantes. As janelas cegas encaram o vazio. O chão de paralelepípedos é escorregadio e a vila parece desprovida de qualquer vida ou esperança.",
+      "ato_aparicao": 1,
+      "gatilhos": {
+        "rose_e_thorn": {
+          "descricao": "Um choro suave e lamurioso corta o silêncio sepulcral. No meio da rua deserta, duas crianças assustadas estão de mãos dadas, olhando para uma casa sombria.",
+          "sfx": "criancas",
+          "proximo": "sombra_na_janela"
+        },
+        "sombra_na_janela": {
+          "descricao": "Pelo canto do olho, você percebe um movimento em uma das janelas escuras de uma casa abandonada próxima. Uma figura alta e pálida parece observar você por um instante antes de desaparecer nas sombras.",
+          "sfx": "vento",
+          "proximo": null
+        }
+      }
+    },
+    "death_house_exterior": {
+      "nome": "Exterior da Casa da Morte",
+      "descricao_publica": "Uma casa alta de tijolos envelhecidos que viu dias muito melhores. Suas janelas são escuras. Há um pórtico no térreo com um portão de ferro enferrujado ligeiramente entreaberto. As casas de ambos os lados estão abandonadas.",
+      "segredo_oculto": {
+        "armadilhas": [],
+        "segredos": [],
+        "notas_mestre": "O exterior é inofensivo, servindo apenas para atrair o jogador com a neblina e a ilusão de Rose e Thorn. A porta baterá e trancará assim que o jogador entrar."
+      },
+      "ato_aparicao": 1,
+      "gatilhos": {
+        "portao_rangendo": {
+          "descricao": "O vento sopra, fazendo o portão de ferro enferrujado ranger.",
+          "sfx": "vento",
+          "proximo": null
+        }
+      }
+    },
+    "death_house_1f_hall": {
+      "nome": "Casa da Morte — Hall de Entrada",
+      "descricao_publica": "Um saguão opulento, porém empoeirado. Lâmpadas de óleo apagadas pendem do teto. Na parede sul repousa um escudo com o brasão de um moinho de vento dourado, ladeado por retratos de aristocratas. Portas duplas bloqueiam o caminho para o interior.",
+      "segredo_oculto": {
+        "armadilhas": [],
+        "segredos": [],
+        "notas_mestre": "Não há monstros aqui. Use este ambiente para ditar a atmosfera sufocante. O brasão com moinho de vento é o símbolo da família Durst."
+      },
+      "ato_aparicao": 1,
+      "gatilhos": {
+        "porta_batendo": {
+          "descricao": "Assim que você dá o primeiro passo, a porta bate violentamente atrás de você.",
+          "sfx": "porta_batendo",
+          "proximo": null
+        }
+      }
+    },
+    "death_house_1f_dining": {
+      "nome": "Casa da Morte — Sala de Jantar",
+      "descricao_publica": "Uma mesa de mogno escuro domina o centro. Um lustre de cristal ilumina talheres de prata impecáveis. Painéis de madeira nas paredes mostram belas cenas de cervos em uma floresta. O silêncio é pesado.",
+      "segredo_oculto": {
+        "armadilhas": [],
+        "segredos": [
+          {
+            "id": "paineis_macabros",
+            "descricao": "Se observados de perto, as árvores nos painéis de madeira são feitas de rostos humanos retorcidos e os lobos têm olhos ocos.",
+            "dc_deteccao": 10,
+            "classe_vantagem": "Inquisidor"
+          }
+        ],
+        "notas_mestre": "A perfeição dos talheres e do lustre é uma ilusão da casa. Tudo aqui está secretamente apodrecido."
+      },
+      "ato_aparicao": 1,
+      "gatilhos": {}
+    },
+    "death_house_2f_library": {
+      "nome": "Casa da Morte — Biblioteca",
+      "descricao_publica": "Cortinas de veludo vermelho bloqueiam a luz. As paredes estão forradas de estantes que vão do chão ao teto, abarrotadas de livros antigos. No centro, uma escrivaninha pesada de mogno com uma lâmpada a óleo apagada. O cheiro de papel velho e poeira sufoca o ar.",
+      "segredo_oculto": {
+        "armadilhas": [
+          {
+            "id": "bau_dardos_quebrado",
+            "descricao": "Na sala secreta, há um baú com pés de garra de ferro. Um esqueleto com armadura de couro está debruçado sobre ele, morto com 3 dardos envenenados nas costelas. O mecanismo da armadilha está quebrado, mas serve de aviso.",
+            "dc_deteccao": 0,
+            "dano": "Nenhum (já disparada)",
+            "classe_vantagem": "Aventureiro",
+            "visivel_sem_teste": true
+          }
+        ],
+        "segredos": [
+          {
+            "id": "porta_secreta_estante",
+            "descricao": "Um livro falso com lombada lisa e vermelha na estante serve de alavanca. Puxá-lo abre uma porta secreta para uma câmara de rituais profanos.",
+            "dc_deteccao": 13,
+            "classe_vantagem": "Ocultista"
+          },
+          {
+            "id": "rituais_falsos",
+            "descricao": "Os livros na sala secreta descrevem rituais necromânticos dos 'Sacerdotes de Osybus'. São completamente falsos e inúteis.",
+            "dc_deteccao": 12,
+            "classe_vantagem": "Ocultista"
+          }
+        ],
+        "notas_mestre": "Não revelar a sala secreta a menos que o jogador procure por passagens falsas ou mexa nos livros. O Ocultista reconhece a falsidade dos rituais facilmente."
+      },
+      "ato_aparicao": 1,
+      "gatilhos": {
+        "livro_falso_secreto": {
+          "descricao": "Ao puxar o livro sem título, ouve-se um 'clique' metálico e a estante inteira gira para fora, revelando um quarto secreto escuro com um baú e um cadáver espetado por dardos.",
+          "sfx": "porta_pedra_arrastando",
+          "proximo": "death_house_2f_secret_room"
+        }
+      }
+    },
+    "death_house_2f_secret_room": {
+      "nome": "Casa da Morte — Câmara Secreta",
+      "descricao_publica": "Uma câmara estreita escondida atrás da estante. Prateleiras de pedra sustentam três urnas de terracota lacradas. O ar é mais frio que o restante da biblioteca e há traços de cera vermelha no chão formando um círculo incompleto.",
+      "segredo_oculto": {
+        "armadilhas": [],
+        "segredos": [
+          {
+            "id": "caixa_de_madeira",
+            "descricao": "Uma caixa de madeira polida lacrada com cera do sinete do moinho. Contém: pingente de âmbar com algo preso, três frascos de perfume requintado, joias de ouro. Nota: 'Para Elisabeth, com meu amor eterno — Gustav'.",
+            "dc_deteccao": 0,
+            "classe_vantagem": "Bardo",
+            "visivel_sem_teste": true
+          }
+        ],
+        "notas_mestre": "A nota de Gustav planta a semente da obsessão de Elisabeth com o culto. O Inquisidor sente a maldade residual nas urnas ao tocá-las."
+      },
+      "ato_aparicao": 1,
+      "gatilhos": {}
+    },
+    "death_house_2f_balcony": {
+      "nome": "Casa da Morte — Sacada Interna",
+      "descricao_publica": "Uma sacada com painéis de carvalho esculpidos com belas cenas de bosques e animais. Uma armadura de placas negras, coberta de teias de aranha, permanece de pé como uma sentinela. O ar aqui é mais frio e uma corrente de vento desce pelo teto.",
+      "segredo_oculto": {
+        "armadilhas": [
+          {
+            "id": "armadura_animada",
+            "descricao": "A armadura negra é animada por magia. Se sofrer dano ou se alguém se aproximar a menos de 1,5m, ela ganha vida e ataca impiedosamente.",
+            "dc_deteccao": 0,
+            "dano": "1d6+2 contundente",
+            "classe_vantagem": "Aventureiro",
+            "visivel_sem_teste": false
+          }
+        ],
+        "segredos": [
+          {
+            "id": "entalhes_macabros",
+            "descricao": "Observando os entalhes de madeira de perto, as árvores têm pequenos cadáveres enforcados e vermes brotando do solo.",
+            "dc_deteccao": 12,
+            "classe_vantagem": "Inquisidor"
+          },
+          {
+            "id": "porta_secreta_sotao",
+            "descricao": "Uma porta secreta imperceptível na parede oeste esconde a escada em espiral, cheia de teias, que leva diretamente ao Sótão.",
+            "dc_deteccao": 15,
+            "classe_vantagem": "Bardo"
+          }
+        ],
+        "notas_mestre": "A armadura parece apenas decoração até que o jogador tente passar perto ou tocá-la. Instile tensão descrevendo o ranger do metal antes do ataque."
+      },
+      "ato_aparicao": 1,
+      "gatilhos": {
+        "armadura_desperta": {
+          "descricao": "O pó cai das juntas de metal quando a imensa armadura negra vira a viseira cega na sua direção e levanta os pesados punhos de ferro para esmagá-lo.",
+          "sfx": "armadura_metal",
+          "proximo": null
+        }
+      }
+    },
+    "death_house_2f_master_suite": {
+      "nome": "Casa da Morte — Suíte Master",
+      "descricao_publica": "Cortinas cor de vinho cobrem as janelas. O quarto tem uma imensa cama com dossel e véus esfarrapados, e um tapete de pele de tigre apodrecido diante da lareira fria. Acima do consolo, um retrato emoldurado de um casal nobre de rostos severos. Sobre a penteadeira, repousa uma caixa de joias.",
+      "segredo_oculto": {
+        "armadilhas": [],
+        "segredos": [
+          {
+            "id": "caixa_joias",
+            "descricao": "A caixa na penteadeira é de prata com filigrana de ouro (75 gp). Contém três anéis de ouro e um colar de platina com um topázio (750 gp).",
+            "dc_deteccao": 0,
+            "classe_vantagem": "Bardo",
+            "visivel_sem_teste": true
+          }
+        ],
+        "notas_mestre": "O retrato mostra Gustav e Elisabeth Durst. O Inquisidor sente um calafrio de maldade pura ao olhar para a mulher no quadro."
+      },
+      "ato_aparicao": 1,
+      "gatilhos": {}
+    },
+    "death_house_3f_childrens_room": {
+      "nome": "Casa da Morte — Quarto das Crianças",
+      "descricao_publica": "O quarto tem uma janela bloqueada com tijolos. Há duas camas infantis, um baú de brinquedos com moinhos pintados e uma casa de bonecas que é uma réplica perfeita desta mesma casa. No meio do chão, deitados lado a lado, repousam dois pequenos esqueletos humanos vestidos com roupas esfarrapadas. O esqueleto menor abraça um boneco de pelúcia encardido.",
+      "segredo_oculto": {
+        "armadilhas": [],
+        "segredos": [
+          {
+            "id": "replica_casa_bonecas",
+            "descricao": "Inspecionar a casa de bonecas revela o mapa de todos os andares e expõe onde estão todas as portas secretas da casa verdadeira.",
+            "dc_deteccao": 15,
+            "classe_vantagem": "Bardo"
+          }
+        ],
+        "notas_mestre": "Os esqueletos são a verdadeira Rose e o verdadeiro Thorn. Morreram de inanição trancados aqui pelos pais. Se o jogador mexer nos ossos ou brinquedos sem respeito, os fantasmas aparecem. O Bardo tem vantagem para acalmá-los. A porta costuma estar trancada por fora com cadeado (Bardo DC 15 para abrir, ou requer a chave da Biblioteca)."
+      },
+      "ato_aparicao": 1,
+      "gatilhos": {
+        "fantasmas_despertam": {
+          "descricao": "A temperatura cai abruptamente. Os espíritos translúcidos de Rose e Thorn se materializam sobre os próprios ossos, olhando para você não com inocência, mas com um desespero sombrio.",
+          "sfx": "vento_frio",
+          "proximo": null
+        }
+      }
+    },
+    "death_house_3f_master_bedroom": {
+      "nome": "Casa da Morte — Quarto dos Pais",
+      "descricao_publica": "O ar é gélido. Uma cama com dossel e véus esfarrapados repousa contra a parede norte. Um tapete de pele de tigre apodrecido jaz diante de uma lareira fria, sob um retrato sombrio de um homem e uma mulher.",
+      "segredo_oculto": {
+        "armadilhas": [],
+        "segredos": [
+          {
+            "id": "passagem_secreta_lareira",
+            "descricao": "Há uma porta secreta atrás do espelho que leva ao Sótão e às masmorras. Fica óbvia se o jogador procurar ativamente atrás dos móveis.",
+            "dc_deteccao": 12,
+            "classe_vantagem": "Bardo"
+          }
+        ],
+        "notas_mestre": "O retrato é de Gustav e Elisabeth Durst, líderes do culto. A porta secreta é o principal funil para o Sótão (Quarto das Crianças)."
+      },
+      "ato_aparicao": 1,
+      "gatilhos": {}
+    },
+    "death_house_dungeon_access": {
+      "nome": "Casa da Morte — Túneis do Porão",
+      "descricao_publica": "O chão de madeira polida dá lugar a terra úmida, argila e rocha. O ar é rarefeito e carrega o fedor metálico de sangue velho. Das profundezas da escuridão, ecoa um cântico macabro e incessante: 'Ele é o Ancião. Ele é a Terra.'",
+      "segredo_oculto": {
+        "armadilhas": [],
+        "segredos": [],
+        "notas_mestre": "A partir daqui, use a tag [MOOD:tense]. A casa parou de esconder seu terror."
+      },
+      "ato_aparicao": 1,
+      "gatilhos": {
+        "ouvir_cantico": {
+          "descricao": "Você prende a respiração para ouvir melhor. Dezenas de vozes fantasmagóricas entoam a mesma frase sem parar, vindo das profundezas: 'Ele é o Ancião. Ele é a Terra.'",
+          "sfx": "cantico_cultistas",
+          "proximo": null
+        }
+      }
+    },
+    "death_house_dungeon_crossroads": {
+      "nome": "Casa da Morte — Encruzilhada da Masmorra",
+      "descricao_publica": "Um cruzamento de quatro túneis apertados. Ossos mofados e restos de banquetes vis se espalham pelo chão de terra. O cântico ecoa ainda mais forte pelos corredores escuros.",
+      "segredo_oculto": {
+        "armadilhas": [
+          {
+            "id": "fosso_estacas",
+            "descricao": "Fosso de 3m camuflado por madeira podre em um dos túneis. Detectável com busca ativa por armadilhas no chão.",
+            "dc_deteccao": 15,
+            "dano": "1d6 contundente + 2d10 perfurante",
+            "classe_vantagem": "Bardo",
+            "visivel_sem_teste": false
+          }
+        ],
+        "segredos": [
+          {
+            "id": "emboscada_carnicais",
+            "descricao": "Quatro Ghouls cultistas estão enterrados sob o chão do cruzamento. Saem da terra e emboscam se o jogador caminhar para o centro sem cuidado.",
+            "dc_deteccao": 15,
+            "classe_vantagem": "Inquisidor"
+          }
+        ],
+        "notas_mestre": "O Inquisidor pode sentir os mortos-vivos sob a terra antes de pisar. Narre a tensão dos túneis apertados."
+      },
+      "ato_aparicao": 1,
+      "gatilhos": {}
+    },
+    "death_house_dungeon_shrine": {
+      "nome": "Casa da Morte — Santuário Sombrio",
+      "descricao_publica": "A sala é adornada com esqueletos mofados pendurados em grilhões. Em uma alcova ao sul, há uma estátua de madeira de um homem cadavérico de capa negra, a mão sobre um lobo, segurando um orbe de cristal cinzento.",
+      "segredo_oculto": {
+        "armadilhas": [
+          {
+            "id": "sombras_da_estatua",
+            "descricao": "Se o jogador tocar na estátua ou remover o orbe de cristal, cinco Sombras (espíritos dos cultistas) se materializam nas paredes e atacam.",
+            "dc_deteccao": 0,
+            "dano": "Drenagem de Força",
+            "classe_vantagem": "Inquisidor",
+            "visivel_sem_teste": false
+          }
+        ],
+        "segredos": [
+          {
+            "id": "porta_secreta_orbe",
+            "descricao": "O orbe não é mágico, vale 25 gp. Há uma porta secreta na parede leste camuflada de argila.",
+            "dc_deteccao": 10,
+            "classe_vantagem": "Ocultista"
+          }
+        ],
+        "notas_mestre": "A estátua é do próprio Strahd von Zarovich, esculpida pelo culto. Só narre o surgimento das Sombras se o jogador interferir com a estátua."
+      },
+      "ato_aparicao": 1,
+      "gatilhos": {}
+    },
+    "death_house_dungeon_leaders": {
+      "nome": "Casa da Morte — Aposentos dos Líderes",
+      "descricao_publica": "Este quarto apertado contém uma cama grande com colchão de penas podre, um baú de madeira aos pés da cama e dois candelabros de ferro. No canto sudoeste, há uma porta de madeira velha.",
+      "segredo_oculto": {
+        "armadilhas": [
+          {
+            "id": "porta_mimico",
+            "descricao": "A porta sudoeste é um Mímico. Se o jogador tocá-la, a mão gruda e o monstro ataca.",
+            "dc_deteccao": 15,
+            "dano": "1d8+3 contundente + agarrado",
+            "classe_vantagem": "Aventureiro",
+            "visivel_sem_teste": false
+          },
+          {
+            "id": "emboscada_ghasts",
+            "descricao": "Gustav e Elisabeth Durst transformados em Ghasts estão dentro das paredes falsas. Se o jogador remover qualquer item do baú, as paredes se partem e eles atacam.",
+            "dc_deteccao": 16,
+            "dano": "Fedor paralisante + garras",
+            "classe_vantagem": "Inquisidor",
+            "visivel_sem_teste": false
+          }
+        ],
+        "segredos": [
+          {
+            "id": "bau_do_tesouro",
+            "descricao": "O baú contém: Manto de Proteção, cota de malha, lanterna, e um Livro de Magias amarelo (disfarce, armadura arcana, mísseis mágicos, visão no escuro, invisibilidade).",
+            "dc_deteccao": 0,
+            "classe_vantagem": "Ocultista",
+            "visivel_sem_teste": true
+          }
+        ],
+        "notas_mestre": "Sala letal. Os Ghasts ignoram o Mímico e atacam quem roubar o baú. O Livro de Magias deve ser narrado com extrema importância se o jogador for Ocultista."
+      },
+      "ato_aparicao": 1,
+      "gatilhos": {}
+    },
+    "death_house_dungeon_ritual": {
+      "nome": "Casa da Morte — Câmara Ritualística",
+      "descricao_publica": "Uma sala parcialmente alagada com pilares de pedra sustentando o teto. No centro, um altar manchado de sangue sobre um palanque seco, com correntes penduradas do teto. Na parede oeste, um grande monte de lixo e raízes submersas. Assim que você entra, o cântico para. Treze aparições sombrias surgem nas bordas da sala, entoando: 'Um deve morrer! Um deve morrer!'",
+      "segredo_oculto": {
+        "armadilhas": [
+          {
+            "id": "lorghoth_o_decaido",
+            "descricao": "O monte de lixo a oeste é Lorghoth, um Shambling Mound. Ele dorme. Desperta imediatamente se for atacado, ou se o jogador negar o sacrifício no altar.",
+            "dc_deteccao": 15,
+            "dano": "2d8+4 por pancada + engolfar",
+            "classe_vantagem": "Aventureiro",
+            "visivel_sem_teste": false
+          }
+        ],
+        "segredos": [
+          {
+            "id": "o_sacrificio",
+            "descricao": "Se o jogador sacrificar qualquer criatura no altar, o culto se apazigua e a casa o deixa sair vivo. Se recusar e fugir do altar, os cultistas gritam 'Lorghoth, nós te despertamos!' e o Shambling Mound ataca.",
+            "dc_deteccao": 0,
+            "classe_vantagem": "Inquisidor",
+            "visivel_sem_teste": true
+          }
+        ],
+        "notas_mestre": "Este é o clímax da Death House. As aparições são ilusões intocáveis. Se o jogador iniciar combate contra Lorghoth, injete [MOOD:combat] imediatamente. Se estiver avaliando o dilema moral do sacrifício, injete [MOOD:dramatic]."
+      },
+      "ato_aparicao": 1,
+      "gatilhos": {
+        "recusa_sacrificio": {
+          "descricao": "As aparições se enfurecem. 'Lorghoth, nós te despertamos!' — gritam. O enorme monte de lixo no canto da sala começa a se erguer, revelando-se uma montanha monstruosa de podridão e raízes movendo-se na sua direção.",
+          "sfx": "monstro_rugido",
+          "proximo": null
+        }
+      }
+    },
     "vila_barovia": {
       "nome": "Vila de Baróvia",
       "descricao": "Ruas estreitas, casas trancadas e um luto permanente sob céu cinza.",

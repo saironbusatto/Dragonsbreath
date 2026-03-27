@@ -132,8 +132,10 @@ Inspirado no Shadowdark RPG: **só role quando há risco real e a falha seria in
 
 | Classe | Vantagem (2d20 → maior) | Desvantagem (2d20 → menor) |
 |--------|--------------------------|---------------------------|
-| Bardo | persuasão, mentira, música, investigação | força bruta, combate físico |
-| Aventureiro | combate, atletismo, intimidação | persuasão, furtividade, magia |
+| Bardo | persuasão, música, engano, investigação | força bruta, combate físico |
+| Aventureiro | combate, atletismo, intimidação, sobrevivência | persuasão sutil, magia, furtividade |
+| Ocultista | magia arcana, história, investigação mágica, decifrar runas | combate físico, atletismo, acrobacia |
+| Inquisidor | religião, resistir a medo/maldições, atacar mortos-vivos, medicina | furtividade, mentira/enganação, acrobacia |
 
 ### Verbos que Disparam Rolagem
 
@@ -280,6 +282,34 @@ Quando dispara → P resetada para 30%
 
 **Não pode:** magia, voar, habilidades sobrenaturais.
 
+### Ocultista
+
+| Aspecto | Detalhe |
+|---------|---------|
+| HP Inicial | 15 |
+| Slots Iniciais | 4/10 usados |
+| Estilo de jogo | Magia arcana, conhecimento, enigmas, ataques à distância |
+| Vantagem nos dados | Magia arcana, história, investigação mágica, decifrar runas |
+| Desvantagem nos dados | Combate físico (força bruta), atletismo, acrobacia |
+
+**Pode:** lançar feitiços arcanos básicos (fogo, luz, escudos mágicos), decifrar textos antigos, sentir magia no ambiente.
+
+**Não pode:** usar armas pesadas ou armaduras, realizar feitos de força bruta, curar ferimentos.
+
+### Inquisidor
+
+| Aspecto | Detalhe |
+|---------|---------|
+| HP Inicial | 22 |
+| Slots Iniciais | 8/10 usados |
+| Estilo de jogo | Magia divina, combate contra mortos-vivos, cura, força de vontade |
+| Vantagem nos dados | Religião, resistir a medo/maldições, atacar mortos-vivos, medicina |
+| Desvantagem nos dados | Furtividade, mentira/enganação, acrobacia |
+
+**Pode:** expulsar mortos-vivos, realizar curas básicas, detectar o mal, sintonizar com artefatos sagrados.
+
+**Não pode:** agir com furtividade, lançar magia arcana/ilusória, enganar ou roubar.
+
 ---
 
 ## Anti-Repetição Narrativa
@@ -351,6 +381,8 @@ Oferenda emocional pode conceder vantagem:
 
 - **Bardo**: memória, canção, promessa, vínculo afetivo.
 - **Aventureiro**: determinação, dever, proteção, vingança, sobrevivência.
+- **Ocultista**: conhecimento proibido, segredo guardado, pacto arcano, busca inacabada.
+- **Inquisidor**: fé inabalável, juramento sagrado, redenção, proteção dos inocentes.
 
 ### Tabela de resolução
 

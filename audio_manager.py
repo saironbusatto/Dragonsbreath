@@ -61,9 +61,9 @@ def text_to_speech_google_cloud(text, voice_type="master"):
             json_file = 'dragonsbreath-55a792adeda7.json'
             if os.path.exists(json_file):
                 os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = json_file
-                print(f"🔑 Usando credenciais do arquivo: {json_file}")
+                print(f" Usando credenciais do arquivo: {json_file}")
             else:
-                print("❌ Arquivo de credenciais Google Cloud não encontrado")
+                print(" Arquivo de credenciais Google Cloud não encontrado")
                 return False
 
         client = texttospeech.TextToSpeechClient()
@@ -305,6 +305,42 @@ def play_sfx(sfx_name):
             print(f"⚠️  Sound file not found: {sfx_path}")
     except Exception as e:
         print(f"⚠️  Sound effect error: {e}")
+
+# Mapeamento de palavras-chave para efeitos sonoros contextuais (deduplicado)
+SFX_KEYWORDS: dict[str, list[str]] = {
+    'crow':      ['corvo', 'corvos', 'grasnido', 'grasnar', 'pássaro negro', 'ave sombria', 'olhos brancos', 'ave majestosa', 'criatura sinistra'],
+    'crows':     ['bando de corvos', 'corvos voam', 'múltiplos corvos', 'revoada'],
+    'scream':    ['grito', 'grita', 'berro', 'urro', 'gritou', 'brado', 'clamor', 'alarido', 'desespero', 'angústia'],
+    'crianca':   ['criança', 'criança correndo', 'passos de criança', 'menino', 'menina', 'garoto', 'garota'],
+    'coin':      ['moeda', 'moedas', 'dinheiro', 'ouro', 'prata', 'tesouro', 'riqueza'],
+    'village':   ['cidade', 'vila', 'povoado', 'ruas', 'portões', 'muralhas', 'casa', 'sala', 'ambiente'],
+    'people':    ['pessoas', 'multidão', 'conversas', 'vozes', 'murmúrios', 'visitante', 'alguém'],
+    'rain':      ['chuva', 'chove', 'chovendo', 'gotas', 'tempestade', 'aguaceiro', 'dezembro', 'noite sombria'],
+    'tavern':    ['taverna', 'bar', 'estalagem', 'bebida', 'taverneiro', 'aconchegante'],
+    'wind':      ['vento', 'ventos', 'brisa', 'rajada', 'ventania', 'sopro', 'uivava', 'sussurrava o vento'],
+    'fire':      ['fogo', 'chamas', 'lareira', 'brasas', 'crepitar', 'fogueira', 'incêndio', 'ardor'],
+    'door':      ['porta', 'batida', 'batidas', 'bater', 'pancada', 'pancadas', 'rangido', 'abrir porta', 'batida suave', 'batida persistente'],
+    'footsteps': ['passos', 'passadas', 'caminhada', 'pisar', 'pegadas', 'aproximar-se'],
+    'bell':      ['sino', 'sinos', 'badalar', 'badalada', 'repique', 'campainha'],
+    'thunder':   ['trovão', 'trovões', 'trovoada', 'estrondo', 'ribombo'],
+    'water':     ['água', 'rio', 'riacho', 'córrego', 'fonte', 'gotejamento', 'pingar'],
+    'night':     ['noite', 'escuridão', 'trevas', 'sombras', 'luar', 'meia-noite', 'anoitecer', 'silêncio da noite'],
+    'book':      ['livro', 'livros', 'páginas', 'folhear', 'estante', 'pergaminho', 'volumes', 'páginas amareladas'],
+    'candle':    ['vela', 'velas', 'chama', 'pavio', 'cera', 'iluminação', 'luz fraca'],
+    'clock':     ['relógio', 'tique-taque', 'ponteiros', 'badaladas'],
+    'whisper':   ['sussurro', 'sussurros', 'murmurar', 'cochichar', 'voz baixa', 'sussurrar'],
+}
+
+
+def trigger_contextual_sfx(narrative_text: str):
+    """Analisa o texto narrativo e toca o efeito sonoro contextual mais adequado."""
+    text_lower = narrative_text.lower()
+    for sfx_name, keywords in SFX_KEYWORDS.items():
+        for keyword in keywords:
+            if keyword in text_lower:
+                play_sfx(sfx_name)
+                return
+
 
 def narrator_speech(text):
     """Usa voz feminina para narração (introdução do Ressoar)"""

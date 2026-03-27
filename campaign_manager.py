@@ -48,6 +48,12 @@ def get_player_template() -> dict:
         "starting_inventory": []
     })
 
+def get_class_template(class_name: str) -> dict | None:
+    """Retorna o template de uma classe específica da campanha atual, ou None se não existir."""
+    campaign = get_current_campaign()
+    class_templates = campaign.get('class_templates', {})
+    return class_templates.get(class_name)
+
 def get_world_template() -> dict:
     """Retorna o template do mundo para a campanha atual."""
     campaign = get_current_campaign()
@@ -61,10 +67,33 @@ def list_available_campaigns() -> list:
     config = load_config()
     campaigns = []
     for key, campaign in config.get('campaigns', {}).items():
+        # Extrai dados completos das classes (incluindo descrições para a tela de seleção)
+        class_templates = campaign.get('class_templates', {})
+        if class_templates:
+            classes = list(class_templates.keys())
+            class_details = [
+                {
+                    'id': cls_name,
+                    'tagline': tpl.get('tagline', ''),
+                    'icon': tpl.get('icon', '⚔️'),
+                    'voice_intro': tpl.get('voice_intro', cls_name),
+                    'description': tpl.get('description', ''),
+                    'hp': tpl.get('starting_hp', 20),
+                    'slots': tpl.get('slots_iniciais', tpl.get('max_slots', 10)),
+                    'max_slots': tpl.get('max_slots', 10),
+                }
+                for cls_name, tpl in class_templates.items()
+            ]
+        else:
+            default_class = campaign.get('player_template', {}).get('class', 'Aventureiro')
+            classes = [default_class]
+            class_details = []
         campaigns.append({
             'id': key,
             'name': campaign.get('name', key),
-            'description': campaign.get('description', 'Sem descrição')
+            'description': campaign.get('description', 'Sem descrição'),
+            'classes': classes,
+            'class_details': class_details,
         })
     campaigns.sort(
         key=lambda c: (

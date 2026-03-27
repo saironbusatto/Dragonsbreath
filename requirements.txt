@@ -13,6 +13,10 @@ pyaudio
 requests
 pyttsx3
 
+# Auth / sessões persistentes
+bcrypt
+python-jose[cryptography]
+
 # Utilitários
 python-dotenv
 

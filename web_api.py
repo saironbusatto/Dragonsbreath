@@ -10,11 +10,12 @@ import random
 import tempfile
 import concurrent.futures
 import requests as http_requests
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Depends
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from dotenv import load_dotenv
+import os as _os
 
 load_dotenv()
 
@@ -29,13 +30,14 @@ if _google_creds_json:
 
 from campaign_manager import list_available_campaigns, switch_campaign
 from world_state_manager import create_initial_world_state, update_world_state
+from database import init_db, list_saves, get_save, upsert_save, delete_save
+from auth import get_current_user, get_optional_user
 from game import (
     get_gm_narrative,
     clean_and_process_ai_response,
     load_game_context_for_act,
     bootstrap_location_triggers,
     sync_act_with_location,
-    validate_player_action,
     is_inspection_action,
     get_player_eyes_response,
     resolve_action_roll,
@@ -48,6 +50,15 @@ app = FastAPI(title="Ressoar")
 
 # Sessões em memória: { session_id: world_state }
 sessions: dict[str, dict] = {}
+
+# Mapa sessão → user_id (para auto-save)
+session_user: dict[str, int] = {}
+
+# Mapa sessão → campaign_id (para auto-save)
+session_campaign: dict[str, str] = {}
+
+# ── Bootstrap DB na inicialização ────────────────────────────────────────────
+init_db()
 
 _MOOD_TTS_SPEED = {
     "combat": 1.45,
@@ -455,6 +466,9 @@ class StartRequest(BaseModel):
     player_name: str
     campaign_id: str
     tutorial: bool = False
+    player_class: str = "Aventureiro"
+    # JWT token opcional — permite vincular a sessão ao usuário logado
+    token: str | None = None
 
 class ActionRequest(BaseModel):
     session_id: str
@@ -546,13 +560,91 @@ def get_campaigns():
     return {"campaigns": list_available_campaigns()}
 
 
+# ─── Auth / config endpoints ──────────────────────────────────────────────────
+
+@app.get("/api/config")
+def get_config():
+    """Expõe a Clerk Publishable Key para o frontend (é uma chave pública)."""
+    return {
+        "clerk_publishable_key": _os.environ.get("CLERK_PUBLISHABLE_KEY", ""),
+        "clerk_frontend_api": _os.environ.get(
+            "CLERK_FRONTEND_API",
+            "https://definite-firefly-91.clerk.accounts.dev",
+        ),
+    }
+
+
+@app.get("/api/auth/me")
+def me(current_user: dict = Depends(get_current_user)):
+    """Verifica o token Clerk e retorna o clerk_user_id."""
+    return {"clerk_user_id": current_user["clerk_user_id"]}
+
+
+# ─── Save/Load endpoints ──────────────────────────────────────────────────────
+
+@app.get("/api/saves")
+def get_saves(current_user: dict = Depends(get_current_user)):
+    saves = list_saves(current_user["clerk_user_id"])
+    return {"saves": saves}
+
+
+@app.post("/api/save")
+def manual_save(session_id: str, current_user: dict = Depends(get_current_user)):
+    world_state = sessions.get(session_id)
+    if world_state is None:
+        raise HTTPException(404, "Sessão não encontrada")
+    pc = world_state.get("player_character", {})
+    uid = current_user["clerk_user_id"]
+    save_id = upsert_save(
+        clerk_user_id=uid,
+        character_name=pc.get("name", "?"),
+        character_class=pc.get("class", "Aventureiro"),
+        campaign_id=session_campaign.get(session_id, "unknown"),
+        world_state=world_state,
+    )
+    session_user[session_id] = uid
+    return {"save_id": save_id, "message": "Progresso salvo"}
+
+
+@app.post("/api/load/{save_id}")
+def load_save(save_id: int, current_user: dict = Depends(get_current_user)):
+    import json as _json
+    uid = current_user["clerk_user_id"]
+    save = get_save(save_id, uid)
+    if not save:
+        raise HTTPException(404, "Save não encontrado")
+
+    world_state = _json.loads(save["world_state"])
+    new_session_id = str(uuid.uuid4())
+    sessions[new_session_id] = world_state
+    session_user[new_session_id] = uid
+    session_campaign[new_session_id] = save["campaign_id"]
+
+    recent = world_state.get("recent_narrations", [])
+    last_narrative = recent[-1] if recent else "A aventura continua..."
+
+    return {
+        "session_id": new_session_id,
+        "state": _state_summary(world_state),
+        "last_narrative": last_narrative,
+        "campaign_id": save["campaign_id"],
+    }
+
+
+@app.delete("/api/saves/{save_id}")
+def remove_save(save_id: int, current_user: dict = Depends(get_current_user)):
+    if not delete_save(save_id, current_user["clerk_user_id"]):
+        raise HTTPException(404, "Save não encontrado")
+    return {"message": "Personagem removido"}
+
+
 @app.post("/api/start")
 def start_game(req: StartRequest):
     if not req.player_name.strip():
         raise HTTPException(400, "Nome não pode ser vazio")
 
     switch_campaign(req.campaign_id)
-    world_state = create_initial_world_state(req.player_name.strip())
+    world_state = create_initial_world_state(req.player_name.strip(), req.player_class)
     world_state["game_mode"] = "rpg"
     if req.tutorial:
         world_state["tutorial_turn"] = 3
@@ -568,6 +660,24 @@ def start_game(req: StartRequest):
 
     session_id = str(uuid.uuid4())
     sessions[session_id] = world_state
+    session_campaign[session_id] = req.campaign_id
+
+    # Vincula sessão ao usuário Clerk se token válido
+    if req.token:
+        from auth import get_optional_user as _opt
+        from fastapi.security import HTTPAuthorizationCredentials as _Creds
+        try:
+            from jose import jwt as _jwt
+            from auth import _get_jwks, CLERK_FRONTEND_API as _CFAPI
+            claims = _jwt.decode(
+                req.token, _get_jwks(), algorithms=["RS256"],
+                options={"verify_aud": False},
+            )
+            uid = claims.get("sub")
+            if uid:
+                session_user[session_id] = uid
+        except Exception:
+            pass
 
     mood = world_state.get("narration_mood", "normal")
     tts_speed = _resolve_tts_speed(mood, tutorial_active=req.tutorial)
@@ -656,25 +766,14 @@ def take_action(req: ActionRequest):
             "valid": True,
         }
 
-    # Valida ação
-    character = world_state.get("player_character", {})
-    is_valid, validation_msg = validate_player_action(action, character, world_state)
-    if not is_valid:
-        return {
-            "narrative": validation_msg,
-            "audio": to_audio_response(validation_msg),
-            "sfx_error": _get_error_sfx(),
-            "state": _state_summary(world_state),
-            "valid": False,
-        }
-
     # Processa ação no motor do jogo
+    character = world_state.get("player_character", {})
     current_act = character.get("current_act", 1)
     game_context = load_game_context_for_act(current_act, world_state)
     bootstrap_location_triggers(world_state, game_context.get("locais", {}))
 
     # Sistema de dados Shadowdark
-    roll_result = resolve_action_roll(action, character)
+    roll_result = resolve_action_roll(action, character, world_state)
     if roll_result:
         mod_pt = {"advantage": "Vantagem", "disadvantage": "Desvantagem", "normal": "Normal"}[roll_result["modifier"]]
         print(f"[DADOS] {mod_pt} | {roll_result['dice']} → {roll_result['roll']} vs DC {roll_result['dc']} | {'SUCESSO' if roll_result['success'] else 'FALHA'}{'(CRÍTICO)' if roll_result['critical'] else ''}{'(FUMBLE)' if roll_result['fumble'] else ''}")
@@ -733,6 +832,21 @@ def take_action(req: ActionRequest):
 
     sessions[req.session_id] = world_state
 
+    # Auto-save para usuários autenticados via Clerk
+    uid = session_user.get(req.session_id)
+    if uid:
+        try:
+            pc = world_state.get("player_character", {})
+            upsert_save(
+                clerk_user_id=uid,
+                character_name=pc.get("name", "?"),
+                character_class=pc.get("class", "Aventureiro"),
+                campaign_id=session_campaign.get(req.session_id, "unknown"),
+                world_state=world_state,
+            )
+        except Exception as _e:
+            print(f"[SAVE] Auto-save falhou: {_e}")
+
     new_act = world_state.get("player_character", {}).get("current_act", 1)
     ambient_url = _get_ambient_for_act(new_act) if new_act != current_act else None
     mood = world_state.get("narration_mood", mood_pre)
@@ -740,7 +854,14 @@ def take_action(req: ActionRequest):
 
     world_state["pause_beat_segments"] = []
     world_state["pause_beat_count"] = 0
-    sfx = detect_sfx_list(cleaned_narrative)
+
+    # SFX: usa hint do GM (IA) quando disponível; fallback para keyword scan
+    gm_sfx_hint = world_state.pop("_gm_sfx_hint", None)
+    if gm_sfx_hint:
+        sfx_url = _resolve_sfx_keyword(gm_sfx_hint)
+        sfx = [{"url": sfx_url, "position": 0.1}] if sfx_url else []
+    else:
+        sfx = detect_sfx_list(cleaned_narrative)
 
     return {
         "narrative": cleaned_narrative,

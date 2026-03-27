@@ -23,7 +23,7 @@ from campaign_manager import (
 # Import audio manager for text-to-speech and sound effects
 try:
     import audio_manager
-    from audio_manager import text_to_speech, play_chime, play_sfx, narrator_speech, master_speech
+    from audio_manager import text_to_speech, play_chime, play_sfx, narrator_speech, master_speech, trigger_contextual_sfx
     AUDIO_ENABLED = True
 except ImportError:
     print("Audio manager not available - running in text-only mode")
@@ -33,9 +33,9 @@ except ImportError:
     def master_speech(text): pass
     def play_chime(): pass
     def play_sfx(sfx_name): pass
+    def trigger_contextual_sfx(narrative_text): pass
 
 MAX_INVENTORY_SLOTS = 10
-QUEST_ITEM_KEYWORDS = ['moeda', 'chave', 'nota', 'mapa', 'pergaminho', 'cristal', 'símbolo', 'anel', 'diapasão']
 VALID_MOODS = ("combat", "tense", "dramatic", "sad", "relief", "normal")
 DEFAULT_MOOD = "normal"
 MIN_ACT = 1
@@ -60,162 +60,6 @@ SIGNIFICANT_THREAT_HINTS = (
     "antagonista", "boss", "chefe", "vilao", "vampiro", "lord", "conde", "elite",
     "antagonista_principal", "antagonista_secundaria", "vilao_de_elite",
 )
-BAROVIAN_DARK_GIFTS = (
-    ("olhos de fumaça", "Você passa a desconfiar de qualquer gesto de compaixão."),
-    ("sangue negro como piche", "Você sente prazer frio ao ver o medo alheio."),
-    ("sombra que se move sozinha", "Você evita vínculos por acreditar que todos vão trair você."),
-    ("voz dupla em sussurro", "Você responde à dor com crueldade calculada."),
-)
-BARD_OFFERING_HINTS = (
-    "canção", "musica", "melodia", "lembran", "promessa", "amor",
-    "verso", "poema", "esposa", "familia", "coração", "coracao",
-)
-ADVENTURER_OFFERING_HINTS = (
-    "vingan", "promessa", "jurar", "determina", "combate", "lutar", "proteger",
-    "honra", "sobreviver", "missao", "missão", "dever", "companheiro",
-)
-
-# Definições de habilidades por classe
-CLASS_ABILITIES = {
-    "Bardo": {
-        "allowed_actions": [
-            "tocar música", "cantar", "contar histórias", "persuadir", "enganar", "investigar",
-            "procurar pistas", "conversar", "negociar", "inspirar", "entreter", "recordar conhecimento",
-            "ler", "escrever", "dançar", "atuar", "imitar", "seduzir com palavras", "acalmar com música"
-        ],
-        "forbidden_actions": [
-            "voar", "levitar", "teletransportar", "lançar bolas de fogo", "lançar raios", "curar magicamente",
-            "ressuscitar", "transformar-se", "ficar invisível", "atravessar paredes", "controlar mentes",
-            "invocar criaturas", "criar ilusões visuais", "manipular elementos", "parar o tempo"
-        ],
-        "limited_magic": [
-            "pequenos truques musicais", "inspirar coragem através da música", "acalmar animais com música",
-            "memorizar perfeitamente melodias e histórias"
-        ],
-        "physical_limits": [
-            "força humana normal", "resistência humana normal", "não pode voar", "não pode respirar debaixo d'água",
-            "precisa dormir e comer", "pode se machucar e morrer", "limitado pela gravidade"
-        ]
-    },
-    "Aventureiro": {
-        "allowed_actions": [
-            "lutar com armas", "explorar", "escalar", "nadar", "correr", "saltar", "rastrear",
-            "sobreviver na natureza", "usar ferramentas", "primeiros socorros básicos"
-        ],
-        "forbidden_actions": [
-            "voar", "levitar", "teletransportar", "lançar magias", "curar magicamente",
-            "ressuscitar", "transformar-se", "ficar invisível", "atravessar paredes"
-        ],
-        "limited_magic": [],
-        "physical_limits": [
-            "força humana normal", "resistência humana normal", "não pode voar", "não pode respirar debaixo d'água",
-            "precisa dormir e comer", "pode se machucar e morrer", "limitado pela gravidade"
-        ]
-    }
-}
-
-def extract_objects_from_action(action: str) -> list[str]:
-    """
-    Extrai objetos/substantivos principais de uma ação do jogador.
-    Retorna lista de objetos que o jogador está tentando interagir.
-    """
-    if not action or len(action.strip()) < 2:
-        return []
-
-    action_lower = action.lower()
-
-    # Lista de substantivos comuns que podem aparecer em ações
-    common_objects = [
-        # Móveis e objetos domésticos
-        'cadeira', 'mesa', 'cama', 'baú', 'estante', 'armário', 'gaveta', 'balcão',
-        'sofá', 'banco', 'escrivaninha', 'prateleira', 'espelho', 'quadro',
-
-        # Objetos pequenos
-        'livro', 'pergaminho', 'carta', 'chave', 'moeda', 'caneca', 'copo', 'prato',
-        'faca', 'espada', 'escudo', 'arco', 'flecha', 'machado', 'martelo', 'corda',
-        'tocha', 'vela', 'lanterna', 'saco', 'bolsa', 'mochila', 'frasco', 'poção',
-
-        # Elementos arquitetônicos
-        'porta', 'janela', 'parede', 'teto', 'chão', 'escada', 'degrau', 'corrimão',
-        'coluna', 'pilar', 'arco', 'telhado', 'varanda', 'sacada',
-
-        # Elementos de ambiente
-        'lareira', 'fogo', 'brasas', 'cinzas', 'fumaça', 'água', 'poça', 'rio',
-        'lago', 'fonte', 'poço', 'pedra', 'rocha', 'árvore', 'galho', 'folha',
-        'flor', 'grama', 'terra', 'areia', 'lama',
-
-        # Elementos de taverna/loja
-        'barril', 'garrafa', 'taça', 'jarra', 'bandeja', 'tábua', 'queijo', 'pão',
-        'carne', 'fruta', 'verdura', 'especiaria', 'ouro', 'prata', 'joia', 'taverna',
-        'piano', 'teto', 'sala',
-
-        # NPCs comuns (substantivos)
-        'taverneiro', 'comerciante', 'guarda', 'soldado', 'camponês', 'nobre',
-        'criança', 'mulher', 'homem', 'idoso', 'jovem', 'estranho', 'viajante',
-
-        # Animais
-        'cavalo', 'cão', 'gato', 'rato', 'pássaro', 'corvo', 'pombo', 'galinha',
-        'porco', 'vaca', 'cabra', 'ovelha', 'lobo', 'urso', 'cobra'
-    ]
-
-    # Procura por objetos na ação
-    found_objects = []
-    for obj in common_objects:
-        if obj in action_lower:
-            found_objects.append(obj)
-
-    # Procura por padrões específicos como "a mesa", "o livro", etc.
-    import re
-    patterns = [
-        r'\b(?:a|o|uma|um|esta|este|essa|esse|aquela|aquele)\s+(\w+)',
-        r'\b(?:na|no|da|do|pela|pelo|com\s+a|com\s+o)\s+(\w+)',
-        r'\b(?:pego|agarro|seguro|toco|quebro|abro|fecho|movo|empurro|puxo)\s+(?:a|o|uma|um)?\s*(\w+)'
-    ]
-
-    # Palavras que não são objetos físicos
-    non_objects = [
-        'situação', 'momento', 'vez', 'tempo', 'lugar', 'lado', 'forma', 'jeito',
-        'coisa', 'algo', 'nada', 'tudo', 'aqui', 'ali', 'lá', 'onde', 'como',
-        'quando', 'porque', 'talvez', 'sempre', 'nunca', 'muito', 'pouco',
-        'bem', 'mal', 'melhor', 'pior', 'grande', 'pequeno', 'novo', 'velho'
-    ]
-
-    for pattern in patterns:
-        matches = re.findall(pattern, action_lower)
-        for match in matches:
-            if (match not in found_objects and
-                len(match) > 2 and
-                match not in non_objects and
-                match in common_objects):  # Só adiciona se estiver na lista de objetos conhecidos
-                found_objects.append(match)
-
-    return found_objects
-
-def get_realistic_alternative(impossible_action: str, character_class: str) -> str:
-    """Sugere alternativas realistas para ações impossíveis."""
-    action_lower = impossible_action.lower()
-
-    alternatives = {
-        'voar': f"Como {character_class}, você poderia tentar escalar algo alto, procurar uma escada, ou pedir ajuda para alcançar lugares elevados.",
-        'voo': f"Você poderia procurar uma forma de subir normalmente - escadas, cordas, ou escalando.",
-        'levitar': f"Talvez você possa pular ou encontrar algo para se apoiar e alcançar o que precisa.",
-        'bola de fogo': f"Como {character_class}, você poderia usar uma tocha, acender uma fogueira, ou procurar por fogo comum.",
-        'raio': f"Você poderia tentar um ataque físico normal ou procurar por uma arma.",
-        'curar magicamente': f"Você poderia tentar primeiros socorros básicos, procurar por ervas medicinais, ou buscar um curandeiro.",
-        'teletransportar': f"Você precisaria viajar normalmente - caminhando, correndo, ou encontrando um meio de transporte.",
-        'invisível': f"Como {character_class}, você poderia tentar se esconder, usar disfarces, ou se mover silenciosamente.",
-        'atravessar parede': f"Você poderia procurar uma porta, janela, ou outro caminho ao redor da parede.",
-        'controlar mente': f"Como {character_class}, você poderia tentar persuadir, convencer com argumentos, ou usar sua música para influenciar o humor.",
-        'invocar': f"Você poderia procurar por aliados reais, animais domesticados, ou pedir ajuda a outras pessoas.",
-        'transformar': f"Você poderia usar disfarces, roupas diferentes, ou atuar para parecer diferente.",
-        'ler mentes': f"Como {character_class}, você poderia observar expressões, fazer perguntas inteligentes, ou usar sua intuição."
-    }
-
-    for keyword, alternative in alternatives.items():
-        if keyword in action_lower:
-            return alternative
-
-    return f"Como {character_class}, você poderia tentar uma abordagem mais mundana e realista para alcançar seu objetivo."
 
 def _flatten_scene_map(elements) -> list[str]:
     """
@@ -278,54 +122,6 @@ def validate_impossible_abilities(action_lower: str, character_class: str) -> tu
 
     return True, ""
 
-def trigger_contextual_sfx(narrative_text: str):
-    """Analisa o texto narrativo e toca efeitos sonoros contextuais apropriados."""
-    if not AUDIO_ENABLED:
-        return
-
-    text_lower = narrative_text.lower()
-
-    # Mapeamento de palavras-chave para efeitos sonoros
-    sfx_keywords = {
-        # SFX para RPG (existentes)
-        'crow': ['corvo', 'corvos', 'grasnido', 'grasnar', 'pássaro negro', 'ave sombria', 'olhos brancos', 'ave majestosa', 'criatura sinistra'],
-        'crows': ['bando de corvos', 'corvos voam', 'múltiplos corvos', 'revoada'],
-        'scream': ['grito', 'grita', 'berro', 'urro', 'gritou', 'brado', 'clamor', 'alarido'],
-        'crianca': ['criança', 'criança correndo', 'passos de criança', 'menino', 'menina', 'garoto', 'garota'],
-        'coin': ['moeda', 'moedas', 'dinheiro', 'ouro', 'prata', 'tesouro', 'riqueza'],
-        'village': ['cidade', 'vila', 'povoado', 'ruas', 'umbraton', 'portões', 'muralhas'],
-        'people': ['pessoas', 'multidão', 'conversas', 'vozes', 'sussurros', 'murmúrios'],
-        'rain': ['chuva', 'chove', 'chovendo', 'gotas', 'tempestade', 'aguaceiro'],
-        'tavern': ['taverna', 'bar', 'estalagem', 'bebida', 'corvo ferido', 'taverneiro'],
-
-        # SFX específicos para contos literários
-        'rain': ['chuva', 'chove', 'chovendo', 'gotas', 'tempestade', 'aguaceiro', 'dezembro', 'noite sombria'],
-        'wind': ['vento', 'ventos', 'brisa', 'rajada', 'ventania', 'sopro', 'uivava', 'sussurrava o vento'],
-        'fire': ['fogo', 'chamas', 'lareira', 'brasas', 'crepitar', 'fogueira', 'incêndio', 'ardor', 'dançavam'],
-        'door': ['porta', 'batida', 'batidas', 'bater', 'pancada', 'pancadas', 'rangido', 'abrir porta', 'som estranho', 'batida suave', 'batida persistente'],
-        'footsteps': ['passos', 'passadas', 'caminhada', 'andar', 'pisar', 'pegadas', 'aproximar-se'],
-        'bell': ['sino', 'sinos', 'badalar', 'badalada', 'repique', 'toque', 'campainha'],
-        'thunder': ['trovão', 'trovões', 'trovoada', 'estrondo', 'ribombo', 'tempestade'],
-        'water': ['água', 'rio', 'riacho', 'córrego', 'fonte', 'gotejamento', 'pingar'],
-        'night': ['noite', 'escuridão', 'trevas', 'sombras', 'luar', 'meia-noite', 'anoitecer', 'silêncio da noite'],
-        'book': ['livro', 'livros', 'páginas', 'folhear', 'biblioteca', 'estante', 'pergaminho', 'volumes', 'filosofia antiga', 'páginas amareladas'],
-        'candle': ['vela', 'velas', 'luz', 'chama', 'pavio', 'cera', 'iluminação', 'luz fraca'],
-        'clock': ['relógio', 'horas', 'tempo', 'tique-taque', 'ponteiros', 'badaladas'],
-        'whisper': ['sussurro', 'sussurros', 'murmurar', 'cochichar', 'voz baixa', 'segredo', 'sussurrar'],
-
-        # SFX específicos para "O Corvo" e contos góticos
-        'scream': ['grito', 'grita', 'berro', 'urro', 'gritou', 'brado', 'clamor', 'alarido', 'desespero', 'angústia'],
-        'people': ['pessoas', 'multidão', 'conversas', 'vozes', 'sussurros', 'murmúrios', 'visitante', 'alguém'],
-        'village': ['cidade', 'vila', 'povoado', 'ruas', 'casa', 'biblioteca', 'sala', 'ambiente'],
-        'tavern': ['taverna', 'bar', 'estalagem', 'bebida', 'aconchegante', 'ambiente doméstico']
-    }
-
-    # Verifica cada categoria de som
-    for sfx_name, keywords in sfx_keywords.items():
-        for keyword in keywords:
-            if keyword in text_lower:
-                play_sfx(sfx_name)
-                return  # Toca apenas um efeito por narrativa para evitar sobreposição
 
 def _fmt_scene(scene: dict | list) -> str:
     """Formata interactable_elements_in_scene como lista legível para o prompt do GM."""
@@ -558,18 +354,18 @@ def _offering_advantage_by_class(offering_text: str, character_class: str) -> tu
     if len(text) < 18:
         return False, "A oferenda foi breve demais para fortalecer sua alma."
 
-    if character_class == "Bardo":
-        if any(hint in text for hint in BARD_OFFERING_HINTS):
-            return True, "Sua oferenda ecoa como uma canção de memória e vínculo."
-        return False, "Você oferece sentimento real, mas sem a cadência plena da sua arte."
+    campaign_data = get_current_campaign()
+    class_templates = campaign_data.get('class_templates', {})
+    class_template = class_templates.get(character_class, {})
+    hints = class_template.get('offering_hints', [])
+    success_msg = class_template.get('offering_success_message', "Sua oferenda encontra eco nas brumas.")
+    failure_msg = class_template.get('offering_failure_message', "As brumas quase engolem sua voz.")
 
-    if character_class == "Aventureiro":
-        if any(hint in text for hint in ADVENTURER_OFFERING_HINTS):
-            return True, "Sua vontade de luta ancora sua alma com firmeza brutal."
-        return False, "A coragem existe, mas falta uma âncora nítida de propósito."
+    if hints and any(hint in text for hint in hints):
+        return True, success_msg
 
     generic = any(hint in text for hint in ("promessa", "amor", "familia", "vingan", "dever"))
-    return generic, "Sua oferenda encontra algum eco nas brumas." if generic else "As brumas quase engolem sua voz."
+    return generic, "Sua oferenda encontra algum eco nas brumas." if generic else failure_msg
 
 
 def _roll_resurrection_check(advantage: bool, dc: int) -> dict:
@@ -616,11 +412,10 @@ def start_resurrection_limbo(world_state: dict) -> tuple[bool, str]:
         "death_count": next_death_count,
     }
 
-    limbo_text = (
-        "O mundo se dissolve em névoa fria, e sua alma deriva sem peso pelas brumas de Baróvia. "
-        "Aqui, nenhuma alma parte em paz, apenas se perde. "
-        "Uma presença antiga cobra seu preço: o que prende sua alma a este mundo? Faça sua oferenda emocional."
-    )
+    campaign_data = get_current_campaign()
+    resurrection_config = campaign_data.get('resurrection', {})
+    limbo_text = resurrection_config.get('limbo_text',
+        "Sua alma deriva entre mundos. Uma presença antiga cobra seu preço: o que prende sua alma a este mundo? Faça sua oferenda emocional.")
     return True, limbo_text
 
 
@@ -655,6 +450,10 @@ def resolve_resurrection_offering(world_state: dict, offering_text: str) -> dict
     has_advantage, advantage_reason = _offering_advantage_by_class(offering, character_class)
     roll = _roll_resurrection_check(has_advantage, dc)
 
+    campaign_data = get_current_campaign()
+    _dark_gifts = campaign_data.get('resurrection', {}).get('dark_gifts', [])
+    _default_gift = ("uma marca sombria", "algo dentro de você mudou para sempre.")
+
     result_type = "success"
     mood = "dramatic"
     if roll["critical"]:
@@ -668,7 +467,7 @@ def resolve_resurrection_offering(world_state: dict, offering_text: str) -> dict
         result_type = "critical_failure"
         mood = "tense"
         character["alignment"] = "maligno"
-        anomaly, personality_flaw = random.choice(BAROVIAN_DARK_GIFTS)
+        anomaly, personality_flaw = random.choice(_dark_gifts) if _dark_gifts else _default_gift
         dark_gift_flaw = {
             "type": "dark_gift",
             "severity": "grave",
@@ -708,7 +507,7 @@ def resolve_resurrection_offering(world_state: dict, offering_text: str) -> dict
     else:
         result_type = "failure"
         mood = "tense"
-        anomaly, personality_flaw = random.choice(BAROVIAN_DARK_GIFTS)
+        anomaly, personality_flaw = random.choice(_dark_gifts) if _dark_gifts else _default_gift
         flaw = {
             "type": "dark_gift",
             "severity": "persistente",
@@ -779,7 +578,10 @@ def get_gm_narrative(world_state: dict, player_action: str, game_context: dict, 
 
     character = world_state.get('player_character', {})
     character_class = character.get('class', 'Aventureiro')
-    class_info = CLASS_ABILITIES.get(character_class, CLASS_ABILITIES['Aventureiro'])
+    campaign_data = get_current_campaign()
+    class_templates = campaign_data.get('class_templates', {})
+    _default_class_info = {'allowed_actions': [], 'forbidden_actions': [], 'limited_magic': [], 'physical_limits': []}
+    class_info = class_templates.get(character_class, class_templates.get('Aventureiro', _default_class_info))
 
     world_state = ensure_npc_signature_memory(world_state)
     ws = world_state.get("world_state", {})
@@ -830,6 +632,16 @@ Regras:
 - Exemplo: [MOOD:tense]
 - Use somente os moods válidos.
 - Não explique a tag; apenas inclua no fim.
+
+--- SFX CONTEXTUAL ---
+Logo após [MOOD:x], inclua exatamente uma tag de som ambiente:
+[SFX:keyword] — use a keyword em português que melhor representa o som dominante da cena.
+[SFX:none] — se nenhum som for adequado ou o som já foi mencionado no turno anterior.
+Keywords disponíveis: corvo, corvos, lobo, chuva, tempestade, trovão, vento, névoa,
+floresta, rio, taverna, cidade, vila, castelo, masmorra, caverna, cemitério,
+pessoas, criança, grito, sussurro, passos, espada, batalha, moeda, fogo, porta,
+sino, magia, fantasma, sombra, musica
+Escolha com critério — prefira sons que o jogador ouça naturalmente na cena.
 
 Perfis de escrita por mood:
 - combat: frases curtas, verbos de impacto, urgência e risco imediato.
@@ -917,6 +729,15 @@ Use isso para validar agência sem prometer sucesso.
 21. ANTI-HACK: Se o jogador mencionar objeto, NPC ou item que NÃO consta na lista acima E NÃO está no inventário dele, narre imersivamente que ele procura mas não encontra. NUNCA invente elementos ausentes da cena.
 22. CENA VAZIA: Se a lista acima mostrar "(cena ainda não mapeada)", use julgamento narrativo normalmente — o Arquivista mapeará após este turno.
 
+--- TELA DO MESTRE (ARMADILHAS E SEGREDOS) ---
+O contexto de jogo inclui uma seção "TELA DO MESTRE" com armadilhas ocultas, segredos e notas exclusivas.
+REGRA ABSOLUTA: NUNCA revele o conteúdo da TELA DO MESTRE na narração diretamente.
+- Segredos e armadilhas só são revelados se o jogador buscar ATIVAMENTE E passar na DC indicada.
+- Se visivel_sem_teste: true, a armadilha ou consequência é narrada imediatamente quando o jogador age na área.
+- Use as notas_mestre para calibrar tensão, reações por classe e o que enfatizar.
+- Ao pedir uma rolagem, use a dc_deteccao indicada.
+- Leve em conta classe_vantagem: o jogador dessa classe recebe Vantagem no teste.
+
 --- ASSINATURAS DE NPC EM CENA ---
 23. Se houver assinatura ativa de NPC, aplique obrigatoriamente a postura corporal em cada ação relevante dele.
 24. A fala do NPC deve seguir a voz textual da assinatura (tom, cadência, grau de ameaça ou acolhimento).
@@ -1001,6 +822,9 @@ Itens disponíveis: {json.dumps(game_context.get('items', {}), indent=2, ensure_
 Locais relevantes: {json.dumps(game_context.get('locais', {}), indent=2, ensure_ascii=False)}
 Gatilhos Narrativos Ativos: {json.dumps(game_context.get('gatilhos', []), indent=2, ensure_ascii=False)}
 
+--- TELA DO MESTRE ---
+{json.dumps(game_context.get('locais_segredos', {}), indent=2, ensure_ascii=False)}
+
 --- AÇÃO DO JOGADOR ---{dice_block}{tutorial_block}
 {player_action}"""
 
@@ -1053,13 +877,24 @@ def load_world_data_for_act(current_act: int) -> tuple[dict, dict, dict]:
     active_npcs = {k: v for k, v in all_npcs.items() if v.get('ato_aparicao', 1) <= current_act}
     active_items = {k: v for k, v in combined_items.items() if v.get('ato_aparicao', 1) <= current_act}
     active_locais = {k: v for k, v in all_locais.items() if v.get('ato_aparicao', 1) <= current_act}
-    
-    # Garante que todos os locais tenham gatilhos
-    for key, local in active_locais.items():
-        if 'gatilhos' not in local:
-            local['gatilhos'] = {}
 
-    return active_npcs, active_items, {'locais': active_locais}
+    # Separa visão pública (jogador/Arquivista) dos segredos do Mestre
+    locais_publicos = {}
+    locais_segredos = {}
+    for key, local in active_locais.items():
+        locais_publicos[key] = {
+            "nome": local.get("nome", ""),
+            "descricao_publica": local.get("descricao_publica") or local.get("descricao", ""),
+            "ato_aparicao": local.get("ato_aparicao", 1),
+            "gatilhos": local.get("gatilhos", {}),
+        }
+        if "segredo_oculto" in local:
+            locais_segredos[key] = {
+                "nome": local.get("nome", ""),
+                "segredo_oculto": local["segredo_oculto"],
+            }
+
+    return active_npcs, active_items, {'locais': locais_publicos, 'locais_segredos': locais_segredos}
 
 def clean_and_process_ai_response(response_text: str, world_state: dict) -> tuple[str, dict]:
     character = world_state.get('player_character', {})
@@ -1076,6 +911,15 @@ def clean_and_process_ai_response(response_text: str, world_state: dict) -> tupl
     else:
         mood = DEFAULT_MOOD
     narrative = re.sub(r'\[MOOD:[a-z_]+\]', '', narrative, flags=re.IGNORECASE).strip()
+
+    # Captura e remove tag de SFX sugerida pelo GM
+    sfx_match = re.search(r'\[SFX:([a-záéíóúãõêâîôûàüç_]+)\]', narrative, flags=re.IGNORECASE)
+    if sfx_match:
+        sfx_hint = sfx_match.group(1).lower()
+        world_state["_gm_sfx_hint"] = sfx_hint if sfx_hint != "none" else None
+    else:
+        world_state["_gm_sfx_hint"] = None
+    narrative = re.sub(r'\[SFX:[^\]]*\]', '', narrative, flags=re.IGNORECASE).strip()
     if pacing_state.get("force_relief_next") and mood not in MA_RELIEF_MOODS:
         mood = "relief"
     world_state['narration_mood'] = mood
@@ -1273,26 +1117,6 @@ def print_inventory(character: dict):
 
     print("---" + "-" * (len(f"Sua Bolsa ({used_slots}/{max_slots} slots)")) + "---\n")
 
-def can_pick_up_item(character: dict, item_name: str) -> tuple[bool, str]:
-    """
-    Verifica se o jogador pode pegar um item baseado nos slots disponíveis.
-    Retorna (pode_pegar, mensagem_explicativa)
-    """
-    inventory = character.get('inventory', [])
-    max_slots = character.get('max_slots', 10)
-    used_slots = calculate_used_slots(inventory)
-    item_slots = get_item_slots(item_name)
-
-    free_slots = max_slots - used_slots
-
-    if item_slots <= free_slots:
-        return True, ""
-    else:
-        if free_slots == 0:
-            return False, f"Sua bolsa está cheia ({used_slots}/{max_slots} slots). Você precisa abandonar algo antes de pegar '{item_name}'."
-        else:
-            return False, f"'{item_name}' ocupa {item_slots} slots, mas você só tem {free_slots} slots livres. Você precisa abandonar algo primeiro."
-
 def get_inventory_management_suggestion(character: dict, item_name: str) -> str:
     """
     Sugere quais itens o jogador poderia abandonar para pegar um novo item.
@@ -1358,36 +1182,8 @@ _DC_EXTREME_KEYWORDS = [
     "extremamente", "incrivelmente",
 ]
 
-# Vantagem e Desvantagem por classe (mesmos stems de _ROLL_VERB_PATTERNS)
-_CLASS_ROLL_PROFILE: dict[str, dict[str, list[str]]] = {
-    "Bardo": {
-        "advantage": [
-            "convenc", "persuad", "mentir", "minto", "enganar", "engano",
-            "seduz", "blef", "disfarç", "negoci", "tocar", "toco",
-            "cantar", "canto", "músic", "melodia", "inspirar", "acalmar",
-            "investigar", "investigo", "decifrar", "traduz",
-        ],
-        "disadvantage": [
-            "empurrar", "empurro", "arromb", "escal",
-            "lutando", "atacar", "ataco", "golpe", "derrub", "arremess", "trepar",
-        ],
-    },
-    "Aventureiro": {
-        "advantage": [
-            "empurrar", "empurro", "arromb", "escal",
-            "lutando", "atacar", "ataco", "golpe", "derrub", "arremess", "trepar",
-            "intimidar", "intimido", "sobreviv", "rastrear", "caçar",
-        ],
-        "disadvantage": [
-            "convenc", "persuad", "mentir", "minto", "enganar", "engano",
-            "seduz", "blef", "disfarç", "músic", "tocar", "cantar",
-            "decifrar", "traduz", "furtand", "esgueirar",
-        ],
-    },
-}
 
-
-def resolve_action_roll(action: str, character: dict) -> dict | None:
+def resolve_action_roll(action: str, character: dict, world_state: dict | None = None) -> dict | None:
     """
     Sistema de dados Shadowdark — só rola quando há risco real.
     Retorna None para ações rotineiras (sucesso automático pelo Mestre).
@@ -1407,15 +1203,24 @@ def resolve_action_roll(action: str, character: dict) -> dict | None:
     else:
         dc = 12
 
-    # Vantagem / Desvantagem pela classe
-    character_class = character.get("class", "Aventureiro")
-    profile = _CLASS_ROLL_PROFILE.get(character_class, {})
-    if any(kw in action_lower for kw in profile.get("advantage", [])):
-        modifier = "advantage"
-    elif any(kw in action_lower for kw in profile.get("disadvantage", [])):
-        modifier = "disadvantage"
+    # Vantagem / Desvantagem: Arquivista define pelo contexto narrativo (turno anterior)
+    # Fallback para keywords de config se não houver contexto ainda
+    roll_context = (world_state or {}).get("roll_context")
+    if roll_context in ("advantage", "disadvantage"):
+        modifier = roll_context
     else:
-        modifier = "normal"
+        character_class = character.get("class", "Aventureiro")
+        campaign_data = get_current_campaign()
+        class_templates = campaign_data.get('class_templates', {})
+        class_template = class_templates.get(character_class, {})
+        adv_kws = class_template.get('roll_advantages', [])
+        dis_kws = class_template.get('roll_disadvantages', [])
+        if any(kw in action_lower for kw in adv_kws):
+            modifier = "advantage"
+        elif any(kw in action_lower for kw in dis_kws):
+            modifier = "disadvantage"
+        else:
+            modifier = "normal"
 
     # Rola os dados
     if modifier == "advantage":
@@ -2242,90 +2047,12 @@ def interactive_story_loop(story_state: dict, texto_completo: str, eventos_json:
         # Salva estado (opcional - pode ser implementado depois)
         # save_story_state(story_state)
 
-def select_game_mode() -> str:
-    """
-    Apresenta ao jogador a escolha entre Modo RPG e Modo Conto Interativo.
-    Inclui sequência especial de abertura do Ressoar.
-    Retorna 'rpg' ou 'conto'.
-    """
-    # SEQUÊNCIA ESPECIAL DE ABERTURA
-    if AUDIO_ENABLED:
-        from audio_manager import play_ressoar_opening_sequence
-        play_ressoar_opening_sequence()
-
-    print("\n" + "="*60)
-    print("🎮 PLATAFORMA RESSOAR - SELEÇÃO DE MODO")
-    print("="*60)
-    print("\nEscolha sua experiência narrativa:")
-    print("\n1. 🗡️  MODO RPG")
-    print("   Viva uma aventura com regras, inventário e liberdade de ação.")
-    print("   • Sistema de Interação Ambiental Dinâmica")
-    print("   • Inventário com slots limitados")
-    print("   • Múltiplas campanhas disponíveis")
-    print("   • Progressão de personagem")
-
-    print("\n2. 📖 MODO CONTO INTERATIVO")
-    print("   Participe de histórias clássicas com escolhas e finais alternativos.")
-    print("   • Narrativas baseadas em obras literárias")
-    print("   • Múltiplas escolhas e consequências")
-    print("   • Finais alternativos únicos")
-    print("   • Variáveis narrativas dinâmicas")
-
-    print("\n" + "-"*60)
-
-    # ÁUDIO ESPECÍFICO PARA SELEÇÃO
-    if AUDIO_ENABLED:
-        from audio_manager import play_mode_selection_audio
-        play_mode_selection_audio()
-
-    while True:
-        if AUDIO_ENABLED:
-            choice = input("Digite 1 ou 2: ").strip()
-        else:
-            choice = input("Digite sua escolha (1 ou 2): ").strip()
-
-        if choice == "1":
-            print("\n🗡️ Modo RPG selecionado!")
-            if AUDIO_ENABLED:
-                master_speech("Modo RPG selecionado! Preparando suas aventuras...")
-            return "rpg"
-        elif choice == "2":
-            print("\n📖 Modo Conto Interativo selecionado!")
-            if AUDIO_ENABLED:
-                master_speech("Modo Conto Interativo selecionado! Preparando suas histórias...")
-            return "conto"
-        else:
-            print("❌ Escolha inválida. Digite 1 para RPG ou 2 para Conto Interativo.")
-            if AUDIO_ENABLED:
-                master_speech("Escolha inválida. Digite 1 para RPG ou 2 para Conto Interativo.")
-
 def main():
     # Carrega estado existente para verificar se é continuação
     save_filepath = 'estado_do_mundo.json'
     world_state = load_world_state(save_filepath)
 
-    # --- BYPASS: entrada direta no RPG (menu comentado para testes) ---
-    if world_state and 'game_mode' in world_state:
-        print(f"\n--- Continuando jogo salvo ---")
     iniciar_modo_rpg(world_state if world_state else None, save_filepath)
-
-    # if world_state and 'game_mode' in world_state:
-    #     # Jogo existente - continua no modo salvo
-    #     game_mode = world_state['game_mode']
-    #     print(f"\n--- Continuando no {game_mode.upper()} ---")
-    #
-    #     if game_mode == 'rpg':
-    #         iniciar_modo_rpg(world_state, save_filepath)
-    #     elif game_mode == 'conto':
-    #         iniciar_modo_conto(world_state)
-    # else:
-    #     # Novo jogo - seleção de modo
-    #     game_mode = select_game_mode()
-    #
-    #     if game_mode == 'rpg':
-    #         iniciar_modo_rpg(None, save_filepath)
-    #     elif game_mode == 'conto':
-    #         iniciar_modo_conto(None)
 
 if __name__ == "__main__":
     main()
