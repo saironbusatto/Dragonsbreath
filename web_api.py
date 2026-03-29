@@ -555,12 +555,23 @@ def tts_endpoint(req: TTSRequest):
 
 @app.post("/api/transcribe")
 def transcribe_audio(req: TranscribeRequest):
-    """Transcreve áudio via OpenAI Whisper (gpt-4o-mini-transcribe).
+    """Transcreve áudio via Groq Whisper (whisper-large-v3-turbo).
+    Fallback para OpenAI Whisper se GROQ_API_KEY não configurada.
     Recebe base64 de áudio webm/opus gravado pelo MediaRecorder do browser.
     """
-    api_key = os.environ.get("OPENAI_API_KEY")
-    if not api_key:
-        raise HTTPException(500, "OPENAI_API_KEY não configurada")
+    groq_key  = os.environ.get("GROQ_API_KEY")
+    openai_key = os.environ.get("OPENAI_API_KEY")
+
+    if groq_key:
+        stt_key      = groq_key
+        stt_base_url = "https://api.groq.com/openai/v1"
+        stt_model    = os.environ.get("GROQ_STT_MODEL", "whisper-large-v3-turbo")
+    elif openai_key:
+        stt_key      = openai_key
+        stt_base_url = None  # padrão OpenAI
+        stt_model    = "gpt-4o-mini-transcribe"
+    else:
+        raise HTTPException(500, "Nenhuma chave de API configurada (GROQ_API_KEY ou OPENAI_API_KEY)")
 
     try:
         audio_bytes = base64.b64decode(req.audio)
@@ -582,17 +593,21 @@ def transcribe_audio(req: TranscribeRequest):
             tmp_path = f.name
 
         from openai import OpenAI as _OpenAI
-        client = _OpenAI(api_key=api_key)
+        client_kwargs = {"api_key": stt_key}
+        if stt_base_url:
+            client_kwargs["base_url"] = stt_base_url
+        client = _OpenAI(**client_kwargs)
+
         with open(tmp_path, "rb") as f:
             result = client.audio.transcriptions.create(
-                model="gpt-4o-mini-transcribe",
+                model=stt_model,
                 file=f,
                 language="pt",
-                # Prompt ajuda Whisper com vocabulário específico do jogo
                 prompt="Jogo de RPG medieval. Nomes: Umbraton, Bardo, Bardo Viajante, taverna, praga, dragão, santuário.",
             )
         text = result.text.strip()
-        print(f"[TRANSCRIBE] {text!r}")
+        provider = "Groq" if groq_key else "OpenAI"
+        print(f"[TRANSCRIBE/{provider}] {text!r}")
         return {"text": text}
     except Exception as e:
         print(f"[TRANSCRIBE] ERRO: {e}")

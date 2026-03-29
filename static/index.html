@@ -1208,6 +1208,8 @@
   let _classMediaRecorder = null;
   let _classChunks      = [];
   let _classTTSAudio    = null; // áudio atual de narração de classe
+  let _classTTSGen      = 0;    // cancela fetches obsoletos (race condition)
+  let _classTTSResolve  = null; // desbloqueia promise pendente ao pausar
 
   // Índice de foco de teclado (navegação por setas — independente da seleção)
   let _classFocusIdx = 0;
@@ -1237,9 +1239,8 @@
     renderClassCards();
     _focusClassCard(0);
 
-    // Narra as opções e depois inicia escuta automática
+    // Narra as opções e aguarda interação do usuário
     await playClassListing();
-    startClassRecording(); // ouve logo após narrar
   }
 
   // ─── Cards (visuais) ───────────────────────────────────────────────────────
@@ -1289,6 +1290,13 @@
   // ─── Seleção ───────────────────────────────────────────────────────────────
   async function selectClass(idx) {
     if (idx < 0 || idx >= _classDetails.length) return;
+
+    // Para gravação em andamento para que o onstop não sobrescreva a seleção
+    if (_classMediaRecorder?.state === 'recording') {
+      _classRecording = false;
+      _classMediaRecorder.stop();
+    }
+
     _selectedClassIdx = idx;
     _classFocusIdx    = idx;
 
@@ -1332,8 +1340,10 @@
   }
 
   async function playNarratorTTS(text) {
-    // Interrompe narração anterior se houver
+    const gen = ++_classTTSGen;
+    // Para áudio anterior e desbloqueia qualquer promise pendente
     if (_classTTSAudio) { _classTTSAudio.pause(); _classTTSAudio = null; }
+    if (_classTTSResolve) { _classTTSResolve(); _classTTSResolve = null; }
     try {
       const res = await fetch(`${API}/api/tts`, {
         method: 'POST',
@@ -1341,6 +1351,7 @@
         body: JSON.stringify({ text, voice_type: 'narrator' }),
       });
       const data = await res.json();
+      if (gen !== _classTTSGen) return; // fetch obsoleto, descarta
       if (!data.audio) return;
       const blob = base64ToBlob(data.audio, 'audio/mp3');
       const url  = URL.createObjectURL(blob);
@@ -1348,8 +1359,9 @@
       _classTTSAudio = a;
       a.play().catch(() => {});
       await new Promise(r => {
-        a.onended = () => { URL.revokeObjectURL(url); _classTTSAudio = null; r(); };
-        a.onerror = r;
+        _classTTSResolve = r;
+        a.onended = () => { URL.revokeObjectURL(url); _classTTSAudio = null; _classTTSResolve = null; r(); };
+        a.onerror = () => { _classTTSResolve = null; r(); };
       });
     } catch {}
   }
@@ -1404,7 +1416,10 @@
           'ESPAÇO · FALE O NÚMERO · TECLE 1-4 · SETAS PARA NAVEGAR';
         stream.getTracks().forEach(t => t.stop());
 
-        if (!_classChunks.length || !_classScreenActive) { _classProcessing = false; return; }
+        // Se classe já foi selecionada (via teclado), ignora esta transcrição
+        if (!_classChunks.length || !_classScreenActive || _selectedClassIdx >= 0) {
+          _classProcessing = false; return;
+        }
         try {
           const blob = new Blob(_classChunks, { type: mimeType });
           const b64  = await blobToBase64(blob);
@@ -1415,18 +1430,17 @@
           });
           const { text } = await res.json();
           if (!text) {
+            // Sem input de voz: apenas aguarda, não reinicia loop automaticamente
             _classProcessing = false;
-            await playClassListing();
-            startClassRecording();
+            document.getElementById('class-voice-hint').textContent =
+              'ESPAÇO · FALE O NÚMERO · TECLE 1-4 · SETAS PARA NAVEGAR';
             return;
           }
           const idx = parseClassChoice(text);
           if (idx >= 0 && idx < _classDetails.length) {
             await selectClass(idx);
           } else {
-            await playNarratorTTS(`Não entendi. ${text}. Diga um número: um, dois, três ou quatro.`);
-            await playClassListing();
-            startClassRecording();
+            await playNarratorTTS(`Não entendi. Diga um número: um, dois, três ou quatro.`);
           }
         } catch {
           showToast('Erro ao transcrever. Tente Espaço de novo.');
@@ -2246,13 +2260,19 @@
     } catch {}
   }
 
-  function dismissPrologue() {
-    prologueEl.classList.add('hidden');
-  }
-
   async function runPrologue() {
     prologueEl.classList.remove('hidden');
-    prologueEl.addEventListener('click', dismissPrologue, { once: true });
+
+    let _prologueDone;
+    const _prologueDismissed = new Promise(r => { _prologueDone = r; });
+    function done() {
+      prologueEl.classList.add('hidden');
+      prologueEl.removeEventListener('click', done);
+      document.removeEventListener('keydown', done);
+      _prologueDone();
+    }
+    prologueEl.addEventListener('click', done, { once: true });
+    document.addEventListener('keydown', done, { once: true });
 
     const phases = ['p1', 'p2', 'p3'];
     const texts  = [
@@ -2266,15 +2286,16 @@
 
     for (let i = 0; i < phases.length; i++) {
       if (prologueEl.classList.contains('hidden')) return;
-      const el = document.getElementById(phases[i]);
-      el.classList.add('visible');
+      document.getElementById(phases[i]).classList.add('visible');
       playBase64Audio(audios[i]);
-      await new Promise(r => setTimeout(r, 3800));
+      await Promise.race([new Promise(r => setTimeout(r, 3800)), _prologueDismissed]);
+      if (prologueEl.classList.contains('hidden')) return;
     }
 
     if (!prologueEl.classList.contains('hidden')) {
       document.getElementById('prologue-enter').classList.add('visible');
     }
+    await _prologueDismissed;
   }
 
   // ── Auth + Saves (Clerk) ────────────────────────────────────────────────────
@@ -2477,10 +2498,10 @@
     if (Clerk.isSignedIn) {
       await showSavesScreen();
     } else {
+      if (isFirstVisit) await runPrologue();
       authScreen.classList.remove('hidden');
       Clerk.mountSignIn(document.getElementById('clerk-signin'));
-      startMenuAmbient(menuAmbientUrl); // pode ser null se fetchMenuAssets ainda não voltou
-      if (isFirstVisit) runPrologue();
+      startMenuAmbient(menuAmbientUrl);
     }
 
     await loadCampaigns();
