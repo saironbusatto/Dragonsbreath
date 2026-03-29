@@ -565,22 +565,24 @@ Retorne o JSON atualizado:"""
         return old_state
 
 def get_openai_response_archivista(system_content: str, user_content: str) -> str:
-    """Arquivista via Groq (Llama 3.3 70B) — mais rápido e gratuito."""
+    """Arquivista — prioridade: DeepSeek V3 → Groq Llama → OpenAI."""
     try:
-        api_key = os.environ.get('GROQ_API_KEY')
-        if not api_key:
-            # fallback OpenAI se GROQ_API_KEY não configurada
-            api_key = os.environ.get('OPENAI_API_KEY')
-            if not api_key:
-                return "{}"
-            model_name = os.environ.get('OPENAI_MODEL_ARQUIVISTA', 'gpt-4o-mini')
-            client = OpenAI(api_key=api_key)
-        else:
+        deepseek_key = os.environ.get('DEEPSEEK_API_KEY')
+        groq_key     = os.environ.get('GROQ_API_KEY')
+        openai_key   = os.environ.get('OPENAI_API_KEY')
+
+        if deepseek_key:
+            client     = OpenAI(api_key=deepseek_key, base_url="https://api.deepseek.com")
+            model_name = os.environ.get('DEEPSEEK_MODEL_ARQUIVISTA', 'deepseek-chat')
+        elif groq_key:
+            client     = OpenAI(api_key=groq_key, base_url="https://api.groq.com/openai/v1")
             model_name = os.environ.get('GROQ_MODEL_ARQUIVISTA', 'llama-3.3-70b-versatile')
-            client = OpenAI(
-                api_key=api_key,
-                base_url="https://api.groq.com/openai/v1",
-            )
+        elif openai_key:
+            client     = OpenAI(api_key=openai_key)
+            model_name = os.environ.get('OPENAI_MODEL_ARQUIVISTA', 'gpt-4o-mini')
+        else:
+            return "{}"
+
         response = client.chat.completions.create(
             model=model_name,
             messages=[
