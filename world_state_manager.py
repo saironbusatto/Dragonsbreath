@@ -565,16 +565,12 @@ Retorne o JSON atualizado:"""
         return old_state
 
 def get_openai_response_archivista(system_content: str, user_content: str) -> str:
-    """Arquivista — prioridade: DeepSeek V3 → Groq Llama → OpenAI."""
+    """Arquivista via Groq Llama 3.3 70B — rápido e gratuito."""
     try:
-        deepseek_key = os.environ.get('DEEPSEEK_API_KEY')
-        groq_key     = os.environ.get('GROQ_API_KEY')
-        openai_key   = os.environ.get('OPENAI_API_KEY')
+        groq_key   = os.environ.get('GROQ_API_KEY')
+        openai_key = os.environ.get('OPENAI_API_KEY')
 
-        if deepseek_key:
-            client     = OpenAI(api_key=deepseek_key, base_url="https://api.deepseek.com")
-            model_name = os.environ.get('DEEPSEEK_MODEL_ARQUIVISTA', 'deepseek-chat')
-        elif groq_key:
+        if groq_key:
             client     = OpenAI(api_key=groq_key, base_url="https://api.groq.com/openai/v1")
             model_name = os.environ.get('GROQ_MODEL_ARQUIVISTA', 'llama-3.3-70b-versatile')
         elif openai_key:

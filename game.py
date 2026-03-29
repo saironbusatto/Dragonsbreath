@@ -568,10 +568,12 @@ def _build_campaign_gm_block(world_state: dict) -> str:
 
 
 def get_gm_narrative(world_state: dict, player_action: str, game_context: dict, roll_result: dict | None = None) -> str:
-    api_key = os.environ.get('OPENAI_API_KEY')
-    if not api_key:
-        print("ERRO: OPENAI_API_KEY não encontrada nas variáveis de ambiente")
+    deepseek_key = os.environ.get('DEEPSEEK_API_KEY')
+    openai_key   = os.environ.get('OPENAI_API_KEY')
+    if not deepseek_key and not openai_key:
+        print("ERRO: nenhuma chave de API configurada (DEEPSEEK_API_KEY ou OPENAI_API_KEY)")
         return "O Mestre do Jogo não consegue se conectar aos planos astrais. (API Key não configurada). O que você faz?"
+    api_key = deepseek_key or openai_key
 
     campaign = get_current_campaign()
     campaign_name = campaign.get('name', 'RPG de Aventura')
@@ -829,8 +831,12 @@ Gatilhos Narrativos Ativos: {json.dumps(game_context.get('gatilhos', []), indent
 {player_action}"""
 
     try:
-        model = os.environ.get('OPENAI_MODEL_MESTRE') or os.environ.get('OPENAI_MODEL', 'gpt-4o-mini')
-        client = OpenAI(api_key=api_key)
+        if deepseek_key:
+            client     = OpenAI(api_key=deepseek_key, base_url="https://api.deepseek.com")
+            model      = os.environ.get('DEEPSEEK_MODEL_MESTRE', 'deepseek-chat')
+        else:
+            client     = OpenAI(api_key=openai_key)
+            model      = os.environ.get('OPENAI_MODEL_MESTRE') or os.environ.get('OPENAI_MODEL', 'gpt-4o-mini')
 
         mood = world_state.get("narration_mood", "normal")
         is_critical = bool(roll_result and (roll_result.get("critical") or roll_result.get("fumble")))
