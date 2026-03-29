@@ -584,6 +584,9 @@ def get_gm_narrative(world_state: dict, player_action: str, game_context: dict, 
     class_templates = campaign_data.get('class_templates', {})
     _default_class_info = {'allowed_actions': [], 'forbidden_actions': [], 'limited_magic': [], 'physical_limits': []}
     class_info = class_templates.get(character_class, class_templates.get('Aventureiro', _default_class_info))
+    tagline           = class_info.get('tagline', '')
+    class_description = class_info.get('description', '')
+    alignment         = character.get('alignment', 'neutro')
 
     world_state = ensure_npc_signature_memory(world_state)
     ws = world_state.get("world_state", {})
@@ -609,6 +612,15 @@ Ações Proibidas: {', '.join(class_info['forbidden_actions'])}
 Magia Limitada: {', '.join(class_info['limited_magic']) if class_info['limited_magic'] else 'Nenhuma'}
 Limitações Físicas: {', '.join(class_info['physical_limits'])}
 Slots de Inventário: {character.get('max_slots', 10)} no total
+
+--- IDENTIDADE DO PERSONAGEM (ÂNCORA PERMANENTE) ---
+Epíteto: {tagline}
+Propósito: {class_description}
+Alinhamento: {alignment}
+REGRA ABSOLUTA: Este personagem age SEMPRE conforme seu propósito e alinhamento.
+O Mestre NUNCA ignora ou contradiz a identidade de classe ao narrar eventos.
+Se o personagem tiver acompanhantes, protegidos ou responsabilidades assumidas,
+eles SEMPRE aparecem na cena enquanto o personagem os acompanhar — nunca desaparecem silenciosamente.
 
 --- BREVIDADE (REGRA MAIS IMPORTANTE) ---
 TAMANHO DA RESPOSTA é proporcional à ação:

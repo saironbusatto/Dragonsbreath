@@ -51,6 +51,12 @@ app = FastAPI(title="Ressoar")
 # Sessões em memória: { session_id: world_state }
 sessions: dict[str, dict] = {}
 
+# Detecção de ações de movimento puro (sem mudança de local)
+_MOVEMENT_VERBS = re.compile(
+    r'\b(and[oa]|caminh[oa]|sig[oa]|avan[cç][oa]|prossig[oa]|me\s+movo|me\s+desloc[oa]|continu[oa]\s+(andando|caminhando|em\s+frente))\b',
+    re.IGNORECASE | re.UNICODE,
+)
+
 # Mapa sessão → user_id (para auto-save)
 session_user: dict[str, int] = {}
 
@@ -847,6 +853,7 @@ def take_action(req: ActionRequest):
     current_act = character.get("current_act", 1)
     game_context = load_game_context_for_act(current_act, world_state)
     bootstrap_location_triggers(world_state, game_context.get("locais", {}))
+    old_location_key = world_state.get("world_state", {}).get("current_location_key", "")
 
     # Sistema de dados Shadowdark
     roll_result = resolve_action_roll(action, character, world_state)
@@ -886,6 +893,15 @@ def take_action(req: ActionRequest):
         future_tts = pool.submit(_build_tts)
         world_state        = future_ws.result()
         audio, audio_timeline = future_tts.result()
+
+    # Contador de movimento sem mudança de local (A3 — travel events)
+    new_location_key = world_state.get("world_state", {}).get("current_location_key", "")
+    if new_location_key != old_location_key:
+        world_state["consecutive_movement_turns"] = 0
+    elif _MOVEMENT_VERBS.search(action):
+        world_state["consecutive_movement_turns"] = world_state.get("consecutive_movement_turns", 0) + 1
+    else:
+        world_state["consecutive_movement_turns"] = 0
 
     if hdywdtd_pre:
         world_state["hdywdtd_pending"] = False

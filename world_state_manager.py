@@ -487,6 +487,7 @@ def _preserve_runtime_state(old_state: dict, new_state: dict) -> dict:
         "time_of_day_counter",
         "npc_soul_cache",
         "travel_encounter_pending",
+        "consecutive_movement_turns",
         "vistani_curse",
         "raven_enemy",
         "npc_pool",

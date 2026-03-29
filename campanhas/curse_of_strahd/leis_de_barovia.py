@@ -373,6 +373,17 @@ def build_gm_context_block(world_state: dict) -> str:
             "Narre AGORA antes de descrever a chegada. O jogador resolve antes de prosseguir."
         )
 
+    # ── 8b. Viagem prolongada sem evento (dentro do mesmo local) ──────────────
+    movement_turns = world_state.get("consecutive_movement_turns", 0)
+    if movement_turns >= 2:
+        lines.append(
+            f"⚠ VIAGEM SEM EVENTO ({movement_turns} turnos consecutivos): "
+            "O jogador está se movendo há turnos sem nada acontecer. "
+            "INJETE AGORA um evento relevante para Baróvia: encontro, rastro de criatura, "
+            "ruína, objeto fora do lugar, som perturbador, sinal de perigo ou descoberta ambiental. "
+            "Não pode terminar mais um turno apenas com deslocamento. Mood sugerido: tense ou dramatic."
+        )
+
     # ── 8. Gothic Loot pendente ───────────────────────────────────────────────
     gothic_pending = world_state.get("gothic_loot_pending")
     if gothic_pending:

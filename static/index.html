@@ -1716,6 +1716,9 @@
     if (!action.trim() || !sessionId) return;
 
     setOrbState('thinking', '⋯', 'o mestre pensa...');
+    const _ts = new Audio(THINKING_SOUND_URL);
+    _ts.volume = 0.45;
+    _ts.play().catch(() => {});
     transcript.classList.remove('hdywdtd');
     transcript.style.color = '#4a3a6a';
 
@@ -1781,7 +1784,8 @@
     }
   }
 
-  const CHIME_URL = '/sons/sistema/chime-2-356833.mp3';
+  const CHIME_URL         = '/sons/sistema/chime-2-356833.mp3';
+  const THINKING_SOUND_URL = '/sons/sistema/familiar_sound2.mp3';
 
   // ── SFX ambiente ──────────────────────────────────────────────────────────
   function playSFX(url) {
