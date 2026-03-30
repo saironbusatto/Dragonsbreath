@@ -221,32 +221,30 @@
       "world_template": {
         "initial_description": "O personagem estava viajando por uma estrada de terra comum quando o ar esfriou subitamente. Uma névoa espessa, cinzenta e antinatural rastejou pelo chão e engoliu a floresta, bloqueando a luz do sol e qualquer caminho de volta. A névoa parece viva e empurra o personagem inexoravelmente para frente, forçando-o a continuar andando pela velha Estrada de Svalich até chegar à sombria Vila de Baróvia.",
         "initial_quest": "Descobrir onde está e encontrar uma saída — ou um propósito — nesta terra amaldiçoada",
-        "initial_location": "old_svalich_road",
+        "initial_location": "estrada_svalich",
         "initial_triggers": {
-          "old_svalich_road": [
+          "estrada_svalich": [
             "nevoa_engole"
           ],
-          "village_of_barovia_streets": [
-            "rose_e_thorn"
+          "vila_barovia": [
+            "rose_e_thorn",
+            "choro_de_mary",
+            "sombra_ravenloft"
           ],
           "death_house_exterior": [
             "portao_rangendo"
           ],
-          "death_house_1f_hall": [
+          "area_1a_entrada": [
             "porta_batendo"
           ],
-          "death_house_2f_library": [
+          "area_8_biblioteca": [
             "livro_falso_secreto"
           ],
-          "death_house_dungeon_access": [
+          "area_22_acesso_dungeon": [
             "ouvir_cantico"
           ],
-          "death_house_dungeon_ritual": [
+          "area_38_camara_ritual": [
             "recusa_sacrificio"
-          ],
-          "vila_barovia": [
-            "choro_de_mary",
-            "sombra_ravenloft"
           ],
           "estrada_svalich": [
             "galhos_estalam"

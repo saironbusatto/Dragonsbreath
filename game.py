@@ -826,8 +826,26 @@ Assinaturas ativas:
             "A partir de agora você está por conta própria. Boa sorte.)\""
         )
 
+    # Bloco MUD — sala atual com saídas, NPCs residentes e itens fixos
+    _loc_data    = game_context.get("locais", {}).get(location_key, {})
+    _mud_exits   = _loc_data.get("exits", {})
+    _mud_exits_s = _loc_data.get("exits_semanticos", {})
+    _mud_npcs    = _loc_data.get("npcs_residentes", [])
+    _mud_itens   = [i.get("nome", "") for i in _loc_data.get("itens_fixos", []) if i.get("nome")]
+    _mud_ambient = _loc_data.get("ambient_url", "")
+
     # USER: contexto dinâmico que muda a cada turno
-    user_content = f"""--- ESTADO ATUAL DO MUNDO ---
+    user_content = f"""--- SALA ATUAL (MUD) ---
+Local ID: {location_key}
+Saídas disponíveis: {json.dumps(_mud_exits, ensure_ascii=False) if _mud_exits else "não mapeadas"}
+Saídas (descrição): {json.dumps(_mud_exits_s, ensure_ascii=False) if _mud_exits_s else "não mapeadas"}
+NPCs residentes: {', '.join(_mud_npcs) if _mud_npcs else "nenhum"}
+Itens fixos: {', '.join(_mud_itens) if _mud_itens else "nenhum"}
+Ambient: {_mud_ambient if _mud_ambient else "não definido"}
+REGRA: O Mestre NUNCA move NPCs para fora de suas allowed_rooms sem evento narrativo.
+REGRA: Saídas não listadas acima NÃO existem — nunca invente passagens ausentes.
+
+--- ESTADO ATUAL DO MUNDO ---
 {json.dumps(world_state, indent=2, ensure_ascii=False)}
 
 --- CONTEXTO DO JOGO ---
@@ -905,6 +923,16 @@ def load_world_data_for_act(current_act: int) -> tuple[dict, dict, dict]:
             "descricao_publica": local.get("descricao_publica") or local.get("descricao", ""),
             "ato_aparicao": local.get("ato_aparicao", 1),
             "gatilhos": local.get("gatilhos", {}),
+            # Campos MUD — passados ao game_context para Mestre e Arquivista
+            "exits": local.get("exits", {}),
+            "exits_semanticos": local.get("exits_semanticos", {}),
+            "ambient_url": local.get("ambient_url", ""),
+            "npcs_residentes": local.get("npcs_residentes", []),
+            "itens_fixos": [
+                i for i in local.get("itens_fixos", [])
+                if not i.get("oculto", False)
+            ],
+            "events_log": local.get("events_log", []),
         }
         if "segredo_oculto" in local:
             locais_segredos[key] = {

@@ -511,6 +511,62 @@ def _preserve_runtime_state(old_state: dict, new_state: dict) -> dict:
 
     return new_state
 
+
+# NPCs críticos: se o Arquivista os colocar fora do home_location sem gatilho, bloqueamos
+_CRITICAL_NPCS = {
+    "strahd":                  "castelo_ravenloft",
+    "rose_ghost":              "area_20_quarto_criancas",
+    "thorn_ghost":             "area_20_quarto_criancas",
+    "shambling_mound_lorghoth": "area_38_camara_ritual",
+}
+
+
+def validate_location_transition(old_loc: str, new_loc: str, locais: dict) -> bool:
+    """
+    Verifica se a transição old_loc → new_loc é válida segundo o grafo de exits.
+    Se old_loc não tem exits mapeados (legado ou mundo aberto), permite tudo.
+    """
+    if old_loc == new_loc:
+        return True
+    old_data = locais.get(old_loc, {})
+    exits = old_data.get("exits")
+    if not exits:
+        return True  # local sem mapa MUD — sem restrição
+    return new_loc in exits.values()
+
+
+def _enforce_critical_npc_locations(novo_estado: dict) -> dict:
+    """
+    Valida NPCs críticos no novo estado.
+    Se um NPC crítico aparecer em important_npcs_in_scene e o player NÃO estiver
+    no home_location desse NPC, remove-o da cena e injeta nota de correção.
+    """
+    ws = novo_estado.get("world_state", {})
+    if not isinstance(ws, dict):
+        return novo_estado
+
+    current_loc = ws.get("current_location_key", "")
+    npcs_in_scene = ws.get("important_npcs_in_scene", {})
+    if not isinstance(npcs_in_scene, dict):
+        return novo_estado
+
+    corrections = []
+    for npc_id, home_loc in _CRITICAL_NPCS.items():
+        if npc_id in npcs_in_scene and current_loc != home_loc:
+            del npcs_in_scene[npc_id]
+            corrections.append(npc_id)
+
+    if corrections:
+        existing = novo_estado.get("_npc_correction_pending", [])
+        if isinstance(existing, list):
+            existing.extend(corrections)
+        else:
+            existing = corrections
+        novo_estado["_npc_correction_pending"] = existing
+
+    return novo_estado
+
+
 def update_world_state(old_state: dict, player_action: str, gm_response: str) -> dict:
     """
     Usa a IA Arquivista para atualizar o estado do mundo baseado nos eventos recentes.
@@ -560,6 +616,7 @@ Retorne o JSON atualizado:"""
         if not novo_estado:
             return old_state
         novo_estado = _preserve_runtime_state(old_state, novo_estado)
+        novo_estado = _enforce_critical_npc_locations(novo_estado)
         return ensure_npc_signature_memory(novo_estado)
     except json.JSONDecodeError:
         # JSON inválido - mantém estado anterior

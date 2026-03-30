@@ -7,6 +7,7 @@
       "tipo": "antagonista_principal",
       "dificuldade_descoberta": "fácil",
       "ato_aparicao": 1,
+      "home_location": "castelo_ravenloft",
       "assinatura_narrativa": {
         "aliases": [
           "Strahd",
@@ -34,7 +35,8 @@
       "verdade_oculta": "Carrega a alma reencarnada de Tatyana, alvo obsessivo de Strahd.",
       "tipo": "aliada_chave",
       "dificuldade_descoberta": "difícil",
-      "ato_aparicao": 1
+      "ato_aparicao": 1,
+      "home_location": "vila_barovia"
     },
     "ismark": {
       "nome": "Ismark Kolyanovich",
@@ -42,7 +44,8 @@
       "verdade_oculta": "Sabe que Baróvia não oferece segurança real e quer tirar Ireena do alcance de Strahd a qualquer custo.",
       "tipo": "aliado",
       "dificuldade_descoberta": "fácil",
-      "ato_aparicao": 1
+      "ato_aparicao": 1,
+      "home_location": "vila_barovia"
     },
     "madam_eva": {
       "nome": "Madam Eva",
@@ -51,6 +54,7 @@
       "tipo": "oraculo_ambiguo",
       "dificuldade_descoberta": "difícil",
       "ato_aparicao": 2,
+      "home_location": "acampamento_tser_pool",
       "assinatura_narrativa": {
         "aliases": [
           "Eva",
@@ -86,6 +90,7 @@
       "tipo": "aliado_oculto",
       "dificuldade_descoberta": "difícil",
       "ato_aparicao": 2,
+      "home_location": "vallaki",
       "assinatura_narrativa": {
         "aliases": [
           "Rictavio",
@@ -128,6 +133,7 @@
       "tipo": "crianca_assustada_ilusao",
       "dificuldade_descoberta": "difícil",
       "ato_aparicao": 1,
+      "home_location": "area_20_quarto_criancas",
       "aparencia_facil": "Uma menina de 10 anos vestindo roupas de época um tanto antiquadas. Ela parece exausta, mas tenta manter uma postura corajosa para proteger o irmãozinho.",
       "verdade_oculta": "É uma manifestação ilusória da casa projetada para atrair aventureiros para a morte. A verdadeira Rose morreu de inanição trancada no sótão pelos próprios pais. Ela não sabe que está morta ou que é uma ilusão.",
       "assinatura_narrativa": {
@@ -147,6 +153,7 @@
       "tipo": "crianca_chorona_ilusao",
       "dificuldade_descoberta": "difícil",
       "ato_aparicao": 1,
+      "home_location": "area_20_quarto_criancas",
       "aparencia_facil": "Um menino de 7 anos, de bochechas sujas de lágrimas, abraçando com muita força um boneco de pelúcia encardido.",
       "verdade_oculta": "Assim como sua irmã, é uma projeção da Casa da Morte. Seu pequeno esqueleto repousa no andar mais alto da casa.",
       "assinatura_narrativa": {
