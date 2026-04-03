@@ -1478,6 +1478,10 @@
     btn.disabled = true;
     btn.textContent = '...';
     _classScreenActive = false;
+    // Cancela qualquer narração da tela de classe ainda em andamento
+    ++_classTTSGen;
+    if (_classTTSAudio) { _classTTSAudio.pause(); _classTTSAudio = null; }
+    if (_classTTSResolve) { _classTTSResolve(); _classTTSResolve = null; }
     const cls = _classDetails[_selectedClassIdx];
     await startGame(_classPlayerName, _classCampaignId, cls.id);
   }
