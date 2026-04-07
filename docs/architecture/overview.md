@@ -144,3 +144,52 @@ Narrativa dinâmica via gatilhos com probabilidade crescente (30% base + 10%/rod
 
 ### 5. Validação Semântica de Ações
 O jogador só pode interagir com objetos explicitamente mencionados na narração atual. Isso mantém a coerência narrativa e impede "soluções mágicas".
+
+---
+
+## Memory Layer Architecture
+
+### Três Camadas
+
+1. `memory/MEMORY.md` (índice vivo)
+- ponteiros para tópicos ativos
+- fatos resumidos de alto nível (`current_location_key`, `narration_mood`, `combat_active`)
+
+2. Topic files (`memory/*.md`, `memory/npcs/*.md`, `memory/scene/*.md`)
+- carregamento sob demanda por turno
+- domínio segmentado (player, location, quests, mood, combat, resurrection, NPCs)
+
+3. Logs brutos (`memory/turn_journal.jsonl` + sessões)
+- trilha auditável de writes e rollbacks
+- nunca entram completos no prompt do Mestre
+
+### Política de Carga por Turno
+
+- sempre: `MEMORY.md`, `player.md`, `location.md`, `mood.md`
+- condicional:
+  - `combat.md` quando `combat_active`
+  - `resurrection.md` quando `resurrection_state.stage` definido
+- NPCs:
+  - apenas `memory/npcs/<id>.md` da cena atual (`scene_npc_signatures`)
+
+### Divergence Checker
+
+`memory_divergence_checker.py` compara tópicos vs legado ao fim da sessão:
+
+- `hp_current` (`player.md` vs legado)
+- `current_location_key` (`MEMORY.md` vs legado)
+- `combat_active` (`combat.md` vs legado)
+- `narration_mood` (`mood.md` vs legado)
+- NPCs em `scene_npc_signatures` vs arquivos em `memory/npcs/`
+
+Se limpo:
+- incrementa `dual_write_clean_sessions`
+
+Se divergente:
+- reseta `dual_write_clean_sessions`
+- registra `last_divergence_at` e campos divergentes
+
+### Localização do Journal
+
+- principal: `memory/turn_journal.jsonl`
+- eventos de GC startup e rollback também são registrados ali

@@ -3,13 +3,18 @@ import json
 import os
 import re
 import random
+from datetime import datetime, timezone
 from world_state_manager import (
     update_world_state,
     create_initial_world_state,
     load_world_state,
     save_world_state,
     ensure_npc_signature_memory,
+    _extract_and_persist_improvised_npcs,
 )
+from memory_loader import MemoryLoader, TurnContext
+from memory_writer import MemoryWriter
+from kairos_session import generate_session_reentry
 from campaign_manager import (
     get_campaign_files,
     load_campaign_data,
@@ -60,6 +65,63 @@ SIGNIFICANT_THREAT_HINTS = (
     "antagonista", "boss", "chefe", "vilao", "vampiro", "lord", "conde", "elite",
     "antagonista_principal", "antagonista_secundaria", "vilao_de_elite",
 )
+
+
+def _memory_mode() -> str:
+    return os.environ.get("MEMORY_MODE", "legacy").strip().lower()
+
+
+def _ensure_memory_session_id(world_state: dict) -> str:
+    sid = world_state.get("_memory_session_id")
+    if isinstance(sid, str) and sid.strip():
+        return sid
+    generated = (
+        datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z")
+    )
+    world_state["_memory_session_id"] = generated
+    return generated
+
+
+def _iter_scene_npc_topics(world_state: dict):
+    ws = world_state.get("world_state", {})
+    scene = ws.get("scene_npc_signatures", {})
+    if not isinstance(scene, dict):
+        return
+    for scene_name, signature in scene.items():
+        if isinstance(signature, dict):
+            npc_id = signature.get("referencia_id") or signature.get("id") or scene_name
+            payload = dict(signature)
+            if "nome" not in payload and isinstance(scene_name, str):
+                payload["nome"] = scene_name
+        else:
+            npc_id = scene_name
+            payload = {"nome": scene_name, "origem": "improvisado", "tipo": "npc_improvisado"}
+        if isinstance(npc_id, str) and npc_id.strip():
+            yield npc_id.strip(), payload
+
+
+def _build_turn_context(world_state: dict, game_context: dict) -> TurnContext | None:
+    if _memory_mode() == "legacy":
+        return None
+
+    campaign_locais = game_context.get("locais", {}) if isinstance(game_context, dict) else {}
+    session_id = _ensure_memory_session_id(world_state)
+    writer = MemoryWriter(
+        memory_dir="memory",
+        campaign_locais=campaign_locais if isinstance(campaign_locais, dict) else {},
+        session_id=session_id,
+    )
+
+    # Ordem obrigatória: criar tópicos de NPC antes de carregar contexto do turno.
+    # NPCs improvisados têm prioridade — formaliza antes de qualquer outro.
+    npc_items = list(_iter_scene_npc_topics(world_state))
+    improvised = [(nid, sig) for nid, sig in npc_items if sig.get("improvised")]
+    others = [(nid, sig) for nid, sig in npc_items if not sig.get("improvised")]
+    for npc_id, signature in improvised + others:
+        writer.create_npc_topic_if_missing(npc_id, signature, world_state)
+
+    loader = MemoryLoader(memory_dir="memory")
+    return loader.load_turn_context(world_state)
 
 def _flatten_scene_map(elements) -> list[str]:
     """
@@ -185,6 +247,48 @@ def _fmt_npc_signatures(scene_npcs: dict) -> str:
         blocks.append("\n".join(lines))
 
     return "\n".join(blocks) if blocks else "(nenhuma assinatura de NPC ativa na cena)"
+
+
+def _fmt_scene_npcs_for_gm(scene_npc_signatures: dict) -> str:
+    """
+    Formata os campos de estado físico dos NPCs presentes na cena para o
+    prompt do Mestre. Cobre items_held, estado_atual e entidades_relacionadas —
+    campos que o Mestre deve respeitar literalmente para não contradizer o estado.
+    Retorna string vazia se não há NPCs ou se o argumento não é um dict.
+    """
+    if not isinstance(scene_npc_signatures, dict) or not scene_npc_signatures:
+        return ""
+
+    lines = ["--- NPCs PRESENTES NA CENA ---"]
+    for npc_id, sig in scene_npc_signatures.items():
+        if not isinstance(sig, dict):
+            continue
+        nome = sig.get("nome") or npc_id
+        items = sig.get("items_held", [])
+        estado = sig.get("estado_atual") or "~"
+        relacionados = sig.get("entidades_relacionadas", {})
+        segredo = sig.get("segredo") or "~"
+
+        lines.append(f"\n[{nome}] (id: {npc_id})")
+        lines.append(f"  itens que carrega: {', '.join(items) if items else 'nenhum'}")
+        lines.append(f"  fazendo agora: {estado}")
+        if isinstance(relacionados, dict) and relacionados:
+            for rel_key, rel_val in relacionados.items():
+                lines.append(f"  {rel_key}: {rel_val}")
+        lines.append(f"  segredo (NÃO revelar): {segredo}")
+
+    lines.append(
+        "\nREGRA DE CONSISTÊNCIA DE NPC:\n"
+        "- itens que carrega: são EXATAMENTE esses. Não invente outros. "
+        "Se a lista estiver vazia, o NPC não carrega nada visível.\n"
+        "- fazendo agora: continue a partir desse estado. Não contradiga.\n"
+        "- entidades relacionadas: existem e são reais. Não as ignore nem apague.\n"
+        "- segredo: NUNCA revele diretamente ao jogador. Pode sugerir indiretamente.\n"
+        "\n"
+        "Se o NPC ganhar um item novo durante a cena, o Arquivista vai atualizar "
+        "items_held no próximo patch — não antecipe isso na narrativa."
+    )
+    return "\n".join(lines)
 
 
 def _is_combat_action(action: str) -> bool:
@@ -567,7 +671,13 @@ def _build_campaign_gm_block(world_state: dict) -> str:
     return "\n".join(blocks)
 
 
-def get_gm_narrative(world_state: dict, player_action: str, game_context: dict, roll_result: dict | None = None) -> str:
+def get_gm_narrative(
+    world_state: dict,
+    player_action: str,
+    game_context: dict,
+    roll_result: dict | None = None,
+    turn_ctx: TurnContext | None = None,
+) -> str:
     deepseek_key = os.environ.get('DEEPSEEK_API_KEY')
     openai_key   = os.environ.get('OPENAI_API_KEY')
     if not deepseek_key and not openai_key:
@@ -593,8 +703,25 @@ def get_gm_narrative(world_state: dict, player_action: str, game_context: dict, 
     combat_state = _update_combat_state(world_state, player_action, roll_result)
     pacing_state = _get_emotional_pacing_state(world_state)
     location_key = ws.get("current_location_key", "")
-    scene_list = _fmt_scene(ws.get("interactable_elements_in_scene", {}))
+    scene_data = ws.get("interactable_elements_in_scene", {})
+    scene_list = _fmt_scene(scene_data)
+    saidas = scene_data.get("saidas", []) if isinstance(scene_data, dict) else []
+    if saidas:
+        saidas_block = "Saídas disponíveis: " + ", ".join(saidas)
+        saidas_instrucao = (
+            "REGRA ABSOLUTA: informe SOMENTE as saídas listadas acima. "
+            "Se o jogador pedir uma direção que não está na lista, responda: "
+            "'Não há caminho nessa direção.' — sem inventar alternativas. "
+            "Se a lista estiver vazia, descreva o ambiente sem mencionar saídas."
+        )
+    else:
+        saidas_block = ""
+        saidas_instrucao = (
+            "Nenhuma saída mapeada para este local. "
+            "Descreva o ambiente ao redor sem sugerir direções específicas."
+        )
     npc_signature_list = _fmt_npc_signatures(ws.get("scene_npc_signatures", {}))
+    scene_npcs_block = _fmt_scene_npcs_for_gm(ws.get("scene_npc_signatures", {}))
     combat_state_list = _fmt_combat_state(combat_state)
     pacing_state_list = _fmt_emotional_pacing_state(pacing_state, location_key)
 
@@ -743,6 +870,12 @@ Use isso para validar agência sem prometer sucesso.
 21. ANTI-HACK: Se o jogador mencionar objeto, NPC ou item que NÃO consta na lista acima E NÃO está no inventário dele, narre imersivamente que ele procura mas não encontra. NUNCA invente elementos ausentes da cena.
 22. CENA VAZIA: Se a lista acima mostrar "(cena ainda não mapeada)", use julgamento narrativo normalmente — o Arquivista mapeará após este turno.
 
+--- SAÍDAS CANÔNICAS DO MAPA ---
+{saidas_block}
+{saidas_instrucao}
+
+{scene_npcs_block}
+
 --- TELA DO MESTRE (ARMADILHAS E SEGREDOS) ---
 O contexto de jogo inclui uma seção "TELA DO MESTRE" com armadilhas ocultas, segredos e notas exclusivas.
 REGRA ABSOLUTA: NUNCA revele o conteúdo da TELA DO MESTRE na narração diretamente.
@@ -760,7 +893,13 @@ REGRA ABSOLUTA: NUNCA revele o conteúdo da TELA DO MESTRE na narração diretam
 27. Respeite regras de atuação específicas dos NPCs listados abaixo.
 
 Assinaturas ativas:
-{npc_signature_list}{_build_campaign_gm_block(world_state)}"""
+{npc_signature_list}{_build_campaign_gm_block(world_state)}
+--- AUDITORIA PRÉ-RESPOSTA ---
+ANTES DE RESPONDER, verifique mentalmente:
+1. Algum NPC da cena carrega item diferente do registrado em "itens que carrega"? → Corrija.
+2. Algum NPC está fazendo algo diferente de "fazendo agora"? → Justifique ou corrija.
+3. Alguma entidade relacionada foi ignorada? → Mantenha-a presente ou explique ausência.
+4. A saída que o jogador tentou usar existe na lista de saídas canônicas? → Verifique."""
 
     # Bloco de dados Shadowdark (injetado quando há rolagem)
     dice_block = ""
@@ -834,6 +973,28 @@ Assinaturas ativas:
     _mud_itens   = [i.get("nome", "") for i in _loc_data.get("itens_fixos", []) if i.get("nome")]
     _mud_ambient = _loc_data.get("ambient_url", "")
 
+    layered_memory_block = ""
+    if turn_ctx is not None:
+        npc_ids = ", ".join(sorted(turn_ctx.npcs.keys())) if turn_ctx.npcs else "nenhum"
+        layered_memory_block = (
+            "\n\n--- MEMÓRIA EM CAMADAS (TURNO) ---\n"
+            f"Arquivos carregados: {json.dumps(turn_ctx.loaded_files, ensure_ascii=False)}\n"
+            f"Estimativa de tokens: {turn_ctx.token_estimate}\n"
+            f"NPC topics carregados: {npc_ids}\n"
+            "INDEX:\n"
+            f"{turn_ctx.index}\n"
+            "PLAYER:\n"
+            f"{turn_ctx.player}\n"
+            "LOCATION:\n"
+            f"{turn_ctx.location}\n"
+            "MOOD:\n"
+            f"{turn_ctx.mood or '(não carregado)'}\n"
+        )
+        if turn_ctx.combat:
+            layered_memory_block += "COMBAT:\n" + turn_ctx.combat + "\n"
+        if turn_ctx.resurrection:
+            layered_memory_block += "RESURRECTION:\n" + turn_ctx.resurrection + "\n"
+
     # USER: contexto dinâmico que muda a cada turno
     user_content = f"""--- SALA ATUAL (MUD) ---
 Local ID: {location_key}
@@ -858,7 +1019,7 @@ Gatilhos Narrativos Ativos: {json.dumps(game_context.get('gatilhos', []), indent
 {json.dumps(game_context.get('locais_segredos', {}), indent=2, ensure_ascii=False)}
 
 --- AÇÃO DO JOGADOR ---{dice_block}{tutorial_block}
-{player_action}"""
+{player_action}{layered_memory_block}"""
 
     try:
         if deepseek_key:
@@ -1445,6 +1606,10 @@ def new_game_loop(world_state: dict, save_filepath: str, game_context: dict):
 
         if action_lower == 'chikito':
             save_world_state(world_state, save_filepath)
+            try:
+                generate_session_reentry(world_state)
+            except Exception:
+                pass
             print("\nJogo salvo. Obrigado por jogar Dragon's Breath!")
             break
 
@@ -1548,7 +1713,13 @@ def new_game_loop(world_state: dict, save_filepath: str, game_context: dict):
             action_with_trigger = f"{player_action}\n[Gatilho]: {gatilho_escolhido}"
         
         # IA Mestre do Jogo
-        gm_response = get_gm_narrative(world_state, action_with_trigger, game_context)
+        turn_ctx = _build_turn_context(world_state, game_context)
+        gm_response = get_gm_narrative(
+            world_state,
+            action_with_trigger,
+            game_context,
+            turn_ctx=turn_ctx,
+        )
         
         # Processa resposta
         cleaned_response, world_state = clean_and_process_ai_response(gm_response, world_state)
@@ -1576,6 +1747,11 @@ def new_game_loop(world_state: dict, save_filepath: str, game_context: dict):
 
         # Hooks pós-narrativa da campanha (ex: névoas, espiões, almas)
         world_state = call_campaign_post_narrative(world_state, gm_response)
+
+        # Detecção precoce de NPCs improvisados — semeia scene_npc_signatures antes
+        # do Arquivista para garantir persistência desde o primeiro turno de interação.
+        _known_ids = set(world_state.get("world_state", {}).get("scene_npc_signatures", {}).keys())
+        world_state = _extract_and_persist_improvised_npcs(world_state, gm_response, _known_ids)
 
         # Atualização do estado do mundo com gatilho incluído
         old_location = world_state.get("world_state", {}).get("current_location_key")
@@ -1762,7 +1938,13 @@ def iniciar_modo_rpg(existing_world_state: dict = None, save_filepath: str = 'es
         game_context = load_game_context_for_act(current_act, world_state)
         # Contexto sem gatilhos para cena de abertura (foco na apresentação do cenário)
         contexto_sem_gatilhos = {**game_context, "gatilhos": []}
-        opening_scene = get_gm_narrative(world_state, "Iniciou a aventura", contexto_sem_gatilhos)
+        opening_turn_ctx = _build_turn_context(world_state, contexto_sem_gatilhos)
+        opening_scene = get_gm_narrative(
+            world_state,
+            "Iniciou a aventura",
+            contexto_sem_gatilhos,
+            turn_ctx=opening_turn_ctx,
+        )
         cleaned_opening, world_state = clean_and_process_ai_response(opening_scene, world_state)
         print(f"\n{cleaned_opening}\n")
 

@@ -41,3 +41,7 @@ estado_do_mundo.json
 # OS
 .DS_Store
 Thumbs.db
+
+# Claude Code local config e banco de dados de runtime
+.claude/
+ressoar.db

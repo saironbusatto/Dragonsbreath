@@ -337,6 +337,94 @@ class TestGetOpenAIResponseArchivista:
         assert mock_client.chat.completions.create.called
 
 
+# ─── _populate_scene_exits_from_campaign ─────────────────────────────────────
+
+_MINIMAL_LOCAIS = {
+    "sala_trono": {
+        "saidas": ["norte", "sul", "escada leste"],
+    },
+    "corredor": {
+        "exits": {"oeste": "sala_trono", "leste": "masmorra"},
+    },
+    "caverna": {},
+}
+
+
+class TestPopulateSceneExitsFromCampaign:
+    def _base_state(self, loc_key: str, scene: dict | None = None) -> dict:
+        return {
+            "player_character": {"name": "Aldric", "class": "Bardo",
+                                 "death_count": 0, "resurrection_flaws": [],
+                                 "alignment": "neutro"},
+            "world_state": {
+                "current_location_key": loc_key,
+                "interactable_elements_in_scene": scene if scene is not None else {},
+            },
+        }
+
+    # Caso 1: local com `saidas` definidas → injetadas corretamente
+    def test_injects_saidas_from_saidas_field(self):
+        state = self._base_state("sala_trono")
+        result = world_state_manager._populate_scene_exits_from_campaign(state, _MINIMAL_LOCAIS)
+        scene_saidas = result["world_state"]["interactable_elements_in_scene"]["saidas"]
+        assert scene_saidas == ["norte", "sul", "escada leste"]
+
+    # Caso 1b: local com `exits` dict (formato atual dos locais.json) → keys injetadas
+    def test_injects_saidas_from_exits_keys(self):
+        state = self._base_state("corredor")
+        result = world_state_manager._populate_scene_exits_from_campaign(state, _MINIMAL_LOCAIS)
+        scene_saidas = result["world_state"]["interactable_elements_in_scene"]["saidas"]
+        assert set(scene_saidas) == {"oeste", "leste"}
+
+    # Caso 2: saídas já preenchidas manualmente → não sobrescreve
+    def test_does_not_overwrite_existing_saidas(self):
+        existing = {"objetos": ["vela"], "saidas": ["porta secreta"]}
+        state = self._base_state("sala_trono", scene=existing)
+        result = world_state_manager._populate_scene_exits_from_campaign(state, _MINIMAL_LOCAIS)
+        assert result["world_state"]["interactable_elements_in_scene"]["saidas"] == ["porta secreta"]
+
+    # Caso 3: local sem saídas/exits no locais.json → scene.saidas permanece vazio, sem erro
+    def test_no_exits_in_locais_leaves_scene_unchanged(self):
+        state = self._base_state("caverna", scene={"objetos": ["tocha"]})
+        result = world_state_manager._populate_scene_exits_from_campaign(state, _MINIMAL_LOCAIS)
+        assert "saidas" not in result["world_state"]["interactable_elements_in_scene"]
+
+    # Caso 4: current_location_key inexistente → retorna world_state intacto, sem exception
+    def test_unknown_location_key_returns_state_unchanged(self):
+        state = self._base_state("local_inexistente")
+        result = world_state_manager._populate_scene_exits_from_campaign(state, _MINIMAL_LOCAIS)
+        assert result["world_state"]["current_location_key"] == "local_inexistente"
+        assert result["world_state"]["interactable_elements_in_scene"] == {}
+
+    # Caso 4b: current_location_key ausente → sem exception
+    def test_missing_location_key_returns_state_unchanged(self):
+        state = {"world_state": {"interactable_elements_in_scene": {}}, "player_character": {}}
+        result = world_state_manager._populate_scene_exits_from_campaign(state, _MINIMAL_LOCAIS)
+        assert isinstance(result, dict)
+
+    # Caso 5: golden turn turn_saidas_canonicas.json — valida campos saidas-específicos
+    def test_golden_turn_saidas_canonicas(self):
+        import json
+        from pathlib import Path
+        golden_path = Path(__file__).parent / "golden" / "turn_saidas_canonicas.json"
+        payload = json.loads(golden_path.read_text(encoding="utf-8"))
+
+        # Monta locais mínimos com saídas para o local do golden turn
+        loc_key = payload["input"]["world_state"]["world_state"]["current_location_key"]
+        locais_com_saidas = {loc_key: {"saidas": ["norte", "sul"]}}
+
+        world_state = payload["input"]["world_state"]
+        result = world_state_manager._populate_scene_exits_from_campaign(world_state, locais_com_saidas)
+
+        expected = payload["expected"]
+        scene_saidas = result["world_state"]["interactable_elements_in_scene"].get("saidas", [])
+
+        assert expected["scene_saidas_not_empty"] == (len(scene_saidas) > 0)
+        assert expected["saidas_injected_from_campaign"] == (scene_saidas == locais_com_saidas[loc_key]["saidas"])
+        assert expected["saidas_match_locais_json"] == (scene_saidas == locais_com_saidas[loc_key]["saidas"])
+        assert expected["no_brumas_fallback"]  # confirma que não houve fallback inventado
+
+
 # ─── NPC Signature Memory ─────────────────────────────────────────────────────
 
 class TestNPCSignatureMemory:
@@ -428,3 +516,150 @@ class TestNPCSignatureMemory:
         assert "npc_signatures" in ws
         assert "scene_npc_signatures" in ws
         assert "figura encapuzada" in ws["scene_npc_signatures"]
+
+
+# ─── _extract_and_persist_improvised_npcs ────────────────────────────────────
+
+class TestExtractAndPersistImprovisedNpcs:
+    def _base_state(self, loc_key: str = "cemiterio_antigo") -> dict:
+        return {
+            "player_character": {"name": "Aldric", "class": "Bardo",
+                                 "death_count": 0, "resurrection_flaws": [],
+                                 "alignment": "neutro"},
+            "world_state": {
+                "current_location_key": loc_key,
+                "scene_npc_signatures": {},
+                "interactable_elements_in_scene": {},
+            },
+        }
+
+    # Caso 1: profissão detectada via padrão artigo+profissão
+    def test_detects_profession_pattern(self):
+        state = self._base_state()
+        gm_text = "Um coveiro para de cavar e olha para você com olhos ocos."
+        result = world_state_manager._extract_and_persist_improvised_npcs(state, gm_text)
+        scene_sigs = result["world_state"]["scene_npc_signatures"]
+        assert any("coveiro" in k for k in scene_sigs), "coveiro não detectado"
+
+    # Caso 1b: variação com artigo definido
+    def test_detects_definite_article_variant(self):
+        state = self._base_state()
+        gm_text = "O coveiro levanta a cabeça devagar."
+        result = world_state_manager._extract_and_persist_improvised_npcs(state, gm_text)
+        scene_sigs = result["world_state"]["scene_npc_signatures"]
+        assert any("coveiro" in k for k in scene_sigs)
+
+    # Caso 2: NPC já existente em scene_npc_signatures → não duplica
+    def test_does_not_duplicate_existing_npc(self):
+        state = self._base_state()
+        state["world_state"]["scene_npc_signatures"]["improvisado_coveiro"] = {
+            "nome": "Coveiro", "improvised": True
+        }
+        gm_text = "O coveiro continua trabalhando em silêncio."
+        result = world_state_manager._extract_and_persist_improvised_npcs(state, gm_text)
+        coveiro_keys = [k for k in result["world_state"]["scene_npc_signatures"] if "coveiro" in k]
+        assert len(coveiro_keys) == 1, "NPC duplicado indevidamente"
+
+    # Caso 3: known_npc_ids bloqueia criação duplicada mesmo com chave diferente
+    def test_known_npc_ids_prevents_duplicate(self):
+        state = self._base_state()
+        gm_text = "A bruxa emerge das sombras."
+        result = world_state_manager._extract_and_persist_improvised_npcs(
+            state, gm_text, known_npc_ids={"bruxa"}
+        )
+        scene_sigs = result["world_state"]["scene_npc_signatures"]
+        assert not any("bruxa" in k for k in scene_sigs)
+
+    # Caso 4: assinatura mínima contém todos os campos obrigatórios
+    def test_minimal_signature_has_required_fields(self):
+        state = self._base_state()
+        gm_text = "Um guarda bloqueia a passagem."
+        result = world_state_manager._extract_and_persist_improvised_npcs(state, gm_text)
+        scene_sigs = result["world_state"]["scene_npc_signatures"]
+        guarda_sig = next((v for k, v in scene_sigs.items() if "guarda" in k), None)
+        assert guarda_sig is not None
+        for field in ("nome", "items_held", "motivacao", "entidades_relacionadas", "segredo", "estado_atual", "improvised"):
+            assert field in guarda_sig, f"campo '{field}' ausente na assinatura mínima"
+        assert guarda_sig["improvised"] is True
+
+    # Caso 5: texto vazio/None → retorna world_state sem modificação, sem exception
+    def test_empty_text_returns_state_unchanged(self):
+        state = self._base_state()
+        result = world_state_manager._extract_and_persist_improvised_npcs(state, "")
+        assert result["world_state"]["scene_npc_signatures"] == {}
+
+    def test_none_text_handled_gracefully(self):
+        state = self._base_state()
+        result = world_state_manager._extract_and_persist_improvised_npcs(state, None)
+        assert isinstance(result, dict)
+
+    # Caso 6: regressão de desaparecimento — NPC improvisado persiste em scene_npc_signatures
+    # após update_world_state quando o Arquivista mantém o NPC em important_npcs_in_scene.
+    def test_improvised_npc_persists_after_archivista_update(self, world_state_rpg):
+        """
+        Simula 3 turnos de interação. O Arquivista (mockado) mantém o NPC em
+        important_npcs_in_scene. ensure_npc_signature_memory deve reconstruir
+        scene_npc_signatures a partir desse dado, garantindo persistência.
+        """
+        # Semeia NPC improvisado antes do primeiro turno
+        gm_intro = "O coveiro para de cavar e olha para você."
+        world_state_rpg = world_state_manager._extract_and_persist_improvised_npcs(
+            world_state_rpg, gm_intro
+        )
+        assert any("coveiro" in k for k in world_state_rpg["world_state"].get("scene_npc_signatures", {}))
+
+        # Estado que o Arquivista retorna: mantém NPC em important_npcs_in_scene e npcs da cena
+        archivista_state = {
+            "player_character": dict(world_state_rpg["player_character"]),
+            "world_state": {
+                "current_location_key": world_state_rpg["world_state"]["current_location_key"],
+                "immediate_scene_description": "O coveiro ainda está aqui.",
+                "active_quests": {"main_quest": "Investigar"},
+                "important_npcs_in_scene": {"coveiro": "Enterrando algo às pressas"},
+                "interactable_elements_in_scene": {
+                    "objetos": [], "npcs": ["coveiro"], "npc_itens": {},
+                    "containers": {}, "saidas": [], "chao": []
+                },
+                "recent_events_summary": ["Interagiu com o coveiro"],
+                "gatilhos_ativos": {}, "gatilhos_usados": {},
+            },
+        }
+
+        mock_client = MagicMock()
+        mock_response = MagicMock()
+        mock_response.choices[0].message.content = json.dumps(archivista_state)
+        mock_client.chat.completions.create.return_value = mock_response
+
+        with patch("world_state_manager.OpenAI", return_value=mock_client):
+            with patch("world_state_manager.get_campaign_files", return_value={"npcs": "", "locais": ""}):
+                with patch("world_state_manager.load_campaign_data", return_value={}):
+                    with patch.dict(os.environ, {"OPENAI_API_KEY": "sk-test"}):
+                        # 3 turnos de interação
+                        for turno in range(3):
+                            world_state_rpg = world_state_manager.update_world_state(
+                                world_state_rpg, f"Falo com o coveiro (turno {turno+1})", "O coveiro murmura algo."
+                            )
+
+        # Após 3 turnos: NPC deve estar em scene_npc_signatures (via important_npcs_in_scene → ensure_npc_signature_memory)
+        ws = world_state_rpg.get("world_state", {})
+        scene_sigs = ws.get("scene_npc_signatures", {})
+        npc_keys = list(scene_sigs.keys())
+        assert any("coveiro" in k for k in npc_keys), (
+            f"NPC coveiro desapareceu após 3 turnos. scene_npc_signatures: {npc_keys}"
+        )
+
+    # Caso extra: golden turn turn_npc_improvisado_persiste.json — valida campos específicos
+    def test_golden_turn_npc_improvisado_persiste(self):
+        import json
+        from pathlib import Path
+        golden_path = Path(__file__).parent / "golden" / "turn_npc_improvisado_persiste.json"
+        payload = json.loads(golden_path.read_text(encoding="utf-8"))
+
+        expected = payload["expected"]
+        scene_sigs = payload["input"]["world_state"]["world_state"]["scene_npc_signatures"]
+        coveiro = scene_sigs.get("improvisado_coveiro", {})
+
+        assert expected["npc_created_in_scene_sigs"] == ("improvisado_coveiro" in scene_sigs)
+        assert expected["items_held_field_present"] == ("items_held" in coveiro)
+        assert expected["motivacao_field_present"] == ("motivacao" in coveiro)
+        assert expected["entidades_relacionadas_field_present"] == ("entidades_relacionadas" in coveiro)

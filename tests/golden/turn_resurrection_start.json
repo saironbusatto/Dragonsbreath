@@ -1,0 +1,46 @@
+{
+  "description": "Morte do jogador e entrada em limbo de ressurreição",
+  "input": {
+    "player_action": "Caio de joelhos e tento manter a consciência",
+    "world_state": {
+      "narration_mood": "sad",
+      "player_character": {
+        "name": "Aldric",
+        "class": "Bardo",
+        "hp_current": 0,
+        "status": {
+          "hp": 0,
+          "max_hp": 20
+        }
+      },
+      "resurrection_state": {
+        "stage": "awaiting_offering",
+        "dc": 12
+      },
+      "world_state": {
+        "current_location_key": "cemiterio_antigo",
+        "active_quests": {
+          "main_quest": "Retornar da morte"
+        },
+        "combat_active": false,
+        "combat_state": {
+          "active": false,
+          "initiative_order": []
+        },
+        "scene_npc_signatures": {}
+      }
+    }
+  },
+  "expected": {
+    "turn_context_fields": [
+      "player",
+      "location",
+      "mood",
+      "resurrection"
+    ],
+    "turn_context_npcs_present": [],
+    "combat_active_after": false,
+    "invariants_pass": true,
+    "journal_status": "committed"
+  }
+}

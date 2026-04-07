@@ -613,3 +613,156 @@ class TestGetStoryMasterNarrative:
             with patch.dict(os.environ, {"OPENAI_API_KEY": "sk-test"}):
                 result = game.get_story_master_narrative("texto", story_eventos, story_state["story_state"])
         assert isinstance(result, str)
+
+
+# ─── _fmt_scene_npcs_for_gm ──────────────────────────────────────────────────
+
+class TestFmtSceneNpcsForGm:
+    # Caso 1: dict vazio → string vazia
+    def test_empty_dict_returns_empty_string(self):
+        assert game._fmt_scene_npcs_for_gm({}) == ""
+
+    # Caso 1b: não-dict → string vazia
+    def test_non_dict_returns_empty_string(self):
+        assert game._fmt_scene_npcs_for_gm(None) == ""
+        assert game._fmt_scene_npcs_for_gm([]) == ""
+
+    # Caso 2: NPC com items_held vazio → prompt contém "nenhum"
+    def test_empty_items_held_shows_nenhum(self):
+        sigs = {
+            "improvisado_coveiro": {
+                "nome": "Coveiro",
+                "items_held": [],
+                "estado_atual": "Cava no chão",
+                "entidades_relacionadas": {},
+                "segredo": "~",
+            }
+        }
+        result = game._fmt_scene_npcs_for_gm(sigs)
+        assert "nenhum" in result
+
+    # Caso 3: NPC com items_held: ["pá"] → prompt contém "pá"
+    def test_items_held_shown_in_prompt(self):
+        sigs = {
+            "improvisado_coveiro": {
+                "nome": "Coveiro",
+                "items_held": ["pá"],
+                "estado_atual": "~",
+                "entidades_relacionadas": {},
+                "segredo": "~",
+            }
+        }
+        result = game._fmt_scene_npcs_for_gm(sigs)
+        assert "pá" in result
+
+    # Caso 4: entidades_relacionadas com filho → prompt contém "Piotr"
+    def test_entidades_relacionadas_shown(self):
+        sigs = {
+            "improvisado_coveiro": {
+                "nome": "Coveiro",
+                "items_held": [],
+                "estado_atual": "~",
+                "entidades_relacionadas": {"filho": "Piotr, criança morta"},
+                "segredo": "~",
+            }
+        }
+        result = game._fmt_scene_npcs_for_gm(sigs)
+        assert "Piotr" in result
+
+    # Caso 5: segredo aparece na seção com rótulo "NÃO revelar"
+    def test_segredo_appears_with_label(self):
+        sigs = {
+            "improvisado_coveiro": {
+                "nome": "Coveiro",
+                "items_held": [],
+                "estado_atual": "~",
+                "entidades_relacionadas": {},
+                "segredo": "Esconde o filho de Strahd",
+            }
+        }
+        result = game._fmt_scene_npcs_for_gm(sigs)
+        assert "Esconde o filho de Strahd" in result
+        assert "NÃO revelar" in result
+
+    # Caso 6: múltiplos NPCs → ambos aparecem no bloco
+    def test_multiple_npcs_all_formatted(self):
+        sigs = {
+            "improvisado_coveiro": {
+                "nome": "Coveiro",
+                "items_held": ["pá"],
+                "estado_atual": "Cava",
+                "entidades_relacionadas": {},
+                "segredo": "~",
+            },
+            "improvisado_guarda": {
+                "nome": "Guarda",
+                "items_held": ["lança", "escudo"],
+                "estado_atual": "Patrulha",
+                "entidades_relacionadas": {},
+                "segredo": "~",
+            },
+        }
+        result = game._fmt_scene_npcs_for_gm(sigs)
+        assert "Coveiro" in result
+        assert "Guarda" in result
+        assert "lança" in result
+
+    # Caso 7: instrução REGRA DE CONSISTÊNCIA presente no bloco gerado
+    def test_consistencia_rule_present(self):
+        sigs = {
+            "improvisado_coveiro": {
+                "nome": "Coveiro",
+                "items_held": [],
+                "estado_atual": "~",
+                "entidades_relacionadas": {},
+                "segredo": "~",
+            }
+        }
+        result = game._fmt_scene_npcs_for_gm(sigs)
+        assert "REGRA DE CONSISTÊNCIA" in result
+        assert "itens que carrega" in result
+        assert "fazendo agora" in result
+
+    # Caso 8: instrução de auditoria presente no prompt final do Mestre
+    def test_audit_instruction_in_gm_system_prompt(self, world_state_rpg):
+        """
+        Verifica que a instrução de auditoria pré-resposta está presente
+        no system_content gerado por get_gm_narrative.
+        """
+        world_state_rpg["world_state"]["interactable_elements_in_scene"] = {
+            "objetos": [], "npcs": [], "npc_itens": {},
+            "containers": {}, "saidas": [], "chao": []
+        }
+
+        captured_system = []
+
+        def fake_create(*args, **kwargs):
+            msgs = kwargs.get("messages", [])
+            for m in msgs:
+                if m.get("role") == "system":
+                    captured_system.append(m["content"])
+            resp = MagicMock()
+            resp.choices[0].message.content = "Narrativa. [MOOD:normal] [SFX:none]"
+            return resp
+
+        mock_client = MagicMock()
+        mock_client.chat.completions.create.side_effect = fake_create
+
+        with patch("game.OpenAI", return_value=mock_client):
+            with patch("game.get_current_campaign", return_value={
+                "name": "Teste", "class_templates": {}
+            }):
+                with patch("game.get_campaign_files", return_value={}):
+                    with patch("game._build_campaign_gm_block", return_value=""):
+                        with patch.dict(os.environ, {"DEEPSEEK_API_KEY": "sk-test"}):
+                            game.get_gm_narrative(
+                                world_state_rpg,
+                                "olho ao redor",
+                                {},
+                            )
+
+        assert captured_system, "system prompt não capturado"
+        system_text = captured_system[0]
+        assert "AUDITORIA PRÉ-RESPOSTA" in system_text
+        assert "itens que carrega" in system_text
+        assert "saídas canônicas" in system_text

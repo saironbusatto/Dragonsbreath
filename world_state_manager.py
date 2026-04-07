@@ -31,6 +31,38 @@ _NPC_LABEL_HINTS = (
     "nobre", "aristocrata", "caçadora", "cacadora",
 )
 
+# Profissões usadas pela detecção heurística de NPCs improvisados na resposta do Mestre.
+# Padrão: "o/a/um/uma/este/esta <profissão>" — sem chamada LLM.
+_IMPROVISED_NPC_PROFESSIONS: tuple[str, ...] = (
+    "coveiro", "coveira",
+    "guarda", "soldado",
+    "taverneiro", "taverneira",
+    "mercador", "comerciante", "vendedor", "vendedora",
+    "padre", "sacerdote", "sacerdotisa",
+    "aldeão", "aldeao", "aldeã",
+    "camponês", "camponesa", "campones",
+    "feiticeiro", "feiticeira", "bruxa", "bruxo",
+    "mendigo", "mendiga",
+    "cavaleiro",
+    "caçador", "cacador", "caçadora", "cacadora",
+    "lenhador", "lenhadora",
+    "ferreiro",
+    "curandeiro", "curandeira",
+    "barqueiro", "barqueira",
+    "criança", "crianca", "menino", "menina",
+    "ancião", "anciao", "anciã",
+    "viajante", "peregrino", "peregrina",
+    "herói", "heroi",
+    "figura", "vulto",
+)
+
+_IMPROVISED_NPC_PATTERN = re.compile(
+    r"\b(?:o|a|um|uma|este|esta|esse|essa)\s+("
+    + "|".join(re.escape(p) for p in _IMPROVISED_NPC_PROFESSIONS)
+    + r")\b",
+    re.IGNORECASE,
+)
+
 
 def _normalize_token(value: str) -> str:
     if not isinstance(value, str):
@@ -368,6 +400,112 @@ def _load_campaign_npcs() -> dict:
         return {}
 
 
+def _load_campaign_locais() -> dict:
+    files = get_campaign_files()
+    locais_path = files.get("locais", "")
+    if not locais_path:
+        return {}
+    try:
+        return load_campaign_data(locais_path).get("locais", {})
+    except Exception:
+        return {}
+
+
+def _populate_scene_exits_from_campaign(world_state: dict, campaign_locais: dict) -> dict:
+    """
+    Injeta saídas canônicas do locais.json da campanha em
+    interactable_elements_in_scene.saidas.
+    Nunca sobrescreve saídas já preenchidas manualmente.
+    Usa campo 'saidas' do local se existir; caso contrário, deriva das chaves de 'exits'.
+    """
+    loc_key = world_state.get("world_state", {}).get("current_location_key")
+    if not loc_key:
+        return world_state
+    local_data = campaign_locais.get(loc_key, {})
+    saidas = local_data.get("saidas", [])
+    if not saidas:
+        exits = local_data.get("exits", {})
+        if isinstance(exits, dict):
+            saidas = list(exits.keys())
+    if not saidas:
+        return world_state
+    ws = world_state.get("world_state", {})
+    scene = ws.setdefault("interactable_elements_in_scene", {})
+    if not isinstance(scene, dict):
+        scene = {}
+        ws["interactable_elements_in_scene"] = scene
+    if not scene.get("saidas"):  # só injeta se estiver vazio
+        scene["saidas"] = saidas
+    return world_state
+
+
+def _extract_and_persist_improvised_npcs(
+    world_state: dict,
+    gm_response_text: str,
+    known_npc_ids: set[str] | None = None,
+) -> dict:
+    """
+    Detecta NPCs mencionados na resposta do Mestre que ainda não estão
+    em scene_npc_signatures e cria uma assinatura mínima para eles.
+
+    NÃO faz chamada LLM. Usa heurística baseada em profissões conhecidas com
+    padrão artigo+profissão em português (ex: "o coveiro", "uma bruxa").
+    A assinatura mínima é um placeholder: o Arquivista substitui pelos campos
+    completos via Fix 1 (regra 9 do prompt) no mesmo turno ou no próximo.
+    Nunca duplica um NPC já registrado.
+    """
+    if not isinstance(gm_response_text, str) or not gm_response_text.strip():
+        return world_state
+
+    ws = world_state.setdefault("world_state", {})
+    if not isinstance(ws, dict):
+        return world_state
+
+    scene_sigs = ws.setdefault("scene_npc_signatures", {})
+    if not isinstance(scene_sigs, dict):
+        scene_sigs = {}
+        ws["scene_npc_signatures"] = scene_sigs
+
+    existing_norms: set[str] = {_normalize_token(k) for k in scene_sigs}
+    # Inclui o nome normalizado de cada assinatura para cobrir casos em que o ID
+    # tem prefixo ("improvisado_coveiro") mas o label detectado é só "coveiro".
+    for sig in scene_sigs.values():
+        if isinstance(sig, dict) and sig.get("nome"):
+            existing_norms.add(_normalize_token(sig["nome"]))
+    if known_npc_ids:
+        existing_norms |= {_normalize_token(nid) for nid in known_npc_ids}
+
+    for match in _IMPROVISED_NPC_PATTERN.finditer(gm_response_text):
+        label = match.group(1)
+        norm = _normalize_token(label)
+        if not norm or norm in existing_norms:
+            continue
+
+        display_label = label.lower()
+        base_id = f"improvisado_{_slugify(display_label)}"
+        npc_id = base_id
+        suffix = 2
+        while npc_id in scene_sigs:
+            npc_id = f"{base_id}_{suffix}"
+            suffix += 1
+
+        scene_sigs[npc_id] = {
+            "nome": display_label.capitalize(),
+            "id_origem": npc_id,
+            "referencia_id": npc_id,
+            "origem": "improvisado",
+            "items_held": [],
+            "motivacao": "~",
+            "entidades_relacionadas": {},
+            "segredo": "~",
+            "estado_atual": "~",
+            "improvised": True,
+        }
+        existing_norms.add(norm)
+
+    return world_state
+
+
 def ensure_npc_signature_memory(world_state: dict) -> dict:
     """
     Garante memória persistente de assinatura de NPCs.
@@ -386,6 +524,9 @@ def ensure_npc_signature_memory(world_state: dict) -> dict:
     registry = ws.get("npc_signatures", {})
     if not isinstance(registry, dict):
         registry = {}
+
+    campaign_locais = _load_campaign_locais()
+    _populate_scene_exits_from_campaign(world_state, campaign_locais)
 
     prepared_npcs = _load_campaign_npcs()
     for npc_id, npc_data in prepared_npcs.items():
@@ -598,7 +739,23 @@ REGRAS DE ATUALIZAÇÃO:
    - "advantage" — se a situação atual favorece claramente a classe do personagem para a próxima ação de risco (ex: Bardo em negociação social, Inquisidor confrontando morto-vivo)
    - "disadvantage" — se a situação desfavorece (ex: Bardo em combate físico direto, Ocultista em tarefa de força bruta)
    - "normal" — padrão; nenhum fator contextual determinante
-   Baseie-se na classe em player_character.class e no contexto atual da cena."""
+   Baseie-se na classe em player_character.class e no contexto atual da cena.
+9. REGRA DE NPC IMPROVISADO: Quando um NPC aparecer na resposta do Mestre com qualquer um destes sinais:
+   - nome próprio OU apelido identificável ("o coveiro", "a bruxa", "o guarda")
+   - item específico que carrega
+   - motivação identificável
+   - vínculo com outro personagem (filho, irmão, mestre)
+   → Inclua IMEDIATAMENTE em world_state.scene_npc_signatures com os campos:
+     - "nome": nome ou apelido usado pelo Mestre
+     - "items_held": lista de itens que carrega (pode ser [] se nenhum)
+     - "motivacao": razão de existir na cena (1 frase)
+     - "entidades_relacionadas": outros personagens/objetos vinculados, ex: {"filho": "Piotr, criança morta"}
+     - "segredo": informação que o jogador ainda não descobriu (ou "~" se desconhecido)
+     - "estado_atual": o que está fazendo agora (1 frase)
+     - "improvised": true
+   NÃO espere o jogador interagir — formalize no MESMO turno que o Mestre introduziu o NPC.
+   Se o campo scene_npc_signatures já contiver uma entrada para esse NPC com "improvised": true,
+   substitua-a por uma versão completa mantendo o mesmo id."""
 
     # USER: o estado atual + o que acabou de acontecer
     archivista_user = f"""JSON DO ESTADO ATUAL:

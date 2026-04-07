@@ -1,0 +1,64 @@
+{
+  "description": "NPC improvisado com item e vínculo familiar é formalizado no turno de introdução",
+  "input": {
+    "player_action": "Falo com o homem que está cavando",
+    "world_state": {
+      "narration_mood": "tense",
+      "player_character": {
+        "name": "Aldric",
+        "class": "Bardo",
+        "hp_current": 18,
+        "status": {
+          "hp": 18,
+          "max_hp": 20
+        }
+      },
+      "world_state": {
+        "current_location_key": "cemiterio_antigo",
+        "active_quests": {
+          "main_quest": "Investigar a praga musical"
+        },
+        "combat_active": false,
+        "combat_state": {
+          "active": false,
+          "initiative_order": []
+        },
+        "scene_npc_signatures": {
+          "improvisado_coveiro": {
+            "referencia_id": "improvisado_coveiro",
+            "nome": "Coveiro",
+            "origem": "improvisado",
+            "items_held": ["pá"],
+            "motivacao": "Enterrar o filho antes que Strahd descubra",
+            "entidades_relacionadas": {"filho": "Piotr, criança morta"},
+            "segredo": "Esconde o filho de Strahd para evitar que vire morto-vivo",
+            "estado_atual": "Cava freneticamente com as mãos ensanguentadas",
+            "improvised": true
+          }
+        }
+      }
+    }
+  },
+  "expected": {
+    "turn_context_fields": [
+      "player",
+      "location",
+      "mood"
+    ],
+    "turn_context_npcs_present": [
+      "improvisado_coveiro"
+    ],
+    "combat_active_after": false,
+    "invariants_pass": true,
+    "journal_status": "committed",
+    "expect_npc_builder": true,
+    "npc_created_in_scene_sigs": true,
+    "items_held_field_present": true,
+    "motivacao_field_present": true,
+    "entidades_relacionadas_field_present": true,
+    "gm_prompt_contains_items_held": true,
+    "gm_prompt_contains_estado_atual": true,
+    "gm_prompt_contains_entidades_relacionadas": true,
+    "gm_prompt_contains_consistencia_rule": true
+  }
+}

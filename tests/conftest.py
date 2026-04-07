@@ -3,11 +3,24 @@ Fixtures compartilhadas para toda a suíte de testes da Plataforma Ressoar.
 """
 import json
 import os
+import shutil
+from pathlib import Path
 import pytest
 from unittest.mock import MagicMock, patch
 
 
 # ─── Fixtures: World State ────────────────────────────────────────────────────
+
+@pytest.fixture
+def world_state(tmp_path):
+    """
+    Save de mundo isolado por teste.
+    Copia o template e evita tocar no estado real do projeto.
+    """
+    src = Path("estado_do_mundo_template.json")
+    dst = tmp_path / "estado_do_mundo.json"
+    shutil.copy(src, dst)
+    return dst
 
 @pytest.fixture
 def world_state_rpg():
@@ -34,6 +47,16 @@ def world_state_rpg():
             "gatilhos_usados": {"umbraton": []}
         },
         "rodadas_sem_gatilho": 0
+    }
+
+
+@pytest.fixture
+def campaign_locais_minimal():
+    """Conjunto mínimo de locais para testes unitários de invariantes."""
+    return {
+        "umbraton": {},
+        "taverna_corvo_ferido": {},
+        "cemiterio_antigo": {},
     }
 
 

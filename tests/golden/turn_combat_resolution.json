@@ -1,0 +1,41 @@
+{
+  "description": "Jogador encerra combate e volta ao estado de exploração",
+  "input": {
+    "player_action": "Dou o golpe final e observo o salão em silêncio",
+    "world_state": {
+      "narration_mood": "relief",
+      "player_character": {
+        "name": "Aldric",
+        "class": "Aventureiro",
+        "hp_current": 8,
+        "status": {
+          "hp": 8,
+          "max_hp": 25
+        }
+      },
+      "world_state": {
+        "current_location_key": "castelo_ravenloft",
+        "active_quests": {
+          "main_quest": "Sobreviver ao castelo"
+        },
+        "combat_active": false,
+        "combat_state": {
+          "active": false,
+          "initiative_order": []
+        },
+        "scene_npc_signatures": {}
+      }
+    }
+  },
+  "expected": {
+    "turn_context_fields": [
+      "player",
+      "location",
+      "mood"
+    ],
+    "turn_context_npcs_present": [],
+    "combat_active_after": false,
+    "invariants_pass": true,
+    "journal_status": "committed"
+  }
+}

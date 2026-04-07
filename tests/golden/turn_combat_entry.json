@@ -1,0 +1,58 @@
+{
+  "description": "Jogador inicia combate contra Strahd",
+  "input": {
+    "player_action": "Ataco Strahd com minha espada",
+    "world_state": {
+      "narration_mood": "tense",
+      "player_character": {
+        "name": "Aldric",
+        "class": "Aventureiro",
+        "hp_current": 20,
+        "status": {
+          "hp": 20,
+          "max_hp": 25
+        }
+      },
+      "world_state": {
+        "current_location_key": "castelo_ravenloft",
+        "active_quests": {
+          "main_quest": "Derrotar Strahd"
+        },
+        "combat_active": true,
+        "combat_state": {
+          "active": true,
+          "initiative_order": [
+            "aldric",
+            "strahd"
+          ]
+        },
+        "scene_npc_signatures": {
+          "strahd": {
+            "referencia_id": "strahd",
+            "nome": "Strahd von Zarovich",
+            "origem": "preparado",
+            "tipo": "vampiro",
+            "moral_tonalidade": "negativa",
+            "arquetipo_social": "vilao_de_elite",
+            "motivacao_principal": "Corromper o heroi",
+            "voz_textual": "Nobre e ameaçadora"
+          }
+        }
+      }
+    }
+  },
+  "expected": {
+    "turn_context_fields": [
+      "player",
+      "location",
+      "combat",
+      "mood"
+    ],
+    "turn_context_npcs_present": [
+      "strahd"
+    ],
+    "combat_active_after": true,
+    "invariants_pass": true,
+    "journal_status": "committed"
+  }
+}

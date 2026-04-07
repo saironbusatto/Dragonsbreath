@@ -1,0 +1,1265 @@
+{
+  "_meta": {
+    "modulo": "Curse of Strahd — Death House (Appendix B)",
+    "nivel_personagem": "1 a 3",
+    "versao_mapa": "1.0",
+    "notas": "Mapa MUD completo. Saídas são IDs de sala. Armadilhas e encontros têm flags de estado para persistência. NPCs com allowed_rooms para impedir alucinações da IA."
+  },
+
+  "npc_locations": {
+    "rose_ghost": "area_20_quarto_criancas",
+    "thorn_ghost": "area_20_quarto_criancas",
+    "specter_nursemaid": "area_15a_quarto_baba",
+    "animated_armor": "area_11_balcao_3o_andar",
+    "broom_animated": "area_14_deposito_3o_andar",
+    "grick": "area_28_despensa_dungeon",
+    "ghouls_4x": "area_29_encontro_fantasmas",
+    "ghasts_gustav_elisabeth": "area_34_aposentos_lideres_culto",
+    "mimic_door": "area_33_sala_lideres_culto",
+    "shambling_mound_lorghoth": "area_38_camara_ritual",
+    "strahd_espectral": "area_31_santuario_darklord",
+    "strahd_real": "castelo_ravenloft_externo"
+  },
+
+  "world_flags": {
+    "secret_stairs_21_revealed": false,
+    "trapdoor_32_opened": false,
+    "strahd_letter_found": false,
+    "dollhouse_secret_found": false,
+    "rose_remains_laid_to_rest": false,
+    "thorn_remains_laid_to_rest": false,
+    "sacrifice_made": false,
+    "cult_denied": false,
+    "lorghoth_awakened": false,
+    "portcullis_37_raised": false
+  },
+
+  "rooms": {
+
+    "area_1a_entrada": {
+      "id": "area_1a_entrada",
+      "nome": "Entrada da Casa da Morte",
+      "andar": "terreo",
+      "descricao": "Uma entrada sombria com piso de pedra úmida. Cabideiro de madeira escura à esquerda, guarda-chuvas de mesário pendurados. Névoa rasteja pelas frestas da porta. A casa estranha pesa no ar.",
+      "descricao_curta": "Entrada da Casa da Morte. Névoa. Cabideiro.",
+      "saidas": {
+        "norte": "area_1b_vestiario",
+        "leste": "area_2a_corredor_principal"
+      },
+      "itens": [],
+      "npcs": [],
+      "armadilhas": [],
+      "ambient": "vento_exterior_uivante.mp3",
+      "eventos": []
+    },
+
+    "area_1b_vestiario": {
+      "id": "area_1b_vestiario",
+      "nome": "Vestiário",
+      "andar": "terreo",
+      "descricao": "Um pequeno cômodo apertado com prateleiras empoeiradas e ganchos na parede. Capas velhas e um chapéu de feltro mofado ainda pendurados. Cheiro de mofo e algo que foi humano.",
+      "descricao_curta": "Vestiário. Capas velhas. Ganchos na parede.",
+      "saidas": {
+        "sul": "area_1a_entrada"
+      },
+      "itens": [
+        {"id": "capa_velha", "nome": "Capa velha mofada", "valor_gp": 0, "descricao": "Inútil. Mas quente."}
+      ],
+      "npcs": [],
+      "armadilhas": [],
+      "ambient": "madeira_rangendo.mp3",
+      "eventos": []
+    },
+
+    "area_2a_corredor_principal": {
+      "id": "area_2a_corredor_principal",
+      "nome": "Corredor Principal — Térreo",
+      "andar": "terreo",
+      "descricao": "Um corredor amplo com piso de tábuas que rangem a cada passo. Escadaria de mármore vermelho sobe ao fundo. Candelabros apagados nas paredes. Tudo coberto de teia e pó. As paredes têm pinturas de paisagens que parecem observar.",
+      "descricao_curta": "Corredor principal. Escadaria de mármore vermelho.",
+      "saidas": {
+        "oeste": "area_1a_entrada",
+        "norte": "area_2b_sala_estar",
+        "leste": "area_3_sala_jantar_terreo",
+        "escada_acima": "area_6_corredor_2o_andar"
+      },
+      "itens": [],
+      "npcs": [],
+      "armadilhas": [],
+      "ambient": "madeira_rangendo.mp3",
+      "eventos": []
+    },
+
+    "area_2b_sala_estar": {
+      "id": "area_2b_sala_estar",
+      "nome": "Sala de Estar",
+      "andar": "terreo",
+      "descricao": "Poltronas estofadas cobertas de pó. Uma lareira apagada com cinzas velhas. Acima da lareira, um retrato da família Durst — Gustav, Elisabeth, Rose e Thorn — olhando com sorrisos que não chegam aos olhos. Tapete persa desbotado no centro.",
+      "descricao_curta": "Sala de estar. Retrato da família Durst acima da lareira.",
+      "saidas": {
+        "sul": "area_2a_corredor_principal",
+        "leste": "area_4a_cozinha"
+      },
+      "itens": [
+        {"id": "retrato_familia_durst", "nome": "Retrato da família Durst", "valor_gp": 0, "descricao": "Gustav, Elisabeth e as crianças. O bebê Walter não está retratado."}
+      ],
+      "npcs": [],
+      "armadilhas": [],
+      "ambient": "lareira_morta_vento.mp3",
+      "eventos": []
+    },
+
+    "area_3_sala_jantar_terreo": {
+      "id": "area_3_sala_jantar_terreo",
+      "nome": "Sala de Jantar — Térreo",
+      "andar": "terreo",
+      "descricao": "Mesa de jantar longa com oito cadeiras, talheres enferrujados ainda postos como se uma refeição fosse ser servida. Pó acumulado nos pratos. No canto, um aparador com louça rachada. Sob o tapete no centro do cômodo, um alçapão oculto leva às profundezas.",
+      "descricao_curta": "Sala de jantar. Mesa posta. Alçapão oculto sob o tapete.",
+      "saidas": {
+        "oeste": "area_2a_corredor_principal",
+        "norte": "area_4a_cozinha",
+        "alcapao_abaixo": "area_32_alcapao_oculto_dungeon"
+      },
+      "itens": [
+        {"id": "alcapao_sala_jantar", "nome": "Alçapão oculto", "oculto": true, "dc_percepcao": 10, "descricao": "Esconde acesso ao dungeon (área 32). Tapete por cima."}
+      ],
+      "npcs": [],
+      "armadilhas": [],
+      "ambient": "madeira_rangendo.mp3",
+      "eventos": [
+        {"trigger": "player_examina_tapete", "descricao": "O tapete está levantado em uma das bordas. Uma argola de ferro mal visível."}
+      ]
+    },
+
+    "area_4a_cozinha": {
+      "id": "area_4a_cozinha",
+      "nome": "Cozinha",
+      "andar": "terreo",
+      "descricao": "Fogão a lenha enferrujado. Panelas penduradas cobertas de teia. Bancadas de pedra com facas que perderam o brilho. Cheiro de gordura velha e mofo. Ratos se mexem nas paredes — ou algo maior.",
+      "descricao_curta": "Cozinha. Fogão enferrujado. Ratos nas paredes.",
+      "saidas": {
+        "sul": "area_3_sala_jantar_terreo",
+        "oeste": "area_2b_sala_estar",
+        "norte": "area_4b_despensa"
+      },
+      "itens": [
+        {"id": "facas_cozinha", "nome": "Faca de cozinha enferrujada", "valor_gp": 0, "dano": "1d4", "descricao": "Ainda corta, mas enferrujada."}
+      ],
+      "npcs": [],
+      "armadilhas": [],
+      "ambient": "ratos_paredes.mp3",
+      "eventos": []
+    },
+
+    "area_4b_despensa": {
+      "id": "area_4b_despensa",
+      "nome": "Despensa",
+      "andar": "terreo",
+      "descricao": "Prateleiras com potes de conserva quebrados. O que foi comida há muito se tornou bolor escuro. Uma porta nos fundos dá para o exterior lateral da casa — trancada por fora.",
+      "descricao_curta": "Despensa. Conservas mofadas. Porta trancada por fora.",
+      "saidas": {
+        "sul": "area_4a_cozinha"
+      },
+      "itens": [],
+      "npcs": [],
+      "armadilhas": [],
+      "ambient": "silencio_umido.mp3",
+      "eventos": []
+    },
+
+    "area_5_quarto_criados": {
+      "id": "area_5_quarto_criados",
+      "nome": "Quarto dos Criados",
+      "andar": "terreo",
+      "descricao": "Três beliches de madeira tosca. Caixas de pertences pessoais vazias embaixo das camas. Uma janela com vista para o lateral escuro da casa. Alguém riscou marcas de contagem na madeira da parede — chegando a 47.",
+      "descricao_curta": "Quarto dos criados. 47 marcas riscadas na parede.",
+      "saidas": {
+        "leste": "area_2a_corredor_principal"
+      },
+      "itens": [],
+      "npcs": [],
+      "armadilhas": [],
+      "ambient": "vento_janela.mp3",
+      "eventos": []
+    },
+
+    "area_6_corredor_2o_andar": {
+      "id": "area_6_corredor_2o_andar",
+      "nome": "Corredor Superior — 2º Andar",
+      "andar": "segundo",
+      "descricao": "O corredor do segundo andar é mais escuro. A escadaria de mármore chega aqui com um corrimão entalhado. Três portas se abrem ao longo do corredor. O silêncio aqui é diferente do andar de baixo — mais denso.",
+      "descricao_curta": "Corredor 2º andar. Três portas. Silêncio denso.",
+      "saidas": {
+        "escada_abaixo": "area_2a_corredor_principal",
+        "norte": "area_7a_escritorio",
+        "leste": "area_8_biblioteca",
+        "sul": "area_10_conservatorio",
+        "escada_acima": "area_11_balcao_3o_andar"
+      },
+      "itens": [],
+      "npcs": [],
+      "armadilhas": [],
+      "ambient": "silencio_sepulcral.mp3",
+      "eventos": []
+    },
+
+    "area_7a_escritorio": {
+      "id": "area_7a_escritorio",
+      "nome": "Escritório de Gustav Durst",
+      "andar": "segundo",
+      "descricao": "Uma escrivaninha com gavetas vazias e tinteiro ressecado. Prateleiras com livros de contabilidade. Cartas abertas em latim em cima da mesa, a maioria sem sentido. Uma janela com vista para a rua de frente — a névoa de Baróvia visível lá fora.",
+      "descricao_curta": "Escritório. Cartas em latim. Janela com névoa.",
+      "saidas": {
+        "sul": "area_6_corredor_2o_andar",
+        "leste": "area_7b_quarto_serventes"
+      },
+      "itens": [
+        {"id": "cartas_latim", "nome": "Cartas em latim", "descricao": "Referências a rituais e ao 'culto'. Assinadas 'G.D.'"}
+      ],
+      "npcs": [],
+      "armadilhas": [],
+      "ambient": "silencio_sepulcral.mp3",
+      "eventos": []
+    },
+
+    "area_7b_quarto_serventes": {
+      "id": "area_7b_quarto_serventes",
+      "nome": "Quarto dos Serventes — 2º Andar",
+      "andar": "segundo",
+      "descricao": "Um cômodo estreito com cama simples e jarro de água vazio. Roupa de cama amarelada dobrada no canto. Pela janela, o muro lateral da casa e a névoa.",
+      "descricao_curta": "Quarto estreito dos serventes.",
+      "saidas": {
+        "oeste": "area_7a_escritorio"
+      },
+      "itens": [],
+      "npcs": [],
+      "armadilhas": [],
+      "ambient": "silencio_umido.mp3",
+      "eventos": []
+    },
+
+    "area_8_biblioteca": {
+      "id": "area_8_biblioteca",
+      "nome": "Biblioteca",
+      "andar": "segundo",
+      "descricao": "Estantes do chão ao teto com tomos encadernados em couro. Uma escrivaninha com cadeira de couro rachado. Lareira apagada. Uma das estantes ao norte tem um livro de capa vermelha com a lombada em branco — parece levemente diferente dos outros. DC 13 Percepção para notar.",
+      "descricao_curta": "Biblioteca. Estantes do chão ao teto. Livro vermelho suspeito.",
+      "saidas": {
+        "oeste": "area_6_corredor_2o_andar",
+        "porta_secreta_norte": "area_9_sala_secreta"
+      },
+      "itens": [
+        {
+          "id": "livro_vermelho_alavanca",
+          "nome": "Livro de capa vermelha — lombada em branco",
+          "oculto": true,
+          "dc_percepcao": 13,
+          "interagivel": true,
+          "descricao": "Não é um livro — é uma alavanca disfarçada. Puxar abre a porta secreta para a área 9.",
+          "efeito": "revela_porta_secreta_area_9"
+        }
+      ],
+      "npcs": [],
+      "armadilhas": [],
+      "ambient": "silencio_sepulcral.mp3",
+      "eventos": [
+        {"trigger": "player_encontra_livro_chave_area_9", "flag_set": "strahd_letter_found", "descricao": "A carta de Strahd na área 9 revela a existência da escadaria secreta para o dungeon."}
+      ]
+    },
+
+    "area_9_sala_secreta": {
+      "id": "area_9_sala_secreta",
+      "nome": "Sala Secreta — Biblioteca",
+      "andar": "segundo",
+      "descricao": "Uma sala pequena e abafada. Prateleiras com tomos de invocação de demônios e rituais necromânticos do Culto dos Sacerdotes de Osybus — estudos revelam que os rituais são falsos (DC 12 Arcanismo, 1 hora). Um baú de madeira pesada com pés de ferro contra a parede sul, a tampa entreaberta. Um esqueleto em couro sobressai do baú, três dardos envenenados no peito — a armadilha já disparou.",
+      "descricao_curta": "Sala secreta. Tomos de ritual. Baú com esqueleto e carta de Strahd.",
+      "saidas": {
+        "porta_secreta_sul": "area_8_biblioteca"
+      },
+      "itens": [
+        {
+          "id": "carta_strahd",
+          "nome": "Carta de Strahd von Zarovich",
+          "descricao": "Selada com o brasão de Strahd. Texto: 'Meu mais patético servo... Vocês não foram os que me trouxeram a esta bela terra. Vocês são apenas vermes se contorcendo na minha terra... Seu temível senhor e mestre, Strahd van Zarovich.'",
+          "efeito": "ao_pegar_seta_flag_strahd_letter_found_true_e_revela_escadaria_21"
+        },
+        {"id": "livros_couro_preto_3x", "nome": "3x Livros de couro preto em branco", "valor_gp": 75, "descricao": "25 gp cada."},
+        {"id": "pergaminho_bencao", "nome": "Pergaminho — Bênção", "tipo": "spell_scroll", "nivel": 1},
+        {"id": "pergaminho_protecao_veneno", "nome": "Pergaminho — Proteção contra Veneno", "tipo": "spell_scroll", "nivel": 1},
+        {"id": "pergaminho_arma_espiritual", "nome": "Pergaminho — Arma Espiritual", "tipo": "spell_scroll", "nivel": 2},
+        {"id": "escritura_casa", "nome": "Escritura da Casa da Morte", "descricao": "Em nome de Gustav e Elisabeth Durst."},
+        {"id": "escritura_moinho", "nome": "Escritura do Moinho (Old Bonegrinder)", "descricao": "Moinho nas montanhas a leste de Vallakie."},
+        {"id": "testamento_durst", "nome": "Testamento assinado por Gustav e Elisabeth", "descricao": "Deixa casa, moinho e propriedades para Rosavalda e Thornboldt Durst em caso de morte dos pais. Os itens envelhecem se retirados da casa, mas permanecem intactos."}
+      ],
+      "npcs": [],
+      "armadilhas": [
+        {"id": "armadilha_dardos_bau", "nome": "Armadilha de dardos — baú", "status": "disparada", "descricao": "Já disparou. O esqueleto no baú prova isso. Inofensiva agora."}
+      ],
+      "ambient": "silencio_sepulcral.mp3",
+      "eventos": []
+    },
+
+    "area_10_conservatorio": {
+      "id": "area_10_conservatorio",
+      "nome": "Conservatório",
+      "andar": "segundo",
+      "descricao": "Cortinas de gaze cobrem as janelas. Um lustre de latão pende do teto. Cadeiras estofadas ao longo das paredes. Vitrais nas paredes mostram pessoas cantando e tocando instrumentos. No canto noroeste, um cravo com banco. Perto da lareira, uma harpa vertical de pé. Na lareira, figuras de alabastro de dançarinos — de perto, são esqueletos bem vestidos.",
+      "descricao_curta": "Conservatório. Cravo. Harpa. Figuras de dançarinos-esqueletos.",
+      "saidas": {
+        "norte": "area_6_corredor_2o_andar"
+      },
+      "itens": [
+        {"id": "cravo", "nome": "Cravo", "descricao": "Desafinado. Uma nota soa como um gemido."},
+        {"id": "harpa_pe", "nome": "Harpa vertical", "descricao": "Uma corda partida. As outras ainda vibram ao toque."},
+        {"id": "figuras_alabastro", "nome": "Figuras de alabastro de dançarinos", "descricao": "São esqueletos dançando. A inspecção mais próxima revela isso."}
+      ],
+      "npcs": [],
+      "armadilhas": [],
+      "ambient": "musica_caixa_musical_distorcida.mp3",
+      "eventos": []
+    },
+
+    "area_11_balcao_3o_andar": {
+      "id": "area_11_balcao_3o_andar",
+      "nome": "Balcão do 3º Andar — Topo da Escadaria",
+      "andar": "terceiro",
+      "descricao": "O topo da escadaria de mármore vermelho. Um corredor com lambris de carvalho entalhados com cenas de florestas, folhas caindo e criaturinhas — quem inspecionar bem (DC 12 Percepção) verá cadáveres minúsculos pendurados nas árvores e vermes brotando do chão. Uma armadura de placas pretas está encostada na parede, coberta de teias. Ela ataca se alguém chegar a menos de 1,5m ou causar dano.",
+      "descricao_curta": "Balcão 3º andar. Armadura animada. Lambris sinistros.",
+      "saidas": {
+        "escada_abaixo": "area_6_corredor_2o_andar",
+        "oeste": "area_12a_suíte_principal",
+        "norte": "area_15a_quarto_baba",
+        "porta_secreta_oeste": "area_16_corredor_sotao"
+      },
+      "itens": [],
+      "npcs": [
+        {
+          "id": "animated_armor",
+          "nome": "Armadura Animada",
+          "status": "inativo",
+          "trigger": "aproximacao_15m_ou_dano",
+          "hp": 33,
+          "ac": 18,
+          "acao": "ataca_ate_ser_destruida",
+          "allowed_rooms": ["area_11_balcao_3o_andar"]
+        }
+      ],
+      "armadilhas": [],
+      "ambient": "madeira_rangendo_vento_uivante.mp3",
+      "porta_secreta": {
+        "id": "porta_secreta_sotao_11",
+        "dc_percepcao": 15,
+        "descricao": "Parede oeste — empurra e abre para escadaria de madeira cheia de teias rumo ao sótão."
+      },
+      "eventos": []
+    },
+
+    "area_12a_suite_principal": {
+      "id": "area_12a_suite_principal",
+      "nome": "Suíte Principal — Quarto",
+      "andar": "terceiro",
+      "descricao": "Quarto do casal Durst. Cama de quatro postes com cortinas bordadas e véus esfarrapados. Par de guarda-roupas vazios. Penteadeira com espelho de moldura de madeira e caixinha de joias. Poltrona estofada. Tapete de pele de tigre podre em frente à lareira. Acima da lareira, retrato empoeirado de Gustav e Elisabeth Durst. Porta ao fundo tem espelho de corpo inteiro — abre para closet vazio (12B). Porta no parlatório dá para o balcão exterior (12C). Monta-cargas no canto da parede oeste — botão chama sino na área 4A.",
+      "descricao_curta": "Suíte principal. Cama de dosséis. Joias. Monta-cargas.",
+      "saidas": {
+        "leste": "area_11_balcao_3o_andar",
+        "norte": "area_12b_closet",
+        "noroeste": "area_12c_sacada_suite",
+        "sul": "area_13_banheiro"
+      },
+      "itens": [
+        {"id": "caixinha_joias", "nome": "Caixinha de joias (prata e ouro)", "valor_gp": 75, "descricao": "Prata com filigrana de ouro. Contém 3 anéis de ouro (25 gp cada) e colar de platina com pingente de topázio (750 gp total)."},
+        {"id": "anel_ouro_1", "nome": "Anel de ouro", "valor_gp": 25},
+        {"id": "anel_ouro_2", "nome": "Anel de ouro", "valor_gp": 25},
+        {"id": "anel_ouro_3", "nome": "Anel de ouro", "valor_gp": 25},
+        {"id": "colar_platina_topazio", "nome": "Colar de platina com pingente de topázio", "valor_gp": 750}
+      ],
+      "npcs": [],
+      "armadilhas": [],
+      "ambient": "silencio_sepulcral.mp3",
+      "eventos": []
+    },
+
+    "area_12b_closet": {
+      "id": "area_12b_closet",
+      "nome": "Closet Vazio",
+      "andar": "terceiro",
+      "descricao": "Um armário embutido vazio e sufocante, coberto de pó.",
+      "descricao_curta": "Closet vazio. Pó.",
+      "saidas": {"sul": "area_12a_suite_principal"},
+      "itens": [],
+      "npcs": [],
+      "armadilhas": [],
+      "ambient": "silencio_sepulcral.mp3",
+      "eventos": []
+    },
+
+    "area_12c_sacada_suite": {
+      "id": "area_12c_sacada_suite",
+      "nome": "Sacada da Suíte Principal",
+      "andar": "terceiro",
+      "descricao": "Sacada com vista para a névoa de Baróvia. Grade de ferro enferrujada. O silêncio lá fora é ensurdecedor.",
+      "descricao_curta": "Sacada. Vista para a névoa. Silêncio.",
+      "saidas": {"interior": "area_12a_suite_principal"},
+      "itens": [],
+      "npcs": [],
+      "armadilhas": [],
+      "ambient": "vento_nevoa_barovia.mp3",
+      "eventos": []
+    },
+
+    "area_13_banheiro": {
+      "id": "area_13_banheiro",
+      "nome": "Banheiro",
+      "andar": "terceiro",
+      "descricao": "Banheira de madeira com pés de garra. Pequeno fogão de ferro com chaleira. Barril embaixo de torneira na parede leste — cisterna no telhado alimentava isso, mas o encanamento não funciona mais.",
+      "descricao_curta": "Banheiro. Banheira de garra. Encanamento quebrado.",
+      "saidas": {"norte": "area_12a_suite_principal"},
+      "itens": [],
+      "npcs": [],
+      "armadilhas": [],
+      "ambient": "gotejamento_lento.mp3",
+      "eventos": []
+    },
+
+    "area_14_deposito_3o_andar": {
+      "id": "area_14_deposito_3o_andar",
+      "nome": "Depósito — 3º Andar",
+      "andar": "terceiro",
+      "descricao": "Prateleiras empoeiradas com lençóis dobrados, cobertores e sabão velho. Encostada na parede do fundo, uma vassoura coberta de teias. Ela ataca qualquer criatura que se aproxime a menos de 1,5m.",
+      "descricao_curta": "Depósito. Vassoura animada encostada no fundo.",
+      "saidas": {"norte": "area_11_balcao_3o_andar"},
+      "itens": [],
+      "npcs": [
+        {
+          "id": "broom_animated",
+          "nome": "Vassoura de Ataque Animado",
+          "status": "inativa",
+          "trigger": "aproximacao_15m",
+          "hp": 17,
+          "ac": 15,
+          "allowed_rooms": ["area_14_deposito_3o_andar"]
+        }
+      ],
+      "armadilhas": [],
+      "ambient": "silencio_sepulcral.mp3",
+      "eventos": []
+    },
+
+    "area_15a_quarto_baba": {
+      "id": "area_15a_quarto_baba",
+      "nome": "Quarto da Babá",
+      "andar": "terceiro",
+      "descricao": "Quarto elegante outrora bem cuidado. Cama grande, duas mesinhas de cabeceira, guarda-roupa vazio. Na parede ao lado do guarda-roupa, espelho de corpo inteiro com moldura ornamental entalhada com hera e frutas — quem buscar portas secretas nota olhos nas frutas (DC 12 Percepção). Atrás do espelho, porta secreta para escadaria do sótão. O espírito da babá (espectro) habita este cômodo. Ela manifesta e ataca quando a porta do quarto do bebê (15B) for aberta.",
+      "descricao_curta": "Quarto da babá. Espelho com hera. Espectro presente.",
+      "saidas": {
+        "sul": "area_11_balcao_3o_andar",
+        "leste": "area_15b_quarto_bebe",
+        "norte": "area_15c_sacada_baba",
+        "porta_secreta_espelho": "area_16_corredor_sotao"
+      },
+      "itens": [],
+      "npcs": [
+        {
+          "id": "specter_nursemaid",
+          "nome": "Espectro da Babá",
+          "status": "latente",
+          "trigger": "abertura_porta_15b",
+          "descricao": "Jovem emaciada, aterrorizada. Não fala, não pode ser persuadida. Atacou se manifestada.",
+          "hp": 22,
+          "ac": 12,
+          "allowed_rooms": ["area_15a_quarto_baba", "area_15b_quarto_bebe", "area_18_deposito_restos_baba"]
+        }
+      ],
+      "porta_secreta": {
+        "id": "porta_secreta_sotao_15a",
+        "dc_percepcao": 15,
+        "descricao": "Atrás do espelho. Escadaria de madeira cheia de teias rumo ao sótão."
+      },
+      "armadilhas": [],
+      "ambient": "choro_distante_bebe.mp3",
+      "eventos": []
+    },
+
+    "area_15b_quarto_bebe": {
+      "id": "area_15b_quarto_bebe",
+      "nome": "Quarto do Bebê (Berçário)",
+      "andar": "terceiro",
+      "descricao": "Um berço coberto com pano negro. Quando o pano é afastado, um embrulho do tamanho de um bebê está deitado no berço — mas quando desembrulhado, não há nada dentro.",
+      "descricao_curta": "Berçário. Berço com pano negro. Embrulho vazio.",
+      "saidas": {"oeste": "area_15a_quarto_baba"},
+      "itens": [
+        {"id": "embrulho_bebe_vazio", "nome": "Embrulho no berço", "descricao": "Tamanho de bebê. Vazio por dentro. Walter nunca existiu além do luto."}
+      ],
+      "npcs": [],
+      "armadilhas": [],
+      "ambient": "choro_distante_bebe.mp3",
+      "eventos": []
+    },
+
+    "area_15c_sacada_baba": {
+      "id": "area_15c_sacada_baba",
+      "nome": "Sacada da Babá",
+      "andar": "terceiro",
+      "descricao": "Sacada com vista para a frente da casa. A névoa de Baróvia cobre tudo. Corvos observam do muro.",
+      "descricao_curta": "Sacada. Vista frontal. Corvos na névoa.",
+      "saidas": {"interior": "area_15a_quarto_baba"},
+      "itens": [],
+      "npcs": [],
+      "armadilhas": [],
+      "ambient": "vento_nevoa_barovia.mp3",
+      "eventos": []
+    },
+
+    "area_16_corredor_sotao": {
+      "id": "area_16_corredor_sotao",
+      "nome": "Corredor do Sótão",
+      "andar": "sotao",
+      "descricao": "Corredor nu, sufocante de pó e teias. Uma porta trancada com cadeado ao norte — a chave está na biblioteca (área 8), ou pode ser arrombada (DC 15 Destreza com ferramentas de ladrão). Esta porta leva ao quarto das crianças (área 20).",
+      "descricao_curta": "Corredor do sótão. Porta trancada ao norte.",
+      "saidas": {
+        "escada_abaixo_oeste": "area_11_balcao_3o_andar",
+        "escada_abaixo_sul": "area_15a_quarto_baba",
+        "norte_trancado": "area_20_quarto_criancas",
+        "leste": "area_17_quarto_sobressalente_1",
+        "sul": "area_19_quarto_sobressalente_2"
+      },
+      "itens": [
+        {"id": "cadeado_porta_20", "nome": "Cadeado da porta do quarto das crianças", "descricao": "Trancado por fora. Chave na área 8. DC 15 para arrombar."}
+      ],
+      "npcs": [],
+      "armadilhas": [],
+      "ambient": "vento_sotao.mp3",
+      "eventos": []
+    },
+
+    "area_17_quarto_sobressalente_1": {
+      "id": "area_17_quarto_sobressalente_1",
+      "nome": "Quarto Sobressalente — Sótão",
+      "andar": "sotao",
+      "descricao": "Cama estreita, mesinha de cabeceira, pequeno fogão de ferro, escrivaninha com banquinho, guarda-roupa vazio, cadeira de balanço. Na janela norte, uma boneca de sorriso fixo em vestido amarelo de renda, teias a cobrindo como véu de noiva.",
+      "descricao_curta": "Quarto sobressalente. Boneca na janela.",
+      "saidas": {"oeste": "area_16_corredor_sotao"},
+      "itens": [
+        {"id": "boneca_vestido_amarelo", "nome": "Boneca de sorriso fixo", "descricao": "Vestido amarelo de renda. Teias. Ela parece olhar para você onde quer que você vá."}
+      ],
+      "npcs": [],
+      "armadilhas": [],
+      "ambient": "vento_sotao.mp3",
+      "eventos": []
+    },
+
+    "area_18_deposito_restos_baba": {
+      "id": "area_18_deposito_restos_baba",
+      "nome": "Depósito — Restos da Babá",
+      "andar": "sotao",
+      "descricao": "Cheio de móveis velhos cobertos de lençóis brancos empoeirados — cadeiras, cabideiros, espelhos em pé, manequins. Perto de um fogão de ferro, sob um lençol, um baú de madeira destrancado: dentro, restos esqueletais da babá, enrolados em lençol manchado de sangue ressecado. Inspeção médica (DC 14 Medicina) confirma múltiplas facadas. Perturbá-los pode convocar o espectro da babá se ele ainda não foi derrotado na área 15.",
+      "descricao_curta": "Depósito com móveis encobertos. Baú com restos da babá.",
+      "saidas": {
+        "norte": "area_16_corredor_sotao",
+        "porta_secreta_leste": "area_21_escada_secreta_espiral"
+      },
+      "itens": [
+        {"id": "restos_baba", "nome": "Restos esqueletais da babá", "descricao": "Esfaqueada. Múltiplas feridas. Os Durst a mataram depois do nascimento de Walter."}
+      ],
+      "npcs": [],
+      "porta_secreta": {
+        "id": "porta_secreta_sotao_18",
+        "condicao": "aparece_apos_carta_strahd_ou_casinha_de_bonecas",
+        "dc_percepcao": "automatico_se_condicao_ativa",
+        "descricao": "Aparece na parede leste somente após condições específicas — carta de Strahd encontrada (área 9) ou porta secreta descoberta na casinha de bonecas (área 20)."
+      },
+      "armadilhas": [],
+      "ambient": "vento_sotao.mp3",
+      "eventos": []
+    },
+
+    "area_19_quarto_sobressalente_2": {
+      "id": "area_19_quarto_sobressalente_2",
+      "nome": "Quarto Sobressalente 2 — Sótão",
+      "andar": "sotao",
+      "descricao": "Cama estreita, mesinha, cadeira de balanço, guarda-roupa vazio, fogão de ferro. Teias em tudo. Nada aqui além de silêncio e pó.",
+      "descricao_curta": "Quarto sobressalente. Vazio. Teias.",
+      "saidas": {"norte": "area_16_corredor_sotao"},
+      "itens": [],
+      "npcs": [],
+      "armadilhas": [],
+      "ambient": "vento_sotao.mp3",
+      "eventos": []
+    },
+
+    "area_20_quarto_criancas": {
+      "id": "area_20_quarto_criancas",
+      "nome": "Quarto das Crianças — Rose e Thorn",
+      "andar": "sotao",
+      "descricao": "Janela com tijolos. Duas camas de criança com teias. Um baú de brinquedos com moinhos pintados. Uma casinha de bonecas — réplica perfeita desta casa maldita. No meio do chão, dois esqueletos pequenos usando roupas que você reconhece — as mesmas das crianças que você viu do lado de fora. O menor abraça uma boneca de pano. Se o baú ou a casinha for perturbada, os fantasmas de Rose e Thorn aparecem. A casinha, inspecionada (DC 15 Percepção), revela todas as portas secretas da casa — incluindo a escadaria espiral do sótão.",
+      "descricao_curta": "Quarto de Rose e Thorn. Esqueletos. Casinha de bonecas. Fantasmas ao perturbar.",
+      "saidas": {
+        "sul_trancado_por_fora": "area_16_corredor_sotao"
+      },
+      "itens": [
+        {"id": "esqueleto_rose", "nome": "Esqueletos de Rose Durst", "descricao": "Pequena. Morreu de fome. Pode ser levada ao caixão 23E para descanso eterno."},
+        {"id": "esqueleto_thorn", "nome": "Esqueleto de Thorn Durst", "descricao": "Abraça a boneca de pano. Pode ser levado ao caixão 23F."},
+        {"id": "boneca_pano_thorn", "nome": "Boneca de pano de Thorn"},
+        {
+          "id": "casinha_bonecas",
+          "nome": "Casinha de bonecas — réplica da Casa da Morte",
+          "descricao": "Réplica perfeita. DC 15 Percepção revela todas as portas secretas, incluindo a escadaria espiral no sótão.",
+          "efeito_ao_inspecionar": "revela_todas_portas_secretas_e_flag_dollhouse_secret_found_true"
+        }
+      ],
+      "npcs": [
+        {
+          "id": "rose_ghost",
+          "nome": "Fantasma de Rose Durst",
+          "status": "latente",
+          "trigger": "perturbacao_bau_ou_casinha",
+          "descricao": "Pequena, lawful good. Sabe que está morta. Morreu de fome trancada aqui. Medo de abandono — tenta possuir player se ele sair. Flaw de possessão: gosta de estar no comando, fica brava quando contrariada.",
+          "hp": 35,
+          "allowed_rooms": ["area_20_quarto_criancas"],
+          "pode_possuir": true
+        },
+        {
+          "id": "thorn_ghost",
+          "nome": "Fantasma de Thorn Durst",
+          "status": "latente",
+          "trigger": "perturbacao_bau_ou_casinha",
+          "descricao": "Pequeno, lawful good. Assustado com tudo. Flaw de possessão: chora e entra em desespero quando as coisas dão errado.",
+          "hp": 35,
+          "allowed_rooms": ["area_20_quarto_criancas"],
+          "pode_possuir": true
+        }
+      ],
+      "armadilhas": [],
+      "ambient": "choro_infantil_distante.mp3",
+      "eventos": [
+        {
+          "trigger": "restos_rose_no_caixao_23e",
+          "efeito": "rose_encontra_paz_flag_rose_laid_to_rest_true"
+        },
+        {
+          "trigger": "restos_thorn_no_caixao_23f",
+          "efeito": "thorn_encontra_paz_flag_thorn_laid_to_rest_true"
+        }
+      ]
+    },
+
+    "area_21_escada_secreta_espiral": {
+      "id": "area_21_escada_secreta_espiral",
+      "nome": "Escadaria Secreta Espiral — Sótão ao Dungeon",
+      "andar": "sotao",
+      "descricao": "Uma escadaria espiral de madeira que range, confinada em um poço de pedra de 1,5m de diâmetro. Desce 15 metros pelos andares da casa, passando pelos pavimentos inferiores até o dungeon. Teias grossas reduzem a visibilidade a 1,5m. O som de cantoria espectral chega de baixo.",
+      "descricao_curta": "Escadaria espiral secreta. Desce ao dungeon. Cantoria espectral.",
+      "condicao_existencia": "strahd_letter_found OU dollhouse_secret_found",
+      "saidas": {
+        "acima": "area_18_deposito_restos_baba",
+        "abaixo": "area_22_acesso_dungeon"
+      },
+      "itens": [],
+      "npcs": [],
+      "armadilhas": [],
+      "ambient": "canto_fantasma_distante.mp3",
+      "eventos": []
+    },
+
+    "area_22_acesso_dungeon": {
+      "id": "area_22_acesso_dungeon",
+      "nome": "Acesso ao Dungeon",
+      "andar": "dungeon",
+      "descricao": "A base da escadaria espiral. Um túnel estreito se estende para o sul antes de se bifurcar leste e oeste. Pisadas centenárias no chão de terra apontam em todas as direções. O canto fantasma ressoa de lugares que você não consegue identificar. Cheiro de terra úmida e algo podre.",
+      "descricao_curta": "Acesso ao dungeon. Túnel bifurca leste e oeste. Cantoria espectral.",
+      "saidas": {
+        "acima": "area_21_escada_secreta_espiral",
+        "sul_bifurcacao_oeste": "area_24_aposentos_iniciantes_culto",
+        "sul_bifurcacao_leste": "area_23_criptas_familia"
+      },
+      "itens": [],
+      "npcs": [],
+      "armadilhas": [],
+      "ambient": "dungeon_gotejamento_canto_distante.mp3",
+      "eventos": []
+    },
+
+    "area_23_criptas_familia": {
+      "id": "area_23_criptas_familia",
+      "nome": "Criptas da Família Durst",
+      "andar": "dungeon",
+      "descricao": "Várias criptas escavadas na terra ao longo do corredor. Cada uma selada com laje de pedra — requer DC 15 Força para remover (alavanca dá vantagem).",
+      "descricao_curta": "Criptas da família. Lajes de pedra.",
+      "saidas": {
+        "norte": "area_22_acesso_dungeon",
+        "sul": "area_27_refeitorio_dungeon",
+        "cripta_a": "area_23a_cripta_vazia",
+        "cripta_b": "area_23b_cripta_walter",
+        "cripta_c": "area_23c_cripta_gustav",
+        "cripta_d": "area_23d_cripta_elisabeth",
+        "cripta_e": "area_23e_cripta_rose",
+        "cripta_f": "area_23f_cripta_thorn"
+      },
+      "itens": [],
+      "npcs": [],
+      "armadilhas": [],
+      "ambient": "dungeon_gotejamento_silencio.mp3",
+      "eventos": []
+    },
+
+    "area_23a_cripta_vazia": {
+      "id": "area_23a_cripta_vazia",
+      "nome": "Cripta A — Vazia",
+      "andar": "dungeon",
+      "descricao": "Laje de pedra encostada na parede. Cripta vazia. Sem inscrição.",
+      "descricao_curta": "Cripta vazia. Sem inscrição.",
+      "saidas": {"saida": "area_23_criptas_familia"},
+      "itens": [],
+      "npcs": [],
+      "armadilhas": [],
+      "ambient": "dungeon_gotejamento_silencio.mp3",
+      "eventos": []
+    },
+
+    "area_23b_cripta_walter": {
+      "id": "area_23b_cripta_walter",
+      "nome": "Cripta B — Walter Durst",
+      "andar": "dungeon",
+      "descricao": "Laje com 'Walter Durst' gravado. Cripta vazia — o bebê nunca foi enterrado aqui.",
+      "descricao_curta": "Cripta de Walter Durst. Vazia.",
+      "saidas": {"saida": "area_23_criptas_familia"},
+      "itens": [],
+      "npcs": [],
+      "armadilhas": [],
+      "ambient": "dungeon_gotejamento_silencio.mp3",
+      "eventos": []
+    },
+
+    "area_23c_cripta_gustav": {
+      "id": "area_23c_cripta_gustav",
+      "nome": "Cripta C — Gustav Durst",
+      "andar": "dungeon",
+      "descricao": "Laje com 'Gustav Durst'. Câmara com caixão vazio sobre pedestal de pedra.",
+      "descricao_curta": "Cripta de Gustav. Caixão vazio.",
+      "saidas": {"saida": "area_23_criptas_familia"},
+      "itens": [],
+      "npcs": [],
+      "armadilhas": [],
+      "ambient": "dungeon_gotejamento_silencio.mp3",
+      "eventos": []
+    },
+
+    "area_23d_cripta_elisabeth": {
+      "id": "area_23d_cripta_elisabeth",
+      "nome": "Cripta D — Elisabeth Durst",
+      "andar": "dungeon",
+      "descricao": "Laje com 'Elisabeth Durst'. Caixão vazio no pedestal. Perturbar o caixão libera enxame de insetos (centopeias) da parede do fundo.",
+      "descricao_curta": "Cripta de Elisabeth. Caixão vazio. Enxame ao perturbar.",
+      "saidas": {"saida": "area_23_criptas_familia"},
+      "itens": [],
+      "npcs": [],
+      "armadilhas": [
+        {"id": "enxame_centopeias", "trigger": "perturbar_caixao", "dano": "enxame de insetos emerge", "status": "armado"}
+      ],
+      "ambient": "dungeon_gotejamento_silencio.mp3",
+      "eventos": []
+    },
+
+    "area_23e_cripta_rose": {
+      "id": "area_23e_cripta_rose",
+      "nome": "Cripta E — Rosavalda Durst",
+      "andar": "dungeon",
+      "descricao": "Laje com 'Rosavalda Durst'. Caixão vazio no pedestal. Se os restos de Rose forem colocados aqui, seu espírito encontra paz e desaparece para sempre.",
+      "descricao_curta": "Cripta de Rose. Caixão vazio. Repouso eterno aqui.",
+      "saidas": {"saida": "area_23_criptas_familia"},
+      "itens": [],
+      "npcs": [],
+      "armadilhas": [],
+      "ambient": "dungeon_gotejamento_silencio.mp3",
+      "eventos": [
+        {
+          "trigger": "restos_rose_colocados_no_caixao",
+          "efeito": "flag_rose_laid_to_rest_true — espírito de Rose desaparece. Player possuído por Rose é libertado."
+        }
+      ]
+    },
+
+    "area_23f_cripta_thorn": {
+      "id": "area_23f_cripta_thorn",
+      "nome": "Cripta F — Thornboldt Durst",
+      "andar": "dungeon",
+      "descricao": "Laje com 'Thornboldt Durst'. Caixão vazio no pedestal. Se os restos de Thorn forem colocados aqui, seu espírito encontra paz e desaparece para sempre.",
+      "descricao_curta": "Cripta de Thorn. Caixão vazio. Repouso eterno aqui.",
+      "saidas": {"saida": "area_23_criptas_familia"},
+      "itens": [],
+      "npcs": [],
+      "armadilhas": [],
+      "ambient": "dungeon_gotejamento_silencio.mp3",
+      "eventos": [
+        {
+          "trigger": "restos_thorn_colocados_no_caixao",
+          "efeito": "flag_thorn_laid_to_rest_true — espírito de Thorn desaparece. Player possuído por Thorn é libertado."
+        }
+      ]
+    },
+
+    "area_24_aposentos_iniciantes_culto": {
+      "id": "area_24_aposentos_iniciantes_culto",
+      "nome": "Aposentos dos Iniciantes do Culto",
+      "andar": "dungeon",
+      "descricao": "Mesa de madeira e quatro cadeiras a leste. A oeste, quatro alcôvas com palhas mofadas — camas dos iniciantes. Cheiro de suor e fanatismo velho.",
+      "descricao_curta": "Aposentos dos iniciantes. Mesa. Quatro palhas mofadas.",
+      "saidas": {
+        "leste": "area_22_acesso_dungeon",
+        "sul": "area_25_poco_quartos_cultistas"
+      },
+      "itens": [],
+      "npcs": [],
+      "armadilhas": [],
+      "ambient": "dungeon_gotejamento_canto_distante.mp3",
+      "eventos": []
+    },
+
+    "area_25_poco_quartos_cultistas": {
+      "id": "area_25_poco_quartos_cultistas",
+      "nome": "Poço e Aposentos dos Cultistas Seniores",
+      "andar": "dungeon",
+      "descricao": "Um poço de 1,2m de diâmetro com borda de pedra de 1m de altura desce 9m até uma cisterna. Balde e corda na roldana. Cinco quartos laterais serviram aos cultistas seniores — cada um com cama, colchão mofado e baú trancado (DC 15 Destreza para arrombar).",
+      "descricao_curta": "Poço. Cinco quartos de cultistas. Baús trancados.",
+      "saidas": {
+        "norte": "area_24_aposentos_iniciantes_culto",
+        "quarto_25a": "area_25a",
+        "quarto_25b": "area_25b",
+        "quarto_25c": "area_25c",
+        "quarto_25d": "area_25d",
+        "quarto_25e": "area_25e",
+        "sul": "area_26_poco_espigoes_oculto"
+      },
+      "itens": [],
+      "npcs": [],
+      "armadilhas": [],
+      "ambient": "dungeon_gotejamento_poco.mp3",
+      "eventos": []
+    },
+
+    "area_25a": {"id":"area_25a","nome":"Quarto 25A","andar":"dungeon","descricao":"Baú contém 11 po e 60 pp em bolsa de pele humana.","descricao_curta":"Quarto cultista. Bolsa sinistra com moedas.","saidas":{"saida":"area_25_poco_quartos_cultistas"},"itens":[{"id":"bolsa_pele_humana","nome":"Bolsa de pele humana com 11 gp e 60 sp","valor_gp":11}],"npcs":[],"armadilhas":[],"ambient":"dungeon_gotejamento_silencio.mp3","eventos":[]},
+
+    "area_25b": {"id":"area_25b","nome":"Quarto 25B","andar":"dungeon","descricao":"Baú com pano preto e três ágatas-musgosas.","descricao_curta":"Quarto cultista. Pedras preciosas.","saidas":{"saida":"area_25_poco_quartos_cultistas"},"itens":[{"id":"agatas_musgosas_3x","nome":"3x Ágata-musgosa","valor_gp":30,"descricao":"10 gp cada."}],"npcs":[],"armadilhas":[],"ambient":"dungeon_gotejamento_silencio.mp3","eventos":[]},
+
+    "area_25c": {"id":"area_25c","nome":"Quarto 25C","andar":"dungeon","descricao":"Baú com tapa-olho de couro negro com cornalina costurada.","descricao_curta":"Quarto cultista. Tapa-olho com pedra preciosa.","saidas":{"saida":"area_25_poco_quartos_cultistas"},"itens":[{"id":"tapa_olho_cornalina","nome":"Tapa-olho de couro negro com cornalina","valor_gp":50}],"npcs":[],"armadilhas":[],"ambient":"dungeon_gotejamento_silencio.mp3","eventos":[]},
+
+    "area_25d": {"id":"area_25d","nome":"Quarto 25D","andar":"dungeon","descricao":"Baú com escova de marfim de cerdas prateadas.","descricao_curta":"Quarto cultista. Escova de marfim.","saidas":{"saida":"area_25_poco_quartos_cultistas"},"itens":[{"id":"escova_marfim_prata","nome":"Escova de marfim com cerdas prateadas","valor_gp":25}],"npcs":[],"armadilhas":[],"ambient":"dungeon_gotejamento_silencio.mp3","eventos":[]},
+
+    "area_25e": {"id":"area_25e","nome":"Quarto 25E","andar":"dungeon","descricao":"Baú com espada curta prateada — a mais valiosa aqui.","descricao_curta":"Quarto cultista. Espada curta prateada.","saidas":{"saida":"area_25_poco_quartos_cultistas"},"itens":[{"id":"espada_curta_prateada","nome":"Espada curta prateada","valor_gp":110,"dano":"1d6 perfurante","propriedade":"prateada"}],"npcs":[],"armadilhas":[],"ambient":"dungeon_gotejamento_silencio.mp3","eventos":[]},
+
+    "area_26_poco_espigoes_oculto": {
+      "id": "area_26_poco_espigoes_oculto",
+      "nome": "Corredor — Poço com Espigões Oculto",
+      "andar": "dungeon",
+      "descricao": "O canto fantasma fica perceptivelmente mais alto rumo ao oeste. O corredor parece normal. Ausência de pegadas no chão (DC 17 Percepção). Buscando armadilhas, poço de 1,5m x 3m de profundidade oculto sob tábuas podres e fina camada de terra. Espigões de madeira afiados no fundo.",
+      "descricao_curta": "Corredor. Cantoria mais alta. Poço com espigões oculto.",
+      "saidas": {
+        "norte": "area_25_poco_quartos_cultistas",
+        "oeste": "area_29_encontro_fantasmas",
+        "leste": "area_27_refeitorio_dungeon"
+      },
+      "itens": [],
+      "npcs": [],
+      "armadilhas": [
+        {
+          "id": "poco_espigoes",
+          "nome": "Poço com Espigões Oculto",
+          "dc_percepcao": 17,
+          "status": "armado",
+          "dano": "1d6 contusão + 2d10 perfurante",
+          "descricao": "Cobre de tábuas podres + terra fina. Primeiro a pisar cai."
+        }
+      ],
+      "ambient": "dungeon_canto_fantasma_mais_alto.mp3",
+      "eventos": []
+    },
+
+    "area_27_refeitorio_dungeon": {
+      "id": "area_27_refeitorio_dungeon",
+      "nome": "Refeitório do Dungeon",
+      "andar": "dungeon",
+      "descricao": "Mesa de madeira simples com longos bancos. No chão de terra, ossos humanos mofados espalhados — restos dos banquetes vis do culto. Uma alcova escurecida na parede sul abriga algo.",
+      "descricao_curta": "Refeitório. Ossos humanos no chão. Alcova suspeita ao sul.",
+      "saidas": {
+        "norte": "area_23_criptas_familia",
+        "oeste": "area_26_poco_espigoes_oculto",
+        "sul_alcova": "area_28_despensa_dungeon",
+        "leste": "area_31_santuario_darklord"
+      },
+      "itens": [],
+      "npcs": [],
+      "armadilhas": [],
+      "ambient": "dungeon_canto_fantasma_distante.mp3",
+      "eventos": []
+    },
+
+    "area_28_despensa_dungeon": {
+      "id": "area_28_despensa_dungeon",
+      "nome": "Despensa do Dungeon — Grick",
+      "andar": "dungeon",
+      "descricao": "Alcova escurecida. Vazia exceto pela criatura que espreita aqui. O Grick desliza para atacar o primeiro que se aproximar a 1,5m. Passiva de Percepção abaixo de 12 é surpreendida.",
+      "descricao_curta": "Alcova escura. Grick à espreita.",
+      "saidas": {"norte": "area_27_refeitorio_dungeon"},
+      "itens": [],
+      "npcs": [
+        {
+          "id": "grick",
+          "nome": "Grick",
+          "status": "à espreita",
+          "trigger": "aproximacao_15m",
+          "hp": 27,
+          "ac": 14,
+          "allowed_rooms": ["area_28_despensa_dungeon"],
+          "loot_pos_morte": "nenhum"
+        }
+      ],
+      "armadilhas": [],
+      "ambient": "dungeon_gotejamento_silencio.mp3",
+      "eventos": []
+    },
+
+    "area_29_encontro_fantasmas": {
+      "id": "area_29_encontro_fantasmas",
+      "nome": "Cruzamento — Ghoul Encounter",
+      "andar": "dungeon",
+      "descricao": "Intersecção de quatro corredores. O canto fantasma é visivelmente mais alto ao norte. Quando um ou mais personagens atingem o ponto central, quatro ghoul (ex-cultistas) emergem do chão e atacam. Lutam até serem destruídos.",
+      "descricao_curta": "Cruzamento. Quatro ghouls emergem ao cruzar o centro.",
+      "saidas": {
+        "norte": "area_22_acesso_dungeon",
+        "sul": "area_35_relicario",
+        "leste": "area_26_poco_espigoes_oculto",
+        "oeste": "area_30_escada_descida"
+      },
+      "itens": [],
+      "npcs": [
+        {
+          "id": "ghouls_4x",
+          "nome": "4x Ghoul (ex-cultistas)",
+          "status": "subterrâneo",
+          "trigger": "player_no_centro_cruzamento",
+          "hp": 22,
+          "ac": 12,
+          "allowed_rooms": ["area_29_encontro_fantasmas"],
+          "loot_pos_morte": "nenhum — trapos podres"
+        }
+      ],
+      "armadilhas": [],
+      "ambient": "dungeon_canto_fantasma_mais_alto.mp3",
+      "eventos": []
+    },
+
+    "area_30_escada_descida": {
+      "id": "area_30_escada_descida",
+      "nome": "Escada para o Nível Inferior",
+      "andar": "dungeon",
+      "descricao": "Uma escadaria de 6 metros desce claramente em direção à origem da cantoria fantasma. O canto parece vir de algum lugar lá embaixo. O corredor além das escadas leva à câmara do relicário.",
+      "descricao_curta": "Escada desce. Cantoria mais forte abaixo.",
+      "saidas": {
+        "leste": "area_29_encontro_fantasmas",
+        "abaixo": "area_35_relicario"
+      },
+      "itens": [],
+      "npcs": [],
+      "armadilhas": [],
+      "ambient": "dungeon_canto_fantasma_intenso.mp3",
+      "eventos": []
+    },
+
+    "area_31_santuario_darklord": {
+      "id": "area_31_santuario_darklord",
+      "nome": "Santuário do Darklord",
+      "andar": "dungeon",
+      "descricao": "Paredes festonadas com esqueletos mofados em grilhões enferrujados. Na alcova sul, estátua de madeira pintada de homem gaunt e pálido em manto negro — a mão esquerda sobre a cabeça de um lobo, a direita segurando orbe de cristal cinza-esfumaçado. Chanting vem do oeste. Tocar a estátua ou pegar o orbe invoca cinco sombras (espíritos de cultistas) que atacam e perseguem além do cômodo.",
+      "descricao_curta": "Santuário de Strahd. Estátua. Orbe. Sombras ao tocar.",
+      "saidas": {
+        "oeste": "area_27_refeitorio_dungeon",
+        "norte": "area_29_encontro_fantasmas",
+        "porta_oculta_leste": "area_32_alcapao_oculto_dungeon"
+      },
+      "itens": [
+        {
+          "id": "orbe_cristal_cinza",
+          "nome": "Orbe de cristal cinza-esfumaçado",
+          "valor_gp": 25,
+          "descricao": "Pode ser usado como foco arcano. Não é mágico. Retirar da estátua invoca 5 sombras.",
+          "trigger_ao_pegar": "invoca_5_sombras"
+        }
+      ],
+      "npcs": [
+        {
+          "id": "strahd_espectral",
+          "nome": "Estátua de Strahd (Ilusão/Presença Espectral)",
+          "tipo": "objeto_animado_ilusao",
+          "descricao": "NÃO é o Strahd real. É uma efígie do culto. O Strahd REAL está no Castelo Ravenloft.",
+          "allowed_rooms": ["area_31_santuario_darklord"],
+          "nota_ia": "NUNCA mover Strahd real para esta sala. Esta é apenas sua efígie."
+        }
+      ],
+      "porta_oculta": {
+        "id": "porta_oculta_31_leste",
+        "dc_percepcao": 10,
+        "descricao": "Parede leste — porta de madeira podre coberta de argila. DC 10 para achar."
+      },
+      "armadilhas": [],
+      "ambient": "dungeon_canto_fantasma_oeste.mp3",
+      "eventos": []
+    },
+
+    "area_32_alcapao_oculto_dungeon": {
+      "id": "area_32_alcapao_oculto_dungeon",
+      "nome": "Escadaria Oculta — Alçapão para o Den",
+      "andar": "dungeon",
+      "descricao": "A escadaria sobe 3 metros até um patamar com teto de tábuas e um alçapão de madeira parafusado por este lado. Empurrado, revela a sala de jantar (área 3) acima. Uma vez aberto, permanece disponível como rota de entrada e saída do dungeon.",
+      "descricao_curta": "Escadaria oculta. Alçapão sobe para a sala de jantar.",
+      "saidas": {
+        "oeste": "area_31_santuario_darklord",
+        "acima_alcapao": "area_3_sala_jantar_terreo"
+      },
+      "itens": [],
+      "npcs": [],
+      "armadilhas": [],
+      "ambient": "dungeon_gotejamento_silencio.mp3",
+      "eventos": [
+        {"trigger": "alcapao_aberto", "efeito": "flag_trapdoor_32_opened_true — rota bidirecional ativa"}
+      ]
+    },
+
+    "area_33_sala_lideres_culto": {
+      "id": "area_33_sala_lideres_culto",
+      "nome": "Sala dos Líderes do Culto — Mimic",
+      "andar": "dungeon",
+      "descricao": "Lustre sobre mesa central. Duas cadeiras altas flanqueiam a mesa com jarro de argila vazio e dois cálices. Candelabros de ferro em dois cantos, velas derretidas faz muito. A porta no canto sudoeste É UM MIMIC disfarçado. Qualquer criatura que tocar a porta fica aderida e o mimic ataca. Também ataca se sofrer dano.",
+      "descricao_curta": "Sala dos líderes. Mimic disfarçado de porta sudoeste. CUIDADO.",
+      "saidas": {
+        "norte": "area_29_encontro_fantasmas",
+        "leste": "area_34_aposentos_lideres_culto",
+        "porta_mimic_sudoeste": "BLOQUEADO_MIMIC"
+      },
+      "itens": [],
+      "npcs": [
+        {
+          "id": "mimic_door",
+          "nome": "Mimic (disfarçado de porta)",
+          "status": "disfarçado",
+          "trigger": "tocar_porta_sudoeste_ou_causar_dano",
+          "hp": 58,
+          "ac": 12,
+          "allowed_rooms": ["area_33_sala_lideres_culto"]
+        }
+      ],
+      "armadilhas": [],
+      "ambient": "dungeon_gotejamento_canto_distante.mp3",
+      "eventos": []
+    },
+
+    "area_34_aposentos_lideres_culto": {
+      "id": "area_34_aposentos_lideres_culto",
+      "nome": "Aposentos dos Líderes do Culto — Gustav e Elisabeth Ghast",
+      "andar": "dungeon",
+      "descricao": "Cama grande com colchão podre. Armário com mantos velhos. Candelabros de ferro. Caixote aberto com 30 tochas e saco de 15 velas. Aos pés da cama, um baú de madeira destrancado. Dois ghasts (Gustav e Elisabeth Durst) escondem-se em cavidades na parede — marcadas X no chão. Emergem e atacam se alguém retirar itens do baú.",
+      "descricao_curta": "Aposentos dos líderes. Baú com tesouro. Dois ghasts nas paredes.",
+      "saidas": {
+        "oeste": "area_33_sala_lideres_culto"
+      },
+      "itens": [
+        {"id": "capa_protecao", "nome": "Capa de Proteção", "tipo": "item_magico", "bonus": "+1 CA e salvaguardas"},
+        {"id": "pocoes_cura_4x", "nome": "4x Poção de Cura", "tipo": "consumivel", "cura": "2d4+2"},
+        {"id": "cota_de_malha", "nome": "Cota de Malha", "ac": 13},
+        {"id": "kit_de_campo", "nome": "Kit de Campo (mess kit)"},
+        {"id": "frasco_fogo_alquimico", "nome": "Frasco de Fogo Alquímico", "dano": "1d4 fogo"},
+        {"id": "lanterna_holofote", "nome": "Lanterna de Holofote"},
+        {"id": "ferramentas_ladrao", "nome": "Ferramentas de Ladrão"},
+        {"id": "grimorio_amarelo", "nome": "Grimório de capa amarela", "descricao": "Contém magias: 1º nível — disfarçar a si mesmo, identificar, armadura de mago, míssil mágico, proteção contra o bem e o mal; 2º nível — visão no escuro, enfeitiçar pessoa, invisibilidade, arma mágica."}
+      ],
+      "npcs": [
+        {
+          "id": "ghasts_gustav_elisabeth",
+          "nome": "2x Ghast — Gustav e Elisabeth Durst",
+          "status": "ocultos_na_parede",
+          "trigger": "remover_item_do_bau",
+          "hp": 36,
+          "ac": 13,
+          "allowed_rooms": ["area_34_aposentos_lideres_culto"],
+          "loot_pos_morte": "mantos pretos esfarrapados"
+        }
+      ],
+      "armadilhas": [],
+      "ambient": "dungeon_gotejamento_silencio.mp3",
+      "eventos": []
+    },
+
+    "area_35_relicario": {
+      "id": "area_35_relicario",
+      "nome": "Relicário do Culto",
+      "andar": "dungeon",
+      "descricao": "O canto fantasma da câmara 38 preenche este cômodo — dúzias de vozes repetindo 'Ele é o Antigo. Ele é a Terra.' Treze nichos nas paredes guardam 'relíquias' do culto — objetos macabros sem valor real: mão mumificada de goblin, faca de osso humano, adaga com crânio de rato, orbe de olho de nothic, aspergilum de osso, manto de pele de ghoul, sapo dessecado em vara, saco de guano de morcego, dedo de bruxa, figurinha de múmia de madeira, pingente de diabo, cabeça murchada de halfling, caixinha com língua de lobo terrível.",
+      "descricao_curta": "Relicário. Treze nichos com relíquias macabras. Cantoria intensa.",
+      "saidas": {
+        "norte": "area_29_encontro_fantasmas",
+        "sul_rampa": "area_37_portcullis",
+        "norte_escada": "area_30_escada_descida",
+        "leste": "area_36_prisao"
+      },
+      "itens": [
+        {"id": "mao_goblin_mumificada","nome":"Mão mumificada de goblin","valor_gp":0},
+        {"id": "faca_osso_humano","nome":"Faca de osso humano","valor_gp":0},
+        {"id": "adaga_cranio_rato","nome":"Adaga com crânio de rato","valor_gp":0},
+        {"id": "orbe_olho_nothic","nome":"Orbe de olho de nothic (20cm)","valor_gp":0},
+        {"id": "aspergilum_osso","nome":"Aspergilum de osso","valor_gp":0},
+        {"id": "manto_pele_ghoul","nome":"Manto de pele de ghoul costurada","valor_gp":0},
+        {"id": "sapo_vara","nome":"Sapo dessecado em vara","valor_gp":0,"descricao":"Pode ser confundido com Cajado de Polimorfar"},
+        {"id": "saco_guano","nome":"Saco de guano de morcego","valor_gp":0},
+        {"id": "dedo_bruxa","nome":"Dedo de bruxa decepado","valor_gp":0},
+        {"id": "figurinha_mumia","nome":"Figurinha de múmia de madeira","valor_gp":0},
+        {"id": "pingente_diabo","nome":"Pingente de ferro com rosto de diabo","valor_gp":0},
+        {"id": "cabeca_halfling","nome":"Cabeça murchada e encolhida de halfling","valor_gp":0},
+        {"id": "caixinha_lingua_lobo","nome":"Caixinha com língua de lobo terrível dessecada","valor_gp":0}
+      ],
+      "npcs": [],
+      "armadilhas": [],
+      "ambient": "dungeon_canto_fantasma_intenso_he_is_the_ancient.mp3",
+      "eventos": []
+    },
+
+    "area_36_prisao": {
+      "id": "area_36_prisao",
+      "nome": "Prisão do Culto",
+      "andar": "dungeon",
+      "descricao": "Alcôvas com grilhões enferrujados nas paredes — os prisioneiros há muito se foram, os ossos estão no refeitório (área 27). Na alcova marcada X, um esqueleto humano com manto preto esfarrapado. No dedo, um anel de ouro. Este cultista questionou a devoção cega ao Strahd e foi executado.",
+      "descricao_curta": "Prisão. Grilhões vazios. Esqueleto com anel de ouro.",
+      "saidas": {
+        "oeste": "area_35_relicario",
+        "porta_secreta_sul": "area_38_camara_ritual"
+      },
+      "itens": [
+        {"id": "anel_ouro_prisioneiro", "nome": "Anel de ouro (esqueleto do cultista dissidente)", "valor_gp": 25}
+      ],
+      "npcs": [],
+      "porta_secreta": {
+        "id": "porta_secreta_prisao_sul",
+        "dc_percepcao": 15,
+        "descricao": "Parede sul. Puxa e abre para a câmara ritual (área 38)."
+      },
+      "armadilhas": [],
+      "ambient": "dungeon_canto_fantasma_intenso.mp3",
+      "eventos": []
+    },
+
+    "area_37_portcullis": {
+      "id": "area_37_portcullis",
+      "nome": "Portão de Ferro — Portcullis",
+      "andar": "dungeon",
+      "descricao": "Túnel bloqueado por grade de ferro enferrujada. Levantá-la requer DC 20 Força. Alternativamente, a roda de madeira embutida na parede leste da área 38 a controla — mas está do outro lado. O chão ao redor está submerso em 60cm de água turva.",
+      "descricao_curta": "Portão de ferro. DC 20 Força. Controle pela roda na área 38.",
+      "saidas": {
+        "norte": "area_35_relicario",
+        "sul_bloqueado": "area_38_camara_ritual"
+      },
+      "itens": [],
+      "npcs": [],
+      "armadilhas": [],
+      "ambient": "dungeon_agua_rasa_canto_fantasma.mp3",
+      "eventos": [
+        {
+          "trigger": "roda_area_38_girada",
+          "efeito": "flag_portcullis_37_raised_true — portcullis sobe"
+        }
+      ]
+    },
+
+    "area_38_camara_ritual": {
+      "id": "area_38_camara_ritual",
+      "nome": "Câmara Ritual — Lorghoth e O Sacrifício",
+      "andar": "dungeon",
+      "descricao": "Sala quadrada de 12m com paredes de alvenaria lisa. Pilares de pedra sustentam o teto de 5m. Água turva cobre a maior parte do chão (60cm de profundidade). Degraus levam a margens secas nas paredes e ao dais octagonal central (1,5m acima da água). Correntes enferrujadas com grilhões pendem do teto sobre o altar de pedra no dais — entalhado com ghouls em êxtase, manchado de sangue seco. Roda de madeira embutida na parede leste controla o portcullis (área 37). Na parede oeste, brecha leva a alcova natural — ali está a Shambling Mound Lorghoth, adormecida. DC 15 Natureza para identificar. Quando alguém sobe ao dais, 13 aparições negras surgem nas margens: 'Um deve morrer!' — repetidamente. Se o sacrifício for feito, o culto se satisfaz. Se recusado, o culto desperta Lorghoth.",
+      "descricao_curta": "Câmara ritual. Altar de sacrifício. Lorghoth adormecida. 'Um deve morrer!'",
+      "saidas": {
+        "norte_porta_secreta": "area_36_prisao",
+        "norte_portcullis": "area_37_portcullis"
+      },
+      "itens": [
+        {
+          "id": "roda_portcullis",
+          "nome": "Roda de madeira (controla portcullis)",
+          "interagivel": true,
+          "efeito": "flag_portcullis_37_raised_toggle"
+        },
+        {
+          "id": "altar_sacrificio",
+          "nome": "Altar de pedra — manchado de sangue",
+          "descricao": "Entalhos de ghouls em êxtase. Centro do ritual. Subir ao dais ativa as aparições."
+        }
+      ],
+      "npcs": [
+        {
+          "id": "shambling_mound_lorghoth",
+          "nome": "Shambling Mound — Lorghoth o Decadente",
+          "status": "adormecida",
+          "trigger": "player_recusa_sacrificio_ou_ataque_direto",
+          "hp": 136,
+          "ac": 15,
+          "allowed_rooms": ["area_38_camara_ritual", "dungeon_geral"],
+          "descricao": "Não sai do dungeon. Preenche completamente o túnel. Se morta, o canto para e as aparições somem para sempre."
+        }
+      ],
+      "armadilhas": [],
+      "ambient": "dungeon_canto_fantasma_maximo.mp3",
+      "eventos": [
+        {
+          "trigger": "player_sobe_ao_dais",
+          "efeito": "13 aparições surgem cantando 'Um deve morrer!' — DC 11 Religião ou Intuição para entender o que é exigido"
+        },
+        {
+          "trigger": "sacrificio_realizado",
+          "efeito": "flag_sacrifice_made_true — aparições somem, névoa recua, personagens avançam ao nível 3"
+        },
+        {
+          "trigger": "player_recusa_e_foge_ou_mata_lorghoth",
+          "efeito": "flag_cult_denied_true — casa ataca ao sair (janelas com tijolos, portas com laminas, fumaça venenosa, paredes podres com enxame de ratos) — personagens avançam ao nível 3 ao escapar"
+        }
+      ]
+    }
+  },
+
+  "ambient_catalog": {
+    "vento_exterior_uivante.mp3": "Vento forte, madeira rangendo, névoa exterior",
+    "madeira_rangendo.mp3": "Assoalho e paredes rangendo ao peso dos anos",
+    "lareira_morta_vento.mp3": "Corrente de ar fria por lareira apagada",
+    "ratos_paredes.mp3": "Movimento de roedores (ou algo maior) atrás das paredes",
+    "silencio_umido.mp3": "Silêncio pesado, umidade perceptível",
+    "silencio_sepulcral.mp3": "Silêncio total e opressivo",
+    "musica_caixa_musical_distorcida.mp3": "Melodia de caixinha de música distorcida e lenta",
+    "vento_janela.mp3": "Vento assobiando por frestas de janela",
+    "madeira_rangendo_vento_uivante.mp3": "Madeira rangendo + vento uivante mais intenso",
+    "choro_distante_bebe.mp3": "Choro de bebê muito distante, quase inaudível",
+    "choro_infantil_distante.mp3": "Choro de criança, mais próximo que o do bebê",
+    "vento_sotao.mp3": "Vento forte no sótão, madeira quase viva",
+    "vento_nevoa_barovia.mp3": "Vento exterior com névoa pesada de Baróvia",
+    "gotejamento_lento.mp3": "Gotejamento ritmado de água",
+    "canto_fantasma_distante.mp3": "Cantoria espectral muito distante — origem incerta",
+    "dungeon_gotejamento_silencio.mp3": "Gotejamento de água + silêncio subterrâneo",
+    "dungeon_gotejamento_canto_distante.mp3": "Gotejamento + canto fantasma distante",
+    "dungeon_gotejamento_poco.mp3": "Gotejamento + eco de poço",
+    "dungeon_canto_fantasma_distante.mp3": "Canto espectral distinto, origem sul/oeste",
+    "dungeon_canto_fantasma_mais_alto.mp3": "Canto espectral claramente mais próximo",
+    "dungeon_canto_fantasma_intenso.mp3": "Canto espectral alto — 'Ele é o Antigo. Ele é a Terra.'",
+    "dungeon_canto_fantasma_oeste.mp3": "Canto vindo claramente do oeste",
+    "dungeon_agua_rasa_canto_fantasma.mp3": "Água rasa + canto fantasma",
+    "dungeon_canto_fantasma_intenso_he_is_the_ancient.mp3": "Vozes múltiplas 'He is the Ancient. He is the Land.' — em loop",
+    "dungeon_canto_fantasma_maximo.mp3": "Canto ao máximo — câmara ritual ativa"
+  },
+
+  "loot_rules": {
+    "regra_geral": "Todo inimigo derrotado DEVE ter resolução de loot. Mesmo que seja 'trapos podres e nada mais', o Mestre NARRA o resultado.",
+    "itens_permanecem": "Itens no chão e corpos persistem na sala até evento narrativo justificar mudança.",
+    "corpo_persiste": "Corpo de inimigo morto fica registrado em events_log da sala. Se player retornar, corpo ainda está lá (a menos que tempo significativo tenha passado ou evento o removeu).",
+    "pilhagem_sempre_respondida": "Se player declarar vasculhar qualquer coisa, a IA DEVE responder o resultado. Proibido ignorar ação de pilhagem."
+  },
+
+  "navigation_rules": {
+    "saidas_sempre_anunciadas": "Toda vez que o player chega a uma sala, o Mestre DEVE mencionar as saídas disponíveis — mesmo que brevemente. Player cego precisa saber onde pode ir.",
+    "retorno_a_sala_visitada": "Ao retornar a sala já visitada, injetar events_log da sala: 'Você já esteve aqui. [Resumo de eventos anteriores]'",
+    "movimento_sem_evento": "Máximo 1 turno de viagem sem micro-evento (detalhe ambiental, som, rastro, presságio). Nunca 2+ turnos de 'andando... andando...' sem nada.",
+    "npc_allowed_rooms": "NPCs só podem ser narrados nas salas do seu allowed_rooms. Strahd REAL = castelo_ravenloft_externo APENAS."
+  }
+}
