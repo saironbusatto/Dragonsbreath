@@ -1,25 +1,25 @@
 # IA — LLM
-openai
+openai>=2.29.0
 
 # Web API
-fastapi
-uvicorn[standard]
+fastapi>=0.135.1
+uvicorn[standard]>=0.42.0
 
 # Audio (local CLI)
-google-cloud-texttospeech
-pygame
-SpeechRecognition
-pyaudio
-requests
-pyttsx3
+google-cloud-texttospeech>=2.34.0
+pygame>=2.6.1
+SpeechRecognition>=3.15.1
+pyaudio>=0.2.14
+requests>=2.32.5
+pyttsx3>=2.99
 
 # Auth / sessões persistentes
-bcrypt
-python-jose[cryptography]
+bcrypt>=5.0.0
+python-jose[cryptography]>=3.5.0
 
 # Utilitários
-python-dotenv
+python-dotenv>=1.2.2
 
 # Testes
-pytest
-pytest-cov
+pytest>=9.0.2
+pytest-cov>=7.0.0

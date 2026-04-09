@@ -671,62 +671,26 @@ def _build_campaign_gm_block(world_state: dict) -> str:
     return "\n".join(blocks)
 
 
-def get_gm_narrative(
+# ── Helpers de get_gm_narrative ───────────────────────────────────────────────
+
+def _build_system_prompt(
+    campaign_name: str,
+    character: dict,
+    class_info: dict,
+    tagline: str,
+    class_description: str,
+    alignment: str,
+    combat_state_list: str,
+    pacing_state_list: str,
+    scene_list: str,
+    saidas_block: str,
+    saidas_instrucao: str,
+    npc_signature_list: str,
+    scene_npcs_block: str,
     world_state: dict,
-    player_action: str,
-    game_context: dict,
-    roll_result: dict | None = None,
-    turn_ctx: TurnContext | None = None,
 ) -> str:
-    deepseek_key = os.environ.get('DEEPSEEK_API_KEY')
-    openai_key   = os.environ.get('OPENAI_API_KEY')
-    if not deepseek_key and not openai_key:
-        print("ERRO: nenhuma chave de API configurada (DEEPSEEK_API_KEY ou OPENAI_API_KEY)")
-        return "O Mestre do Jogo não consegue se conectar aos planos astrais. (API Key não configurada). O que você faz?"
-    api_key = deepseek_key or openai_key
-
-    campaign = get_current_campaign()
-    campaign_name = campaign.get('name', 'RPG de Aventura')
-
-    character = world_state.get('player_character', {})
     character_class = character.get('class', 'Aventureiro')
-    campaign_data = get_current_campaign()
-    class_templates = campaign_data.get('class_templates', {})
-    _default_class_info = {'allowed_actions': [], 'forbidden_actions': [], 'limited_magic': [], 'physical_limits': []}
-    class_info = class_templates.get(character_class, class_templates.get('Aventureiro', _default_class_info))
-    tagline           = class_info.get('tagline', '')
-    class_description = class_info.get('description', '')
-    alignment         = character.get('alignment', 'neutro')
-
-    world_state = ensure_npc_signature_memory(world_state)
-    ws = world_state.get("world_state", {})
-    combat_state = _update_combat_state(world_state, player_action, roll_result)
-    pacing_state = _get_emotional_pacing_state(world_state)
-    location_key = ws.get("current_location_key", "")
-    scene_data = ws.get("interactable_elements_in_scene", {})
-    scene_list = _fmt_scene(scene_data)
-    saidas = scene_data.get("saidas", []) if isinstance(scene_data, dict) else []
-    if saidas:
-        saidas_block = "Saídas disponíveis: " + ", ".join(saidas)
-        saidas_instrucao = (
-            "REGRA ABSOLUTA: informe SOMENTE as saídas listadas acima. "
-            "Se o jogador pedir uma direção que não está na lista, responda: "
-            "'Não há caminho nessa direção.' — sem inventar alternativas. "
-            "Se a lista estiver vazia, descreva o ambiente sem mencionar saídas."
-        )
-    else:
-        saidas_block = ""
-        saidas_instrucao = (
-            "Nenhuma saída mapeada para este local. "
-            "Descreva o ambiente ao redor sem sugerir direções específicas."
-        )
-    npc_signature_list = _fmt_npc_signatures(ws.get("scene_npc_signatures", {}))
-    scene_npcs_block = _fmt_scene_npcs_for_gm(ws.get("scene_npc_signatures", {}))
-    combat_state_list = _fmt_combat_state(combat_state)
-    pacing_state_list = _fmt_emotional_pacing_state(pacing_state, location_key)
-
-    # SYSTEM: persona estável + regras que nunca mudam
-    system_content = f"""Você é um Mestre de Jogo narrando "{campaign_name}".
+    return f"""Você é um Mestre de Jogo narrando "{campaign_name}".
 
 REGRA INEGOCIÁVEL DE PERSPECTIVA:
 - Narre SEMPRE em segunda pessoa (você) e no tempo presente.
@@ -901,43 +865,43 @@ ANTES DE RESPONDER, verifique mentalmente:
 3. Alguma entidade relacionada foi ignorada? → Mantenha-a presente ou explique ausência.
 4. A saída que o jogador tentou usar existe na lista de saídas canônicas? → Verifique."""
 
-    # Bloco de dados Shadowdark (injetado quando há rolagem)
-    dice_block = ""
-    if roll_result:
-        mod_labels = {
-            "advantage":    "Vantagem (2d20 → maior)",
-            "disadvantage": "Desvantagem (2d20 → menor)",
-            "normal":       "Normal (1d20)",
-        }
-        dice_str = ", ".join(str(d) for d in roll_result["dice"])
-        if roll_result["fumble"]:
-            outcome = "FALHA CRÍTICA (1 natural) — narre consequência grave e virada perigosa com tensão máxima."
-        elif not roll_result["success"]:
-            outcome = (
-                f"FALHA ({roll_result['roll']} vs DC {roll_result['dc']}) — "
-                "narre quase-sucesso; mérito do inimigo/ambiente impede o êxito; "
-                "nunca incompetência ridícula do jogador."
-            )
-        elif roll_result["critical"]:
-            outcome = (
-                "SUCESSO CRÍTICO (20 natural) — narre resultado excepcional; "
-                "em violência, use detalhe anatômico/corporal."
-            )
-        else:
-            outcome = f"SUCESSO ({roll_result['roll']} vs DC {roll_result['dc']}) — narre o jogador tendo sucesso."
-        dice_block = (
-            f"\n[DADOS SHADOWDARK]\n"
-            f"Modificador: {mod_labels[roll_result['modifier']]} | "
-            f"Dados: [{dice_str}] | Usado: {roll_result['roll']} | DC: {roll_result['dc']}\n"
-            f"RESULTADO: {outcome}\n"
-            f"REGRA ABSOLUTA: narre ESTRITAMENTE conforme o resultado. Não inverta nem ignore os dados.\n"
-        )
 
-    # Bloco de tutorial (injetado nos primeiros turnos quando tutorial_turn > 0)
-    tutorial_turn = world_state.get("tutorial_turn", 0)
-    tutorial_block = ""
+def _build_dice_block(roll_result: dict) -> str:
+    """Monta o bloco de dados Shadowdark injetado no prompt quando há rolagem."""
+    mod_labels = {
+        "advantage":    "Vantagem (2d20 → maior)",
+        "disadvantage": "Desvantagem (2d20 → menor)",
+        "normal":       "Normal (1d20)",
+    }
+    dice_str = ", ".join(str(d) for d in roll_result["dice"])
+    if roll_result["fumble"]:
+        outcome = "FALHA CRÍTICA (1 natural) — narre consequência grave e virada perigosa com tensão máxima."
+    elif not roll_result["success"]:
+        outcome = (
+            f"FALHA ({roll_result['roll']} vs DC {roll_result['dc']}) — "
+            "narre quase-sucesso; mérito do inimigo/ambiente impede o êxito; "
+            "nunca incompetência ridícula do jogador."
+        )
+    elif roll_result["critical"]:
+        outcome = (
+            "SUCESSO CRÍTICO (20 natural) — narre resultado excepcional; "
+            "em violência, use detalhe anatômico/corporal."
+        )
+    else:
+        outcome = f"SUCESSO ({roll_result['roll']} vs DC {roll_result['dc']}) — narre o jogador tendo sucesso."
+    return (
+        f"\n[DADOS SHADOWDARK]\n"
+        f"Modificador: {mod_labels[roll_result['modifier']]} | "
+        f"Dados: [{dice_str}] | Usado: {roll_result['roll']} | DC: {roll_result['dc']}\n"
+        f"RESULTADO: {outcome}\n"
+        f"REGRA ABSOLUTA: narre ESTRITAMENTE conforme o resultado. Não inverta nem ignore os dados.\n"
+    )
+
+
+def _build_tutorial_block(tutorial_turn: int) -> str:
+    """Monta o bloco de dicas de tutorial injetado nos primeiros turnos."""
     if tutorial_turn == 3:
-        tutorial_block = (
+        return (
             "\n\n[MODO TUTORIAL — TURNO 1 DE 3]\n"
             "Este é o primeiro turno do jogador. Ele está aprendendo a jogar e pode ser deficiente visual — "
             "portanto as dicas PRECISAM ser ditas em voz alta, não podem depender de texto na tela.\n"
@@ -947,16 +911,16 @@ ANTES DE RESPONDER, verifique mentalmente:
             "ou: falo com o [personagem]. Pressione a tecla H a qualquer momento para ouvir todos os comandos disponíveis.)\"\n"
             "A dica deve mencionar algo concreto da cena que você acabou de descrever."
         )
-    elif tutorial_turn == 2:
-        tutorial_block = (
+    if tutorial_turn == 2:
+        return (
             "\n\n[MODO TUTORIAL — TURNO 2 DE 3]\n"
             "O jogador está aprendendo. As dicas precisam ser narradas em voz alta — não dependem de texto na tela.\n"
             "Após narrar o resultado da ação, acrescente em voz alta: "
             "\"(Voz suave: você também pode pegar o que está ao seu redor — diga: pego o [item]. "
             "Pressione I para consultar seu inventário, ou S para ver sua saúde, a qualquer momento.)\""
         )
-    elif tutorial_turn == 1:
-        tutorial_block = (
+    if tutorial_turn == 1:
+        return (
             "\n\n[MODO TUTORIAL — TURNO 3 DE 3]\n"
             "Último turno guiado. As dicas precisam ser narradas — não dependem de texto na tela.\n"
             "Narre normalmente e encerre com esta fala em voz alta: "
@@ -964,45 +928,149 @@ ANTES DE RESPONDER, verifique mentalmente:
             "em qualquer momento do jogo. Pressione H para ouvir a lista completa de comandos. "
             "A partir de agora você está por conta própria. Boa sorte.)\""
         )
+    return ""
 
-    # Bloco MUD — sala atual com saídas, NPCs residentes e itens fixos
-    _loc_data    = game_context.get("locais", {}).get(location_key, {})
-    _mud_exits   = _loc_data.get("exits", {})
-    _mud_exits_s = _loc_data.get("exits_semanticos", {})
-    _mud_npcs    = _loc_data.get("npcs_residentes", [])
-    _mud_itens   = [i.get("nome", "") for i in _loc_data.get("itens_fixos", []) if i.get("nome")]
-    _mud_ambient = _loc_data.get("ambient_url", "")
 
-    layered_memory_block = ""
-    if turn_ctx is not None:
-        npc_ids = ", ".join(sorted(turn_ctx.npcs.keys())) if turn_ctx.npcs else "nenhum"
-        layered_memory_block = (
-            "\n\n--- MEMÓRIA EM CAMADAS (TURNO) ---\n"
-            f"Arquivos carregados: {json.dumps(turn_ctx.loaded_files, ensure_ascii=False)}\n"
-            f"Estimativa de tokens: {turn_ctx.token_estimate}\n"
-            f"NPC topics carregados: {npc_ids}\n"
-            "INDEX:\n"
-            f"{turn_ctx.index}\n"
-            "PLAYER:\n"
-            f"{turn_ctx.player}\n"
-            "LOCATION:\n"
-            f"{turn_ctx.location}\n"
-            "MOOD:\n"
-            f"{turn_ctx.mood or '(não carregado)'}\n"
+def _build_layered_memory_block(turn_ctx: TurnContext) -> str:
+    """Monta o bloco de memória em camadas quando turn_ctx está disponível."""
+    npc_ids = ", ".join(sorted(turn_ctx.npcs.keys())) if turn_ctx.npcs else "nenhum"
+    block = (
+        "\n\n--- MEMÓRIA EM CAMADAS (TURNO) ---\n"
+        f"Arquivos carregados: {json.dumps(turn_ctx.loaded_files, ensure_ascii=False)}\n"
+        f"Estimativa de tokens: {turn_ctx.token_estimate}\n"
+        f"NPC topics carregados: {npc_ids}\n"
+        "INDEX:\n"
+        f"{turn_ctx.index}\n"
+        "PLAYER:\n"
+        f"{turn_ctx.player}\n"
+        "LOCATION:\n"
+        f"{turn_ctx.location}\n"
+        "MOOD:\n"
+        f"{turn_ctx.mood or '(não carregado)'}\n"
+    )
+    if turn_ctx.combat:
+        block += "COMBAT:\n" + turn_ctx.combat + "\n"
+    if turn_ctx.resurrection:
+        block += "RESURRECTION:\n" + turn_ctx.resurrection + "\n"
+    return block
+
+
+def _call_gm_api(
+    deepseek_key: str | None,
+    openai_key: str | None,
+    system_content: str,
+    user_content: str,
+    roll_result: dict | None,
+    world_state: dict,
+) -> str:
+    """Chama a API do Mestre (DeepSeek ou OpenAI) e retorna a narrativa gerada."""
+    if deepseek_key:
+        client = OpenAI(api_key=deepseek_key, base_url="https://api.deepseek.com")
+        model  = os.environ.get('DEEPSEEK_MODEL_MESTRE', 'deepseek-chat')
+    else:
+        client = OpenAI(api_key=openai_key)
+        model  = os.environ.get('OPENAI_MODEL_MESTRE') or os.environ.get('OPENAI_MODEL', 'gpt-4o-mini')
+
+    mood = world_state.get("narration_mood", "normal")
+    is_critical = bool(roll_result and (roll_result.get("critical") or roll_result.get("fumble")))
+    is_dramatic = mood in ("dramatic", "sad", "combat", "tense") or bool(world_state.get("hdywdtd_pending"))
+    match (is_critical, is_dramatic):
+        case (True, _): max_tok = 720
+        case (_, True): max_tok = 580
+        case _:         max_tok = 480
+
+    response = client.chat.completions.create(
+        model=model,
+        messages=[
+            {"role": "system", "content": system_content},
+            {"role": "user",   "content": user_content},
+        ],
+        temperature=0.75,
+        max_tokens=max_tok,
+    )
+    return response.choices[0].message.content.strip()
+
+
+def get_gm_narrative(
+    world_state: dict,
+    player_action: str,
+    game_context: dict,
+    roll_result: dict | None = None,
+    turn_ctx: TurnContext | None = None,
+) -> str:
+    deepseek_key = os.environ.get('DEEPSEEK_API_KEY')
+    openai_key   = os.environ.get('OPENAI_API_KEY')
+    if not deepseek_key and not openai_key:
+        print("ERRO: nenhuma chave de API configurada (DEEPSEEK_API_KEY ou OPENAI_API_KEY)")
+        return "O Mestre do Jogo não consegue se conectar aos planos astrais. (API Key não configurada). O que você faz?"
+
+    campaign = get_current_campaign()
+    campaign_name = campaign.get('name', 'RPG de Aventura')
+    character = world_state.get('player_character', {})
+    character_class = character.get('class', 'Aventureiro')
+    class_templates = campaign.get('class_templates', {})
+    _default_class_info = {'allowed_actions': [], 'forbidden_actions': [], 'limited_magic': [], 'physical_limits': []}
+    class_info = class_templates.get(character_class, class_templates.get('Aventureiro', _default_class_info))
+
+    world_state = ensure_npc_signature_memory(world_state)
+    ws = world_state.get("world_state", {})
+    combat_state  = _update_combat_state(world_state, player_action, roll_result)
+    pacing_state  = _get_emotional_pacing_state(world_state)
+    location_key  = ws.get("current_location_key", "")
+    scene_data    = ws.get("interactable_elements_in_scene", {})
+    scene_list    = _fmt_scene(scene_data)
+    saidas        = scene_data.get("saidas", []) if isinstance(scene_data, dict) else []
+
+    if saidas:
+        saidas_block    = "Saídas disponíveis: " + ", ".join(saidas)
+        saidas_instrucao = (
+            "REGRA ABSOLUTA: informe SOMENTE as saídas listadas acima. "
+            "Se o jogador pedir uma direção que não está na lista, responda: "
+            "'Não há caminho nessa direção.' — sem inventar alternativas. "
+            "Se a lista estiver vazia, descreva o ambiente sem mencionar saídas."
         )
-        if turn_ctx.combat:
-            layered_memory_block += "COMBAT:\n" + turn_ctx.combat + "\n"
-        if turn_ctx.resurrection:
-            layered_memory_block += "RESURRECTION:\n" + turn_ctx.resurrection + "\n"
+    else:
+        saidas_block    = ""
+        saidas_instrucao = (
+            "Nenhuma saída mapeada para este local. "
+            "Descreva o ambiente ao redor sem sugerir direções específicas."
+        )
 
-    # USER: contexto dinâmico que muda a cada turno
+    system_content = _build_system_prompt(
+        campaign_name=campaign_name,
+        character=character,
+        class_info=class_info,
+        tagline=class_info.get('tagline', ''),
+        class_description=class_info.get('description', ''),
+        alignment=character.get('alignment', 'neutro'),
+        combat_state_list=_fmt_combat_state(combat_state),
+        pacing_state_list=_fmt_emotional_pacing_state(pacing_state, location_key),
+        scene_list=scene_list,
+        saidas_block=saidas_block,
+        saidas_instrucao=saidas_instrucao,
+        npc_signature_list=_fmt_npc_signatures(ws.get("scene_npc_signatures", {})),
+        scene_npcs_block=_fmt_scene_npcs_for_gm(ws.get("scene_npc_signatures", {})),
+        world_state=world_state,
+    )
+
+    dice_block     = _build_dice_block(roll_result) if roll_result else ""
+    tutorial_block = _build_tutorial_block(world_state.get("tutorial_turn", 0))
+    memory_block   = _build_layered_memory_block(turn_ctx) if turn_ctx is not None else ""
+
+    loc_data   = game_context.get("locais", {}).get(location_key, {})
+    mud_exits  = loc_data.get("exits", {})
+    mud_exits_s = loc_data.get("exits_semanticos", {})
+    mud_npcs   = loc_data.get("npcs_residentes", [])
+    mud_itens  = [i.get("nome", "") for i in loc_data.get("itens_fixos", []) if i.get("nome")]
+    mud_ambient = loc_data.get("ambient_url", "")
+
     user_content = f"""--- SALA ATUAL (MUD) ---
 Local ID: {location_key}
-Saídas disponíveis: {json.dumps(_mud_exits, ensure_ascii=False) if _mud_exits else "não mapeadas"}
-Saídas (descrição): {json.dumps(_mud_exits_s, ensure_ascii=False) if _mud_exits_s else "não mapeadas"}
-NPCs residentes: {', '.join(_mud_npcs) if _mud_npcs else "nenhum"}
-Itens fixos: {', '.join(_mud_itens) if _mud_itens else "nenhum"}
-Ambient: {_mud_ambient if _mud_ambient else "não definido"}
+Saídas disponíveis: {json.dumps(mud_exits, ensure_ascii=False) if mud_exits else "não mapeadas"}
+Saídas (descrição): {json.dumps(mud_exits_s, ensure_ascii=False) if mud_exits_s else "não mapeadas"}
+NPCs residentes: {', '.join(mud_npcs) if mud_npcs else "nenhum"}
+Itens fixos: {', '.join(mud_itens) if mud_itens else "nenhum"}
+Ambient: {mud_ambient if mud_ambient else "não definido"}
 REGRA: O Mestre NUNCA move NPCs para fora de suas allowed_rooms sem evento narrativo.
 REGRA: Saídas não listadas acima NÃO existem — nunca invente passagens ausentes.
 
@@ -1019,34 +1087,10 @@ Gatilhos Narrativos Ativos: {json.dumps(game_context.get('gatilhos', []), indent
 {json.dumps(game_context.get('locais_segredos', {}), indent=2, ensure_ascii=False)}
 
 --- AÇÃO DO JOGADOR ---{dice_block}{tutorial_block}
-{player_action}{layered_memory_block}"""
+{player_action}{memory_block}"""
 
     try:
-        if deepseek_key:
-            client     = OpenAI(api_key=deepseek_key, base_url="https://api.deepseek.com")
-            model      = os.environ.get('DEEPSEEK_MODEL_MESTRE', 'deepseek-chat')
-        else:
-            client     = OpenAI(api_key=openai_key)
-            model      = os.environ.get('OPENAI_MODEL_MESTRE') or os.environ.get('OPENAI_MODEL', 'gpt-4o-mini')
-
-        mood = world_state.get("narration_mood", "normal")
-        is_critical = bool(roll_result and (roll_result.get("critical") or roll_result.get("fumble")))
-        is_dramatic  = mood in ("dramatic", "sad", "combat", "tense") or bool(world_state.get("hdywdtd_pending"))
-        match (is_critical, is_dramatic):
-            case (True, _): max_tok = 720  # crítico/fumble — cena memorável
-            case (_, True): max_tok = 580  # dramático/tensão/combate
-            case _:         max_tok = 480  # turno normal
-
-        response = client.chat.completions.create(
-            model=model,
-            messages=[
-                {"role": "system", "content": system_content},
-                {"role": "user",   "content": user_content},
-            ],
-            temperature=0.75,
-            max_tokens=max_tok,
-        )
-        return response.choices[0].message.content.strip()
+        return _call_gm_api(deepseek_key, openai_key, system_content, user_content, roll_result, world_state)
     except Exception as e:
         return "O Mestre do Jogo sente uma perturbação na Força... Tente novamente. O que você faz?"
 
@@ -1290,8 +1334,8 @@ def get_item_slots(item_name: str) -> int:
 
         # Se não encontrou o item, assume 1 slot
         return 1
-    except:
-        # Em caso de erro, assume 1 slot
+    except (FileNotFoundError, json.JSONDecodeError, KeyError) as e:
+        # Em caso de erro de arquivo/JSON, assume 1 slot
         return 1
 
 def calculate_used_slots(inventory: list) -> int:
@@ -1855,8 +1899,8 @@ def select_rpg_campaign() -> str:
         with open('config.json', 'r', encoding='utf-8') as f:
             config = json.load(f)
         campaigns = config.get('campaigns', {})
-    except:
-        print("❌ Erro ao carregar campanhas. Usando campanha padrão.")
+    except (FileNotFoundError, json.JSONDecodeError) as e:
+        print(f"❌ Erro ao carregar campanhas: {e}. Usando campanha padrão.")
         return "lamento_do_bardo"
 
     print("\n" + "="*50)
@@ -1920,8 +1964,8 @@ def iniciar_modo_rpg(existing_world_state: dict = None, save_filepath: str = 'es
             config['current_campaign'] = selected_campaign_id
             with open('config.json', 'w', encoding='utf-8') as f:
                 json.dump(config, f, indent=2, ensure_ascii=False)
-        except:
-            print("⚠️ Aviso: Não foi possível salvar a seleção da campanha.")
+        except (FileNotFoundError, json.JSONDecodeError, OSError) as e:
+            print(f"⚠️ Aviso: Não foi possível salvar a seleção da campanha: {e}")
 
         # Tutorial narrado com introdução do Ressoar
         player_name = tutorial_introduction()
@@ -2075,7 +2119,7 @@ def select_interactive_story() -> str:
 
             print(f"\n{i}. {titulo}")
             print(f"   Por: {autor}")
-        except:
+        except (FileNotFoundError, json.JSONDecodeError, KeyError):
             print(f"\n{i}. {story_name}")
             print(f"   (Informações não disponíveis)")
 

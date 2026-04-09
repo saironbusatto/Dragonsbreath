@@ -1,4 +1,5 @@
 import os
+import logging
 import requests
 import pygame
 import speech_recognition as sr
@@ -6,6 +7,8 @@ import io
 from dotenv import load_dotenv
 import json
 import base64
+
+logger = logging.getLogger(__name__)
 
 # Tenta importar pyttsx3 para TTS gratuito local
 try:
@@ -44,8 +47,8 @@ def _ensure_mixer_initialized():
         try:
             pygame.mixer.init(frequency=22050, size=-16, channels=2, buffer=512)
             _mixer_initialized = True
-        except:
-            pass
+        except Exception as e:
+            logger.warning(f"Falha ao inicializar pygame mixer: {e}. Áudio desativado.")
 
 def text_to_speech_google_cloud(text, voice_type="master"):
     """TTS usando Google Cloud com arquivo JSON (mais barato: $4/1M chars vs $22/1M ElevenLabs)"""
@@ -58,12 +61,12 @@ def text_to_speech_google_cloud(text, voice_type="master"):
 
         # Se não estiver no .env, tenta usar o arquivo JSON local
         if not credentials_path:
-            json_file = 'dragonsbreath-55a792adeda7.json'
+            json_file = 'dragonsbreath-NOVO.json'
             if os.path.exists(json_file):
                 os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = json_file
-                print(f" Usando credenciais do arquivo: {json_file}")
+                logger.info(f"Usando credenciais do arquivo: {json_file}")
             else:
-                print(" Arquivo de credenciais Google Cloud não encontrado")
+                logger.error("Arquivo de credenciais Google Cloud não encontrado")
                 return False
 
         client = texttospeech.TextToSpeechClient()
@@ -93,7 +96,7 @@ def text_to_speech_google_cloud(text, voice_type="master"):
 
         synthesis_input = texttospeech.SynthesisInput(text=text)
 
-        print(f"🗣️ Sintetizando com Google Cloud TTS (pt-BR): {voice_name}")
+        logger.info(f"Sintetizando com Google Cloud TTS (pt-BR): {voice_name}")
         response = client.synthesize_speech(
             input=synthesis_input,
             voice=voice,
@@ -113,12 +116,11 @@ def text_to_speech_google_cloud(text, voice_type="master"):
                 pygame.mixer.music.stop()
                 raise
 
-        print(f"✅ Google Cloud TTS concluído ({len(response.audio_content)} bytes)")
+        logger.info(f"Google Cloud TTS concluído ({len(response.audio_content)} bytes)")
         return True
 
     except Exception as e:
-        print(f"⚠️ Google Cloud TTS error: {e}")
-        print("💡 Dica: Verifique se o arquivo dragonsbreath-55a792adeda7.json está presente")
+        logger.warning(f"Google Cloud TTS error: {e}. Verifique se dragonsbreath-NOVO.json está presente.")
         return False
 
 def text_to_speech_local(text, voice_type="master"):
@@ -151,7 +153,7 @@ def text_to_speech_local(text, voice_type="master"):
         engine.runAndWait()
         return True
     except Exception as e:
-        print(f"⚠️  Local TTS error: {e}")
+        logger.warning(f"Local TTS error: {e}")
         return False
 
 def text_to_speech_elevenlabs(text, voice_type="master"):
@@ -219,12 +221,12 @@ def text_to_speech_elevenlabs(text, voice_type="master"):
             return True
         else:
             if response.status_code == 401:
-                print("⚠️  ElevenLabs API quota exceeded")
+                logger.warning("ElevenLabs API quota exceeded")
             else:
-                print(f"⚠️  ElevenLabs API error - Status: {response.status_code}")
+                logger.warning(f"ElevenLabs API error - Status: {response.status_code}")
             return False
     except Exception as e:
-        print(f"⚠️  ElevenLabs TTS error: {e}")
+        logger.warning(f"ElevenLabs TTS error: {e}")
         return False
 
 def text_to_speech(text, voice_type="master"):
@@ -244,7 +246,7 @@ def text_to_speech(text, voice_type="master"):
     # Cache simples para evitar repetições
     cache_key = f"{text[:50]}_{voice_type}"
     if cache_key in _tts_cache:
-        print("🔄 Usando áudio em cache")
+        logger.debug("Usando áudio em cache")
         return
 
     # Tenta cada serviço na ordem de prioridade
@@ -252,27 +254,27 @@ def text_to_speech(text, voice_type="master"):
         success = False
 
         if service == "google_cloud":
-            print("🔊 Tentando Google Cloud TTS (mais barato)...")
+            logger.debug("Tentando Google Cloud TTS...")
             success = text_to_speech_google_cloud(text, voice_type)
 
         elif service == "local_pyttsx3":
-            print("🔊 Tentando TTS local (gratuito)...")
+            logger.debug("Tentando TTS local (gratuito)...")
             success = text_to_speech_local(text, voice_type)
 
         elif service == "elevenlabs":
-            print("🔊 Tentando ElevenLabs TTS (premium)...")
+            logger.debug("Tentando ElevenLabs TTS (premium)...")
             success = text_to_speech_elevenlabs(text, voice_type)
 
         if success:
             _last_tts_service = service
             _tts_cache[cache_key] = True
-            print(f"✅ TTS bem-sucedido com {service}")
+            logger.debug(f"TTS bem-sucedido com {service}")
             return
         else:
-            print(f"❌ Falha no {service}, tentando próximo...")
+            logger.warning(f"Falha no {service}, tentando próximo...")
 
     # Se todos falharam
-    print("⚠️  Todos os serviços de TTS falharam - continuando apenas com texto")
+    logger.error("Todos os serviços de TTS falharam - continuando apenas com texto")
     _last_tts_service = None
 
 def play_sfx(sfx_name):
@@ -302,9 +304,9 @@ def play_sfx(sfx_name):
         if sfx_path and os.path.exists(sfx_path):
             pygame.mixer.Sound(sfx_path).play()
         else:
-            print(f"⚠️  Sound file not found: {sfx_path}")
+            logger.warning(f"Sound file not found: {sfx_path}")
     except Exception as e:
-        print(f"⚠️  Sound effect error: {e}")
+        logger.warning(f"Sound effect error: {e}")
 
 # Mapeamento de palavras-chave para efeitos sonoros contextuais (deduplicado)
 SFX_KEYWORDS: dict[str, list[str]] = {
@@ -361,10 +363,10 @@ def play_ressoar_opening_sequence():
     2. Narração sobre o Ressoar
     3. Pausa antes das opções
     """
-    print("🎵 Iniciando sequência de abertura do Ressoar...")
+    logger.info("Iniciando sequência de abertura do Ressoar...")
 
     # 1. Som único de abertura - logo do Ressoar
-    print("🎶 Tocando som de abertura...")
+    logger.debug("Tocando som de abertura...")
     play_sfx("logo")
 
     # Aguarda o som terminar
@@ -384,12 +386,12 @@ Cada passo seu deixará uma marca. Cada feito seu será lembrado.
 
 O mundo é todo ouvidos. O que ele vai escutar de você?"""
 
-    print("🗣️ Narrando introdução do Ressoar...")
+    logger.debug("Narrando introdução do Ressoar...")
     narrator_speech(ressoar_intro)
 
     # 3. Pausa dramática antes das opções
     time.sleep(1)
-    print("✨ Sequência de abertura concluída. Apresentando opções...")
+    logger.info("Sequência de abertura concluída. Apresentando opções...")
 
 def play_mode_selection_audio():
     """
@@ -419,17 +421,17 @@ def speech_to_text():
                 return text
 
             except sr.WaitTimeoutError:
-                print("⚠️  Tempo limite para fala excedido. Use entrada de texto.")
+                logger.warning("Tempo limite para fala excedido.")
                 return input("Digite sua ação: > ").strip()
             except sr.UnknownValueError:
-                print("⚠️  Não consegui entender. Use entrada de texto.")
+                logger.warning("Não consegui entender a fala.")
                 return input("Digite sua ação: > ").strip()
             except KeyboardInterrupt:
-                print("⚠️  Interrompido. Use entrada de texto.")
+                logger.info("Reconhecimento de voz interrompido pelo usuário.")
                 return input("Digite sua ação: > ").strip()
             except Exception as e:
-                print(f"⚠️  Erro no reconhecimento de voz: {e}")
+                logger.warning(f"Erro no reconhecimento de voz: {e}")
                 return input("Digite sua ação: > ").strip()
     except Exception as e:
-        print(f"⚠️  Microfone não disponível: {e}")
+        logger.warning(f"Microfone não disponível: {e}")
         return input("Digite sua ação: > ").strip()

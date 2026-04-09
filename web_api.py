@@ -8,8 +8,11 @@ import re
 import base64
 import random
 import tempfile
+import logging
 import concurrent.futures
 import requests as http_requests
+
+logger = logging.getLogger(__name__)
 from fastapi import FastAPI, HTTPException, Depends
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
@@ -19,14 +22,22 @@ import os as _os
 
 load_dotenv()
 
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+    datefmt="%Y-%m-%dT%H:%M:%S",
+)
+
 # Google Cloud: suporte a credenciais via variável de ambiente (Railway/cloud)
 _google_creds_json = os.environ.get("GOOGLE_CREDENTIALS_JSON")
 if _google_creds_json:
     import tempfile
+    import atexit
     _tmp = tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False)
     _tmp.write(_google_creds_json)
     _tmp.close()
     os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = _tmp.name
+    atexit.register(os.unlink, _tmp.name)
 
 from campaign_manager import list_available_campaigns, switch_campaign
 from world_state_manager import create_initial_world_state, update_world_state
@@ -187,7 +198,7 @@ def _get_intro_music() -> str | None:
         url = _search_freesound(query, duration_filter="duration:[4 TO 20]")
         if url:
             _intro_music_url = url
-            print(f"[INTRO] Música de abertura: {url}")
+            logger.debug(f"[INTRO] Música de abertura: {url}")
             return url
     return None
 
@@ -219,7 +230,7 @@ def _get_menu_ambient() -> str | None:
         url = _search_freesound(query, duration_filter=None)
         if url:
             _menu_ambient_url = url
-            print(f"[MENU] Ambient: {url}")
+            logger.debug(f"[MENU] Ambient: {url}")
             return url
     _menu_ambient_url = ""
     return None
@@ -235,7 +246,7 @@ def _get_class_theme(class_id: str) -> str | None:
         url = _search_freesound(query, duration_filter=None)
         if url:
             _class_theme_cache[key] = url
-            print(f"[CLASS THEME] {class_id}: {url}")
+            logger.debug(f"[CLASS THEME] {class_id}: {url}")
             return url
     _class_theme_cache[key] = None
     return None
@@ -302,7 +313,7 @@ def _get_ambient_for_act(act: int) -> str | None:
     # Sem filtro de duração: previews Freesound sempre ~30s, perfeitos para loop
     url = _search_freesound(query, duration_filter=None) if query else None
     _ambient_cache[act] = url
-    print(f"[AMBIENT] Ato {act}: {url}")
+    logger.debug(f"[AMBIENT] Ato {act}: {url}")
     return url
 
 
@@ -348,7 +359,7 @@ def _select_trigger(world_state: dict, game_context: dict) -> tuple[str | None, 
             world_state["world_state"]["gatilhos_ativos"][location_key].append(proximo_id)
 
         world_state["rodadas_sem_gatilho"] = 0
-        print(f"[TRIGGER] {gatilho_id} → sfx={sfx_kw!r}")
+        logger.debug(f"[TRIGGER] {gatilho_id} → sfx={sfx_kw!r}")
         return descricao, _resolve_sfx_keyword(sfx_kw)
     else:
         world_state["rodadas_sem_gatilho"] = world_state.get("rodadas_sem_gatilho", 0) + 1
@@ -383,10 +394,10 @@ def _search_freesound(query_en: str, duration_filter: str | None = "duration:[1 
             url = results[0]["previews"].get("preview-hq-mp3") or results[0]["previews"].get("preview-lq-mp3")
             if url:
                 _sfx_cache[cache_key] = url
-                print(f"[SFX] Freesound: {query_en!r} → {url}")
+                logger.debug(f"[SFX] Freesound: {query_en!r} → {url}")
                 return url
     except Exception as e:
-        print(f"[SFX] Freesound erro: {e}")
+        logger.warning(f"[SFX] Freesound erro: {e}")
     return None
 
 def detect_sfx_list(narrative_text: str) -> list[dict]:
@@ -421,7 +432,7 @@ def detect_sfx_list(narrative_text: str) -> list[dict]:
         if url:
             results.append({"url": url, "position": round(pos / total_chars, 3)})
             used_positions.append(pos)
-            print(f"[SFX] '{kw_pt}' pos={pos}/{total_chars} → {url}")
+            logger.debug(f"[SFX] '{kw_pt}' pos={pos}/{total_chars} → {url}")
 
     return results
 
@@ -439,7 +450,7 @@ def synthesize_speech(text: str, voice_type: str = "master", speed: float = 1.0)
     """
     api_key = os.environ.get("OPENAI_API_KEY")
     if not api_key:
-        print("[TTS] OPENAI_API_KEY não configurada")
+        logger.error("[TTS] OPENAI_API_KEY não configurada")
         return None
 
     if voice_type == "narrator":
@@ -448,7 +459,7 @@ def synthesize_speech(text: str, voice_type: str = "master", speed: float = 1.0)
         voice = os.getenv("OPENAI_TTS_VOICE_MASTER", "fable")
 
     model = os.getenv("OPENAI_TTS_MODEL", "tts-1")
-    print(f"[TTS] Sintetizando com voz={voice} modelo={model} speed={speed}, texto={text[:60]!r}...")
+    logger.debug(f"[TTS] Sintetizando com voz={voice} modelo={model} speed={speed}, texto={text[:60]!r}...")
 
     try:
         from openai import OpenAI as _OpenAI
@@ -461,10 +472,10 @@ def synthesize_speech(text: str, voice_type: str = "master", speed: float = 1.0)
             speed=speed,
         )
         audio_bytes = response.content
-        print(f"[TTS] OK — {len(audio_bytes)} bytes")
+        logger.debug(f"[TTS] OK — {len(audio_bytes)} bytes")
         return audio_bytes
     except Exception as e:
-        print(f"[TTS] ERRO: {e}")
+        logger.error(f"[TTS] ERRO: {e}")
         return None
 
 
@@ -613,10 +624,10 @@ def transcribe_audio(req: TranscribeRequest):
             )
         text = result.text.strip()
         provider = "Groq" if groq_key else "OpenAI"
-        print(f"[TRANSCRIBE/{provider}] {text!r}")
+        logger.debug(f"[TRANSCRIBE/{provider}] {text!r}")
         return {"text": text}
     except Exception as e:
-        print(f"[TRANSCRIBE] ERRO: {e}")
+        logger.error(f"[TRANSCRIBE] ERRO: {e}")
         raise HTTPException(500, f"Erro na transcrição: {e}")
     finally:
         if tmp_path:
@@ -839,7 +850,7 @@ def take_action(req: ActionRequest):
     # HUD Narrativo — Agente "Olhos do Jogador" (não avança o tempo do jogo)
     if is_inspection_action(action):
         narrative = get_player_eyes_response(action, world_state)
-        print(f"[OLHOS] {narrative[:80]!r}...")
+        logger.debug(f"[OLHOS] {narrative[:80]!r}...")
         return {
             "narrative": narrative,
             "audio": to_audio_response(narrative, "narrator"),
@@ -859,7 +870,7 @@ def take_action(req: ActionRequest):
     roll_result = resolve_action_roll(action, character, world_state)
     if roll_result:
         mod_pt = {"advantage": "Vantagem", "disadvantage": "Desvantagem", "normal": "Normal"}[roll_result["modifier"]]
-        print(f"[DADOS] {mod_pt} | {roll_result['dice']} → {roll_result['roll']} vs DC {roll_result['dc']} | {'SUCESSO' if roll_result['success'] else 'FALHA'}{'(CRÍTICO)' if roll_result['critical'] else ''}{'(FUMBLE)' if roll_result['fumble'] else ''}")
+        logger.debug(f"[DADOS] {mod_pt} | {roll_result['dice']} → {roll_result['roll']} vs DC {roll_result['dc']} | {'SUCESSO' if roll_result['success'] else 'FALHA'}{'(CRÍTICO)' if roll_result['critical'] else ''}{'(FUMBLE)' if roll_result['fumble'] else ''}")
 
     # Seleciona gatilho narrativo e injeta na ação
     trigger_desc, trigger_sfx_url = _select_trigger(world_state, game_context)
@@ -937,7 +948,7 @@ def take_action(req: ActionRequest):
                 world_state=world_state,
             )
         except Exception as _e:
-            print(f"[SAVE] Auto-save falhou: {_e}")
+            logger.error(f"[SAVE] Auto-save falhou: {_e}")
 
     new_act = world_state.get("player_character", {}).get("current_act", 1)
     ambient_url = _get_ambient_for_act(new_act) if new_act != current_act else None

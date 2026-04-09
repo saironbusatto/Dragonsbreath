@@ -2,11 +2,14 @@
 auth.py — Verificação de tokens Clerk via JWKS (RS256)
 Sem bcrypt, sem secret key local: a Clerk assina, nós verificamos.
 """
+import logging
 import os
 import requests as _requests
 from fastapi import Depends, HTTPException
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jose import JWTError, jwt
+
+logger = logging.getLogger(__name__)
 
 CLERK_FRONTEND_API = os.environ.get(
     "CLERK_FRONTEND_API",
@@ -29,9 +32,9 @@ def _get_jwks() -> dict:
             )
             resp.raise_for_status()
             _jwks_cache = resp.json()
-            print(f"[AUTH] JWKS carregado do Clerk ({len(_jwks_cache.get('keys', []))} chave(s))")
+            logger.info(f"JWKS carregado do Clerk ({len(_jwks_cache.get('keys', []))} chave(s))")
         except Exception as e:
-            print(f"[AUTH] Falha ao carregar JWKS: {e}")
+            logger.error(f"Falha ao carregar JWKS: {e}")
             _jwks_cache = {"keys": []}
     return _jwks_cache
 
@@ -50,7 +53,7 @@ def _verify_clerk_token(token: str) -> dict | None:
         )
         return claims
     except JWTError as e:
-        print(f"[AUTH] Token inválido: {e}")
+        logger.warning(f"Token inválido: {e}")
         return None
 
 
