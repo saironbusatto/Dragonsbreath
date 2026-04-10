@@ -1282,7 +1282,10 @@ def bootstrap_location_triggers(world_state: dict, locais_definidos: dict) -> bo
         return False
 
     gatilhos_local = locais_definidos.get(location_key, {}).get("gatilhos", {})
-    gatilhos_ativos[location_key] = list(gatilhos_local.keys())
+    # Exclui da fila inicial triggers que já são "proximo" de outro — eles serão
+    # adicionados dinamicamente quando o trigger pai disparar, evitando dupla inserção.
+    proximos = {g.get("proximo") for g in gatilhos_local.values() if g.get("proximo")}
+    gatilhos_ativos[location_key] = [k for k in gatilhos_local if k not in proximos]
     gatilhos_usados.setdefault(location_key, [])
     return bool(gatilhos_local)
 

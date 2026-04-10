@@ -367,10 +367,12 @@
       "descricao_publica": "Uma entrada sombria com piso de pedra úmida. Cabideiro de madeira escura à esquerda, guarda-chuvas de mesário pendurados. Névoa rasteja pelas frestas da porta. A casa estranha pesa no ar.",
       "ato_aparicao": 1,
       "exits": {
+        "sul": "death_house_exterior",
         "norte": "area_1b_vestiario",
         "leste": "area_2a_corredor_principal"
       },
       "exits_semanticos": {
+        "sul": "Porta de entrada — pesada, de carvalho escuro. Trancada ao entrar, mas cede após a catástrofe do porão.",
         "norte": "Porta estreita — cheiro forte de mofo e roupa úmida.",
         "leste": "Corredor largo para o interior da casa — assoalho range, candelabros apagados ao longe."
       },

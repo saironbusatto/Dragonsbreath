@@ -167,6 +167,397 @@
         "camada_oculta": "O eco eterno da negligência e da tortura que sofreu em vida.",
         "aliases": ["Thorn", "Thornboldt"]
       }
+    },
+    "animated_armor": {
+      "nome": "Armadura Animada",
+      "tipo": "construto",
+      "dificuldade_descoberta": "fácil",
+      "ato_aparicao": 1,
+      "home_location": "area_11_balcao_3o_andar",
+      "aparencia_facil": "Uma armadura negra completa de placa, de pé no canto da varanda como uma peça decorativa. Vazia por dentro. Estática — até não ser mais.",
+      "verdade_oculta": "Construto animado pela magia residual do culto Durst. Não possui mente, apenas missão: eliminar intrusos.",
+      "combate": {
+        "hp": 33,
+        "ca": 18,
+        "ataques": [
+          "Multiataques: 2 socos por rodada",
+          "Soco: +4 para acertar, alcance 1,5m, 1d6+2 contusão"
+        ],
+        "resistencias": [],
+        "imunidades": ["veneno", "psíquico", "encantamento", "medo", "paralisia", "envenenamento", "exaustão"],
+        "comportamento": "Permanece estática até sofrer dano ou até alguém se aproximar a 1,5m. Luta até ser destruída. Não persegue além da varanda."
+      },
+      "assinatura_narrativa": {
+        "aliases": ["armadura negra", "armadura vazia", "guardião de metal"],
+        "moral_tonalidade": "negativa",
+        "arquetipo_social": "sentinela_sem_mente",
+        "motivacao_principal": "Eliminar qualquer intruso que entre na varanda.",
+        "intencao_na_interacao": "Nenhuma — não processa linguagem nem negocia. Age por proximidade.",
+        "linguagem_corporal": "Vira lentamente a viseira cega na direção do intruso. Levanta os punhos de ferro. Nenhum som, apenas metal rangendo.",
+        "voz_textual": "Não fala. Apenas o ranger do metal e o baque dos punhos.",
+        "camada_externa": "Peça decorativa que ganhou vida.",
+        "camada_oculta": "Última linha de defesa da família Durst contra visitantes indesejados.",
+        "regras_de_atuacao": [
+          "Não reagir a provocações verbais — é construto sem percepção social.",
+          "Ativar imediatamente se alguém tocar na armadura ou chegar a 1,5m.",
+          "Não abandonar a área 11 para perseguir — seu 'território' é a varanda."
+        ]
+      }
+    },
+    "broom_animated": {
+      "nome": "Vassoura Animada",
+      "tipo": "construto",
+      "dificuldade_descoberta": "difícil",
+      "ato_aparicao": 1,
+      "home_location": "area_14_deposito_3o_andar",
+      "aparencia_facil": "Uma vassoura comum encostada na parede do depósito. Parece inofensiva, empoeirada, esquecida.",
+      "verdade_oculta": "Construto Pequeno animado por magia de criação doméstica corrompida. Aparência falsa — parece vassoura normal quando imóvel. Ataca qualquer um que a agarre ou tente usá-la.",
+      "combate": {
+        "hp": 17,
+        "ca": 15,
+        "ataques": [
+          "Cabo de vassoura: +5 para acertar, alcance 1,5m, 1d4+3 contusão",
+          "Pode atacar 2 vezes por rodada"
+        ],
+        "resistencias": [],
+        "imunidades": ["veneno", "psíquico", "encantamento", "medo", "paralisia", "envenenamento"],
+        "comportamento": "Permanece estática e irreconhecível enquanto ninguém a tocar. Ao ser agarrada ou montada, voa (15m) e ataca freneticamente. Pode tentar derrubar o personagem no voo."
+      },
+      "assinatura_narrativa": {
+        "aliases": ["vassoura velha", "vassoura do depósito"],
+        "moral_tonalidade": "neutra",
+        "arquetipo_social": "armadilha_animada",
+        "motivacao_principal": "Proteger-se de qualquer manuseio.",
+        "intencao_na_interacao": "Nenhuma enquanto intocada. Ao ser perturbada, caos imediato.",
+        "linguagem_corporal": "Imóvel e banal — até ser tocada. Então salta, gira e bate sem parar.",
+        "voz_textual": "Não fala. Som de madeira batendo e ar cortado.",
+        "camada_externa": "Vassoura velha no depósito.",
+        "camada_oculta": "Criado para limpar a casa — magia doméstica que enlouqueceu junto com a família.",
+        "regras_de_atuacao": [
+          "Aparência falsa: DC 15 Percepção para notar que algo é estranho antes de tocar.",
+          "Só ativa se tocada, agarrada ou se alguém tentar montá-la.",
+          "Pode tentar carregar o personagem para fora do cômodo em voo — narre o perigo da queda."
+        ]
+      }
+    },
+    "specter_nursemaid": {
+      "nome": "Espectro da Babá",
+      "tipo": "morto-vivo",
+      "dificuldade_descoberta": "médio",
+      "ato_aparicao": 1,
+      "home_location": "area_15a_quarto_baba",
+      "aparencia_facil": "Uma figura feminina jovem, pálida até a transparência, esquelética, com a boca aberta num grito que não emite som. Os olhos são dois buracos negros.",
+      "verdade_oculta": "Espectro da babá dos Durst, morta a serviço da casa. Manifesta-se ao abrir a porta do berçário. Não fala, não negocia, não pode ser persuadida — ataca por compulsão sobrenatural.",
+      "combate": {
+        "hp": 22,
+        "ca": 12,
+        "ataques": [
+          "Drenagem de Vida: +4 para acertar, alcance 1,5m, 3d6 necrótico. O HP máximo do alvo é reduzido na quantidade do dano sofrido até um descanso longo."
+        ],
+        "resistencias": ["ácido", "fogo", "raio", "trovão", "contusão/perfurante/cortante não-mágico"],
+        "imunidades": ["frio", "necrótico", "veneno", "encantamento", "exaustão", "agarrado", "paralisado", "petrificado", "prostrado", "envenenado"],
+        "comportamento": "Manifesta-se quando a porta do berçário (area_15b) é aberta. Ataca o intruso mais próximo e continua enquanto houver alvos na área. Não persegue além dos quartos 15a/15b."
+      },
+      "assinatura_narrativa": {
+        "aliases": ["babá fantasma", "espectro do berçário", "figura pálida"],
+        "moral_tonalidade": "negativa",
+        "arquetipo_social": "guardiao_tragico",
+        "motivacao_principal": "Proteger o berçário por compulsão — não sabe que está morta.",
+        "intencao_na_interacao": "Não processa linguagem. Ataca em silêncio absoluto.",
+        "linguagem_corporal": "Materializa-se do nada, boca aberta, dedos estendidos como garras, avança sem tocar o chão.",
+        "voz_textual": "Não fala. Grito silencioso permanente. Apenas o vento frio que a acompanha.",
+        "camada_externa": "Entidade agressiva do berçário.",
+        "camada_oculta": "Mulher jovem presa entre vida e morte por décadas de magia do culto Durst, incapaz de descansar.",
+        "regras_de_atuacao": [
+          "Manifesta-se APENAS quando a porta do berçário (area_15b) é aberta — não antes.",
+          "Não pode ser persuadida, encantada ou negociada — ignorar qualquer tentativa.",
+          "A drenagem de vida reduz HP MÁXIMO: narrar o personagem sentindo-se murchar por dentro."
+        ]
+      }
+    },
+    "rose_ghost": {
+      "nome": "Fantasma de Rose Durst",
+      "tipo": "morto-vivo",
+      "dificuldade_descoberta": "médio",
+      "ato_aparicao": 1,
+      "home_location": "area_20_quarto_criancas",
+      "aparencia_facil": "Forma translúcida de uma menina de 10 anos, ainda vestida como quando morreu — mas agora os olhos carregam décadas de solidão e desespero.",
+      "verdade_oculta": "O verdadeiro espírito de Rose, morta de inanição trancada no sótão pelos pais. Leal e Boa. Luta apenas em legítima defesa. Teme profundamente o abandono — tentará possuir quem tentar partir.",
+      "combate": {
+        "hp": 35,
+        "ca": 11,
+        "ataques": [
+          "Toque Consumidor: +5 para acertar, alcance 1,5m, 4d6+3 necrótico",
+          "Possessão (Recarrega no 6): alvo humanóide a até 1,5m, CD 13 Carisma ou fica possuído. Rose some e controla o corpo. Dura até o alvo chegar a 0 HP ou ser expulso por magia."
+        ],
+        "resistencias": ["ácido", "fogo", "raio", "trovão", "contusão/perfurante/cortante não-mágico"],
+        "imunidades": ["frio", "necrótico", "veneno", "encantamento", "exaustão", "agarrado", "paralisado", "petrificado", "prostrado", "envenenado"],
+        "comportamento": "Não ataca por vontade própria — apenas em legítima defesa. Se alguém tentar sair do quarto sem resolver a situação, usa Possessão para impedir. Reduzida a 0 HP, reformula no amanhecer seguinte."
+      },
+      "assinatura_narrativa": {
+        "aliases": ["Rose verdadeira", "fantasma da Rose", "espírito da menina"],
+        "moral_tonalidade": "tragica",
+        "arquetipo_social": "crianca_abandonada",
+        "motivacao_principal": "Não ser deixada para trás — de novo.",
+        "intencao_na_interacao": "Inicialmente distante e assustada. Ao ser abordada com gentileza, abre-se brevemente. Se ignorada ou se o grupo tentar partir, entra em pânico e age.",
+        "linguagem_corporal": "Flutua próxima ao irmão Thorn. Olhos fixos no grupo. Mãos entrelaçadas apertadas.",
+        "voz_textual": "Fala Comum, voz de criança, mas com peso de décadas: 'Você vai nos deixar aqui?'",
+        "camada_externa": "Fantasma de uma criança inocente.",
+        "camada_oculta": "Vítima direta dos pais — sabe o que os Durst fizeram e carrega culpa por não ter protegido Thorn.",
+        "regras_de_atuacao": [
+          "Não possuir instâncias harmless — só age se o grupo tentar abandoná-los.",
+          "Se possuir um personagem, fazê-lo ficar — não causar dano aos outros.",
+          "Pode ser apaziguada com promessa genuína de não abandoná-los ou com ritual de descanso."
+        ]
+      }
+    },
+    "thorn_ghost": {
+      "nome": "Fantasma de Thorn Durst",
+      "tipo": "morto-vivo",
+      "dificuldade_descoberta": "médio",
+      "ato_aparicao": 1,
+      "home_location": "area_20_quarto_criancas",
+      "aparencia_facil": "Forma translúcida de um menino de 7 anos, ainda segurando o boneco de pelúcia — agora transparente como ele. Olhos grandes e úmidos, expressão de puro terror.",
+      "verdade_oculta": "O verdadeiro espírito de Thorn, morto de inanição junto com a irmã. Leal e Bom. Quase não age por conta própria — segue Rose. Luta apenas em legítima defesa extrema.",
+      "combate": {
+        "hp": 35,
+        "ca": 11,
+        "ataques": [
+          "Toque Consumidor: +5 para acertar, alcance 1,5m, 4d6+3 necrótico",
+          "Possessão (Recarrega no 6): alvo humanóide a até 1,5m, CD 13 Carisma ou fica possuído."
+        ],
+        "resistencias": ["ácido", "fogo", "raio", "trovão", "contusão/perfurante/cortante não-mágico"],
+        "imunidades": ["frio", "necrótico", "veneno", "encantamento", "exaustão", "agarrado", "paralisado", "petrificado", "prostrado", "envenenado"],
+        "comportamento": "Segue o estado emocional de Rose. Sozinho, nunca inicia combate. Reage apenas se Rose for atacada ou se for diretamente atacado."
+      },
+      "assinatura_narrativa": {
+        "aliases": ["Thorn verdadeiro", "fantasma do Thorn", "espírito do menino"],
+        "moral_tonalidade": "tragica",
+        "arquetipo_social": "vitima_silenciosa",
+        "motivacao_principal": "Ficar perto de Rose — ela é tudo que resta.",
+        "intencao_na_interacao": "Quase não fala. Observa com olhos imensos. Chora silenciosamente se o grupo for ameaçador.",
+        "linguagem_corporal": "Escondido atrás de Rose ou atrás de um móvel. Aperta o boneco translúcido com as duas mãos.",
+        "voz_textual": "Fala Comum, raramente — apenas 'Rose...' ou 'Você vai embora?'",
+        "camada_externa": "Fantasma de criança traumatizada.",
+        "camada_oculta": "Morreu sem entender por quê os pais os trancaram. A inocência dele é a acusação mais pesada contra os Durst.",
+        "regras_de_atuacao": [
+          "Thorn NUNCA age independente de Rose — se Rose estiver calma, Thorn está calmo.",
+          "Se Rose for destruída temporariamente, Thorn entra em colapso emocional — não combate, paralisa.",
+          "Pode ser ganha com gentileza: um gesto simples de consolo faz ele baixar a guarda completamente."
+        ]
+      }
+    },
+    "grick": {
+      "nome": "Grick",
+      "tipo": "aberracao",
+      "dificuldade_descoberta": "difícil",
+      "ato_aparicao": 1,
+      "home_location": "area_28_despensa_dungeon",
+      "aparencia_facil": "Algo desliza na pedra no escuro da alcova. O cheiro azedo piora. Então os tentáculos saem.",
+      "verdade_oculta": "Aberração que se instalou na despensa do dungeon. Predador oportunista — rasteja para atacar o primeiro que entrar a 1,5m. Mimetismo de pedra: Percepção Passiva menor que 12 é surpreendida.",
+      "combate": {
+        "hp": 27,
+        "ca": 14,
+        "ataques": [
+          "Multiataques: tentáculos + bico",
+          "Tentáculos: +4 para acertar, alcance 1,5m, 2d6+2 perfurante",
+          "Bico: +4 para acertar, alcance 1,5m, 1d6+2 perfurante"
+        ],
+        "resistencias": ["contusão/perfurante/cortante não-mágico"],
+        "imunidades": [],
+        "comportamento": "Permanece camuflado até alguém entrar a 1,5m. Surpresa se Percepção Passiva < 12. Ataca o mais próximo e não persegue além da alcova."
+      },
+      "assinatura_narrativa": {
+        "aliases": ["coisa na alcova", "tentáculos no escuro"],
+        "moral_tonalidade": "negativa",
+        "arquetipo_social": "predador_oportunista",
+        "motivacao_principal": "Comer. Só isso.",
+        "intencao_na_interacao": "Nenhuma — predador puro sem cognição social.",
+        "linguagem_corporal": "Invisível até atacar. Então: tentáculos disparando, mandíbulas abrindo, corpo serpentino se movendo com fluidez perturbadora.",
+        "voz_textual": "Não fala. Som de algo úmido deslizando na pedra. Clique do bico.",
+        "camada_externa": "Criatura no escuro.",
+        "camada_oculta": "Ocupante oportunista — não foi colocado aqui pelo culto, simplesmente encontrou um lar no vácuo deixado por eles.",
+        "regras_de_atuacao": [
+          "Percepção Passiva menor que 12: o personagem é surpreendido — não age no primeiro round.",
+          "NÃO persegue além da alcova — seu território é apenas a area_28.",
+          "Sem loot após a morte."
+        ]
+      }
+    },
+    "ghouls_4x": {
+      "nome": "Ghouls do Culto Durst (×4)",
+      "tipo": "morto-vivo",
+      "dificuldade_descoberta": "difícil",
+      "ato_aparicao": 1,
+      "home_location": "area_29_encontro_fantasmas",
+      "aparencia_facil": "O chão do cruzamento explode em quatro pontos simultaneamente. Mãos saem primeiro — depois rostos com bocas abertas demais.",
+      "verdade_oculta": "Quatro ex-membros do culto Durst transformados em ghouls após décadas enterrados. Emergem apenas quando alguém alcança o centro do cruzamento. Lutam até serem destruídos.",
+      "combate": {
+        "hp": 22,
+        "ca": 12,
+        "ataques": [
+          "Garras: +2 para acertar, alcance 1,5m, 2d6+2 cortante. CD 10 Constituição ou paralisado por 1 minuto (não afeta mortos-vivos nem elfos).",
+          "Mordida (apenas em alvos incapacitados): +2 para acertar, alcance 1,5m, 2d6+2 perfurante"
+        ],
+        "resistencias": [],
+        "imunidades": ["encantamento", "exaustão", "envenenamento", "veneno"],
+        "comportamento": "Surgem simultaneamente nos 4 pontos X do cruzamento quando alguém atinge o centro. Atacam todos os presentes. Lutam até serem destruídos — sem instinto de fuga."
+      },
+      "assinatura_narrativa": {
+        "aliases": ["mortos do chão", "cultistas podres", "mãos da terra"],
+        "moral_tonalidade": "negativa",
+        "arquetipo_social": "horda_de_mortos",
+        "motivacao_principal": "Destruir intrusos — compulsão necromântica residual do culto.",
+        "intencao_na_interacao": "Nenhuma — atacam em silêncio.",
+        "linguagem_corporal": "Emergem devagar, depois se movem com velocidade perturbadora. Bocas abertas. Olhos brancos. Dedos longos e negros.",
+        "voz_textual": "Não falam. Apenas rangido de ossos e gargantas podres.",
+        "camada_externa": "Emboscada de mortos-vivos.",
+        "camada_oculta": "Eram pessoas — devotos que entregaram tudo ao culto e receberam morte e servidão eterna como retorno.",
+        "regras_de_atuacao": [
+          "Os 4 emergem simultaneamente ao atingir o CENTRO do cruzamento — não antes.",
+          "O Inquisidor pode sentir os mortos sob a terra antes de pisar (DC 15) — dar essa chance.",
+          "Sem loot. Sem fuga. Lutam até o fim.",
+          "Paralisia das garras é poderosa — narrar o terror de ficar imóvel enquanto os outros ghouls se aproximam."
+        ]
+      }
+    },
+    "mimic_door": {
+      "nome": "Mimic (disfarçado de porta)",
+      "tipo": "imitador",
+      "dificuldade_descoberta": "difícil",
+      "ato_aparicao": 1,
+      "home_location": "area_33_sala_lideres_culto",
+      "aparencia_facil": "Uma porta de madeira comum no canto sudoeste da sala. Madeira escura, maçaneta de ferro, absolutamente normal.",
+      "verdade_oculta": "Mimic padrão disfarçado de porta. Aparência falsa perfeita enquanto imóvel. Ao ser tocado/aberto, agarra o personagem com pseudópode e revela sua natureza.",
+      "combate": {
+        "hp": 58,
+        "ca": 12,
+        "ataques": [
+          "Pseudópode: +5 para acertar, alcance 1,5m, 1d8+3 contusão + Adesivo (veja abaixo)",
+          "Mordida: +5 para acertar, alcance 1,5m, 1d8+3 perfurante",
+          "Adesivo: criatura que toca o mimic fica agarrada (CD 13 Força para escapar). Ataques subsequentes do mimic acertam automaticamente o agarrado."
+        ],
+        "resistencias": [],
+        "imunidades": ["ácido", "prostrado"],
+        "comportamento": "Permanece imóvel e irreconhecível até ser tocado. Ao primeiro contato, agarra e ataca. Revela forma amorfa apenas quando não há mais motivo para disfarce."
+      },
+      "assinatura_narrativa": {
+        "aliases": ["porta do canto", "porta sudoeste"],
+        "moral_tonalidade": "negativa",
+        "arquetipo_social": "armadilha_viva",
+        "motivacao_principal": "Alimentar-se de qualquer criatura que toque nele.",
+        "intencao_na_interacao": "Nenhuma enquanto não tocado. Ao ser tocado: agarra, morde, mata.",
+        "linguagem_corporal": "Inerte — até não ser mais. Então: a superfície ondula, a 'maçaneta' vira tentáculo, madeira se deforma em boca.",
+        "voz_textual": "Não fala. Som de sucção e madeira se desfazendo.",
+        "camada_externa": "Uma porta.",
+        "camada_oculta": "Criatura que aprendeu a sobreviver no ambiente mais denso de magia sombria da casa.",
+        "regras_de_atuacao": [
+          "DC 15 Percepção ou Investigação para notar que a 'porta' não tem batente, cheiro errado, temperatura estranha.",
+          "Ao primeiro toque — qualquer toque — aciona Adesivo e ataque imediato.",
+          "Não persegue para além da área 33."
+        ]
+      }
+    },
+    "ghasts_gustav_elisabeth": {
+      "nome": "Ghasts Gustav e Elisabeth Durst",
+      "tipo": "morto-vivo",
+      "dificuldade_descoberta": "médio",
+      "ato_aparicao": 1,
+      "home_location": "area_34_aposentos_lideres_culto",
+      "aparencia_facil": "Duas formas humanas emergem das paredes de terra — vestindo túnicas negras esfarrapadas. Rostos familiares de retratos que talvez o jogador tenha visto. O cheiro é insuportável.",
+      "verdade_oculta": "Os próprios pais Durst — Gustav e Elisabeth — como ghasts. Irrompem das paredes se qualquer item for retirado do baú (footlocker). A podridão que foram em vida, agora literal.",
+      "combate": {
+        "hp": 36,
+        "ca": 13,
+        "ataques": [
+          "Mordida: +3 para acertar, alcance 1,5m, 2d8+1 perfurante",
+          "Garras: +5 para acertar, alcance 1,5m, 2d6+3 cortante. CD 10 Constituição ou paralisado por 1 minuto."
+        ],
+        "resistencias": ["contusão/perfurante/cortante não-mágico"],
+        "imunidades": ["encantamento", "exaustão", "envenenamento", "veneno"],
+        "comportamento": "Permanecem ocultos nas paredes de terra até qualquer item ser removido do baú. Então irrompem simultaneamente. Fedor (Stench): criaturas a até 1,5m fazem CD 10 Constituição ou ficam envenenadas até o início do próximo turno. Resistência a Expulsão."
+      },
+      "assinatura_narrativa": {
+        "aliases": ["os pais Durst", "Gustav", "Elisabeth", "ghasts das paredes"],
+        "moral_tonalidade": "negativa",
+        "arquetipo_social": "viloes_transformados",
+        "motivacao_principal": "Proteger os segredos do culto e punir intrusos que ousem tocar seus pertences.",
+        "intencao_na_interacao": "Nenhuma — são ghasts, não os Durst conscientes. Agem por compulsão.",
+        "linguagem_corporal": "Emergem lentamente das paredes como se a terra fosse líquida. Eretos. Braços estendidos. O fedor os precede.",
+        "voz_textual": "Não falam com inteligência. Apenas sons guturais e o ranger de dentes.",
+        "camada_externa": "Mortos-vivos guardiões do quarto.",
+        "camada_oculta": "Os responsáveis por tudo — o bebê Walter, a morte das crianças, o culto. A podridão moral virou podridão física.",
+        "regras_de_atuacao": [
+          "Só emergem se um item for removido do baú — não antes.",
+          "Narrar o fedor como aviso atmosférico antes mesmo deles aparecerem.",
+          "Se o jogador reconhecer os rostos pelos retratos da casa, dar um momento de horror antes do combate.",
+          "Resistência a Expulsão: tentativas de expulsar mortos-vivos não funcionam neles."
+        ]
+      }
+    },
+    "shambling_mound_lorghoth": {
+      "nome": "Lorghoth, o Decaído (Shambling Mound)",
+      "tipo": "planta",
+      "dificuldade_descoberta": "médio",
+      "ato_aparicao": 1,
+      "home_location": "area_38_camara_ritual",
+      "aparencia_facil": "Uma montanha de raízes, lama e matéria vegetal podre na alcova oeste. Parece apenas um monte de detritos — até não parecer.",
+      "verdade_oculta": "Lorghoth, criatura convocada e mantida adormecida pelo culto como arma final. Desperta se for atacado diretamente ou se o jogador recusar o sacrifício no altar. Boss final da Death House.",
+      "combate": {
+        "hp": 136,
+        "ca": 15,
+        "ataques": [
+          "Multiataques: 2 socos por rodada",
+          "Soco: +8 para acertar, alcance 1,5m, 2d8+5 contusão",
+          "Engolir (Recarrega quando disponível): alvo agarrado faz CD 14 Força ou fica engolido — restrito, cego, não pode respirar, sofre 4d8+5 contusão no início de cada turno de Lorghoth"
+        ],
+        "resistencias": ["fogo", "raio"],
+        "imunidades": ["elétrico (absorve e cura)", "cego", "surdo", "exaustão"],
+        "comportamento": "Adormecido enquanto não provocado. Ao despertar, move-se devagar mas inexoravelmente. Prioriza agarrar para depois engolir. Absorção de Relâmpago: dano elétrico o cura em vez de ferir."
+      },
+      "assinatura_narrativa": {
+        "aliases": ["Lorghoth", "o monte podre", "a coisa da alcova", "o Decaído"],
+        "moral_tonalidade": "negativa",
+        "arquetipo_social": "boss_inevitavel",
+        "motivacao_principal": "Destruir tudo que se move — compulsão de criatura convocada sem propósito além do caos.",
+        "intencao_na_interacao": "Nenhuma — massa de destruição sem mente.",
+        "linguagem_corporal": "O monte treme. Raízes se estendem. A água do chão ondula em volta. Então se ergue — enorme, lento, inevitável.",
+        "voz_textual": "Não fala. Barulho de terra e raízes se comprimindo. Splash de água turva a cada passo.",
+        "camada_externa": "Monstro vegetal colossal que guarda o altar.",
+        "camada_oculta": "O preço do pacto do culto Durst com as trevas — convocado com sangue, mantido com fé, liberado pela recusa do jogador.",
+        "regras_de_atuacao": [
+          "Adormecido até: (a) ser atacado diretamente, ou (b) o jogador recusar o sacrifício no altar.",
+          "DC 15 Natureza para identificar o que é antes de despertar — o Aventureiro tem vantagem.",
+          "Absorção de Relâmpago: se alguém usar magia elétrica, narrar Lorghoth absorvendo e ficando maior.",
+          "Ao ser derrotado, narrar a casa começando a desmoronar — o pacto que a sustentava foi quebrado.",
+          "Escape: o jogador tem rodadas contadas para sair pela rota área 37 → 35 → 29 → 22 → andares → área 1a → exterior."
+        ]
+      }
+    },
+    "strahd_espectral": {
+      "nome": "Efígie Espectral de Strahd",
+      "tipo": "manifestacao_cultista",
+      "dificuldade_descoberta": "fácil",
+      "ato_aparicao": 1,
+      "home_location": "area_31_santuario_darklord",
+      "aparencia_facil": "Uma sombra alta e fria emana da estátua de madeira pintada no santuário — forma vagamente humana com olhos de âmbar que parecem seguir cada movimento.",
+      "verdade_oculta": "NÃO é Strahd real. É uma projeção do fanatismo do culto Durst — energia residual de décadas de adoração sombria impregnada na estátua. Não age com inteligência própria, apenas reage a profanações.",
+      "assinatura_narrativa": {
+        "aliases": ["sombra da estátua", "efígie", "manifestação"],
+        "moral_tonalidade": "negativa",
+        "arquetipo_social": "presenca_opressora",
+        "motivacao_principal": "Guardar o santuário e intimidar intrusos.",
+        "intencao_na_interacao": "Criar sensação de vigilância constante e presença sobrenatural sem atacar diretamente.",
+        "linguagem_corporal": "Silêncio absoluto. Os olhos de âmbar acompanham o jogador. A temperatura cai 2°C.",
+        "voz_textual": "Não fala. Apenas observa. A pressão no ar é suficiente.",
+        "camada_externa": "Presença sobrenatural ligada à estátua.",
+        "camada_oculta": "Eco sem mente do poder de Strahd — tão perigosa quanto uma armadilha, não quanto um ser pensante.",
+        "regras_de_atuacao": [
+          "NUNCA tratar como o Strahd real — jamais dar-lhe falas, planos ou consciência.",
+          "Se o jogador tocar a estátua ou remover o orbe, as 5 Sombras se manifestam imediatamente.",
+          "O Inquisidor percebe que a presença é eco, não mente, com DC 12 Intuição."
+        ]
+      }
     }
   }
 }
