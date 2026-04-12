@@ -926,8 +926,8 @@ def take_action(req: ActionRequest):
         audio, audio_timeline = build_audio_payload(cleaned_narrative, "master", _resolve_tts_speed("sad"))
 
     recent = world_state.get("recent_narrations", [])
-    recent.append(cleaned_narrative[:300])
-    world_state["recent_narrations"] = recent[-2:]
+    recent.append(cleaned_narrative[:500])
+    world_state["recent_narrations"] = recent[-5:]
 
     tutorial_turn = world_state.get("tutorial_turn", 0)
     if tutorial_turn > 0:
