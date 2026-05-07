@@ -774,6 +774,16 @@ Retorne o JSON atualizado:"""
             return old_state
         novo_estado = _preserve_runtime_state(old_state, novo_estado)
         novo_estado = _enforce_critical_npc_locations(novo_estado)
+
+        # Bloqueia teleporte inválido: reverte se a transição não existe no grafo de exits
+        old_loc = old_state.get("world_state", {}).get("current_location_key", "")
+        new_loc = novo_estado.get("world_state", {}).get("current_location_key", "")
+        if old_loc and new_loc and old_loc != new_loc:
+            _files = get_campaign_files()
+            _locais = load_campaign_data(_files.get("locais", "")).get("locais", {})
+            if not validate_location_transition(old_loc, new_loc, _locais):
+                novo_estado["world_state"]["current_location_key"] = old_loc
+
         return ensure_npc_signature_memory(novo_estado)
     except json.JSONDecodeError:
         # JSON inválido - mantém estado anterior
