@@ -55,6 +55,8 @@ from game import (
     PAUSE_BEAT_PROMPT_SECONDS,
     start_resurrection_limbo,
     resolve_resurrection_offering,
+    _build_turn_context,
+    validate_player_action,
 )
 
 app = FastAPI(title="Ressoar")
@@ -746,7 +748,8 @@ def start_game(req: StartRequest):
     game_context = load_game_context_for_act(current_act, world_state)
     game_context["gatilhos"] = []
 
-    opening_raw = get_gm_narrative(world_state, "Iniciou a aventura", game_context)
+    opening_turn_ctx = _build_turn_context(world_state, game_context)
+    opening_raw = get_gm_narrative(world_state, "Iniciou a aventura", game_context, turn_ctx=opening_turn_ctx)
     opening_clean, world_state = clean_and_process_ai_response(opening_raw, world_state)
     world_state = update_world_state(world_state, "Iniciou a aventura", opening_raw)
     world_state["recent_narrations"] = [opening_clean[:300]]
@@ -859,8 +862,18 @@ def take_action(req: ActionRequest):
             "valid": True,
         }
 
-    # Processa ação no motor do jogo
+    # Guardrail: rejeita ação fisicamente impossível antes de chamar o GM
     character = world_state.get("player_character", {})
+    is_valid, validation_message = validate_player_action(action, character, world_state)
+    if not is_valid:
+        return {
+            "narrative": validation_message,
+            "audio": to_audio_response(validation_message, "master"),
+            "state": _state_summary(world_state),
+            "valid": False,
+        }
+
+    # Processa ação no motor do jogo
     current_act = character.get("current_act", 1)
     game_context = load_game_context_for_act(current_act, world_state)
     bootstrap_location_triggers(world_state, game_context.get("locais", {}))
@@ -877,7 +890,8 @@ def take_action(req: ActionRequest):
     action_with_trigger = f"{action}\n[Gatilho]: {trigger_desc}" if trigger_desc else action
     game_context["gatilhos"] = [trigger_desc] if trigger_desc else []
 
-    gm_response = get_gm_narrative(world_state, action_with_trigger, game_context, roll_result)
+    turn_ctx = _build_turn_context(world_state, game_context)
+    gm_response = get_gm_narrative(world_state, action_with_trigger, game_context, roll_result, turn_ctx=turn_ctx)
     cleaned_narrative, world_state = clean_and_process_ai_response(gm_response, world_state)
 
     # Arquivista (update_world_state) e TTS rodam em paralelo — maior ganho de latência
@@ -927,7 +941,7 @@ def take_action(req: ActionRequest):
 
     recent = world_state.get("recent_narrations", [])
     recent.append(cleaned_narrative[:500])
-    world_state["recent_narrations"] = recent[-5:]
+    world_state["recent_narrations"] = recent[-15:]  # janela maior reduz alucinação de continuidade
 
     tutorial_turn = world_state.get("tutorial_turn", 0)
     if tutorial_turn > 0:
