@@ -3,6 +3,7 @@ import json
 import os
 import re
 import random
+import uuid
 from datetime import datetime, timezone
 from world_state_manager import (
     update_world_state,
@@ -71,6 +72,26 @@ def _memory_mode() -> str:
     return os.environ.get("MEMORY_MODE", "legacy").strip().lower()
 
 
+def _memory_namespace(world_state: dict) -> str:
+    """Namespace estável por save — viaja com o world_state em save/load."""
+    ns = world_state.get("_memory_namespace")
+    if isinstance(ns, str) and ns.strip():
+        return ns
+    ns = uuid.uuid4().hex
+    world_state["_memory_namespace"] = ns
+    return ns
+
+
+def _memory_dir_for(world_state: dict) -> str:
+    """Dir de memória isolado por save: memory/{namespace} (absoluto).
+    Evita que a memória de um jogador vaze para outro no app web.
+    Absoluto porque o WAL do MemoryWriter junta memory_dir + file path,
+    o que só colapsa corretamente com paths absolutos.
+    Base configurável via MEMORY_BASE_DIR (default 'memory')."""
+    base = os.environ.get("MEMORY_BASE_DIR", "memory")
+    return os.path.abspath(os.path.join(base, _memory_namespace(world_state)))
+
+
 def _ensure_memory_session_id(world_state: dict) -> str:
     sid = world_state.get("_memory_session_id")
     if isinstance(sid, str) and sid.strip():
@@ -106,8 +127,9 @@ def _build_turn_context(world_state: dict, game_context: dict) -> TurnContext | 
 
     campaign_locais = game_context.get("locais", {}) if isinstance(game_context, dict) else {}
     session_id = _ensure_memory_session_id(world_state)
+    mem_dir = _memory_dir_for(world_state)
     writer = MemoryWriter(
-        memory_dir="memory",
+        memory_dir=mem_dir,
         campaign_locais=campaign_locais if isinstance(campaign_locais, dict) else {},
         session_id=session_id,
     )
@@ -120,7 +142,7 @@ def _build_turn_context(world_state: dict, game_context: dict) -> TurnContext | 
     for npc_id, signature in improvised + others:
         writer.create_npc_topic_if_missing(npc_id, signature, world_state)
 
-    loader = MemoryLoader(memory_dir="memory")
+    loader = MemoryLoader(memory_dir=mem_dir)
     return loader.load_turn_context(world_state)
 
 def _flatten_scene_map(elements) -> list[str]:
