@@ -18,7 +18,6 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from dotenv import load_dotenv
-import os as _os
 
 load_dotenv()
 
@@ -31,7 +30,6 @@ logging.basicConfig(
 # Google Cloud: suporte a credenciais via variável de ambiente (Railway/cloud)
 _google_creds_json = os.environ.get("GOOGLE_CREDENTIALS_JSON")
 if _google_creds_json:
-    import tempfile
     import atexit
     _tmp = tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False)
     _tmp.write(_google_creds_json)
@@ -269,31 +267,22 @@ def _get_error_sfx() -> str | None:
     return url
 
 
-# Sons de dados (buscados uma vez e cacheados)
-_sfx_dice_url:     str | None = None
-_sfx_critical_url: str | None = None
-_sfx_fumble_url:   str | None = None
+# Sons de dados (buscados uma vez e cacheados por slot)
+_dice_sfx_cache: dict[str, str | None] = {}
+_DICE_SFX_QUERIES = {
+    "dice":     "dice rolling tabletop wooden",
+    "critical": "fanfare triumph short brass",
+    "fumble":   "dark sting dissonant low bass",
+}
 
-def _get_dice_sfx() -> str | None:
-    global _sfx_dice_url
-    if _sfx_dice_url:
-        return _sfx_dice_url
-    _sfx_dice_url = _search_freesound("dice rolling tabletop wooden")
-    return _sfx_dice_url
+def _get_dice_sfx_slot(slot: str) -> str | None:
+    if slot not in _dice_sfx_cache:
+        _dice_sfx_cache[slot] = _search_freesound(_DICE_SFX_QUERIES[slot])
+    return _dice_sfx_cache[slot]
 
-def _get_critical_sfx() -> str | None:
-    global _sfx_critical_url
-    if _sfx_critical_url:
-        return _sfx_critical_url
-    _sfx_critical_url = _search_freesound("fanfare triumph short brass")
-    return _sfx_critical_url
-
-def _get_fumble_sfx() -> str | None:
-    global _sfx_fumble_url
-    if _sfx_fumble_url:
-        return _sfx_fumble_url
-    _sfx_fumble_url = _search_freesound("dark sting dissonant low bass")
-    return _sfx_fumble_url
+def _get_dice_sfx() -> str | None:     return _get_dice_sfx_slot("dice")
+def _get_critical_sfx() -> str | None: return _get_dice_sfx_slot("critical")
+def _get_fumble_sfx() -> str | None:   return _get_dice_sfx_slot("fumble")
 
 
 # ─── Ambient por ato ──────────────────────────────────────────────────────────
@@ -661,8 +650,8 @@ def get_menu_assets():
 def get_config():
     """Expõe a Clerk Publishable Key para o frontend (é uma chave pública)."""
     return {
-        "clerk_publishable_key": _os.environ.get("CLERK_PUBLISHABLE_KEY", ""),
-        "clerk_frontend_api": _os.environ.get(
+        "clerk_publishable_key": os.environ.get("CLERK_PUBLISHABLE_KEY", ""),
+        "clerk_frontend_api": os.environ.get(
             "CLERK_FRONTEND_API",
             "https://definite-firefly-91.clerk.accounts.dev",
         ),

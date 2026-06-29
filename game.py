@@ -987,20 +987,15 @@ def _build_layered_memory_block(turn_ctx: TurnContext) -> str:
 
 
 def _call_gm_api(
-    deepseek_key: str | None,
     openai_key: str | None,
     system_content: str,
     user_content: str,
     roll_result: dict | None,
     world_state: dict,
 ) -> str:
-    """Chama a API do Mestre (DeepSeek ou OpenAI) e retorna a narrativa gerada."""
-    if deepseek_key:
-        client = OpenAI(api_key=deepseek_key, base_url="https://api.deepseek.com")
-        model  = os.environ.get('DEEPSEEK_MODEL_MESTRE', 'deepseek-chat')
-    else:
-        client = OpenAI(api_key=openai_key)
-        model  = os.environ.get('OPENAI_MODEL_MESTRE') or os.environ.get('OPENAI_MODEL', 'gpt-4o-mini')
+    """Chama a API do Mestre (OpenAI) e retorna a narrativa gerada."""
+    client = OpenAI(api_key=openai_key)
+    model  = os.environ.get('OPENAI_MODEL_MESTRE') or os.environ.get('OPENAI_MODEL', 'gpt-4o-mini')
 
     mood = world_state.get("narration_mood", "normal")
     is_critical = bool(roll_result and (roll_result.get("critical") or roll_result.get("fumble")))
@@ -1029,10 +1024,9 @@ def get_gm_narrative(
     roll_result: dict | None = None,
     turn_ctx: TurnContext | None = None,
 ) -> str:
-    deepseek_key = os.environ.get('DEEPSEEK_API_KEY')
-    openai_key   = os.environ.get('OPENAI_API_KEY')
-    if not deepseek_key and not openai_key:
-        print("ERRO: nenhuma chave de API configurada (DEEPSEEK_API_KEY ou OPENAI_API_KEY)")
+    openai_key = os.environ.get('OPENAI_API_KEY')
+    if not openai_key:
+        print("ERRO: OPENAI_API_KEY não configurada")
         return "O Mestre do Jogo não consegue se conectar aos planos astrais. (API Key não configurada). O que você faz?"
 
     campaign = get_current_campaign()
@@ -1121,7 +1115,7 @@ Gatilhos Narrativos Ativos: {json.dumps(game_context.get('gatilhos', []), indent
 {player_action}{memory_block}"""
 
     try:
-        return _call_gm_api(deepseek_key, openai_key, system_content, user_content, roll_result, world_state)
+        return _call_gm_api(openai_key, system_content, user_content, roll_result, world_state)
     except Exception as e:
         return "O Mestre do Jogo sente uma perturbação na Força... Tente novamente. O que você faz?"
 
