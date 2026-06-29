@@ -3,6 +3,7 @@ import json
 import os
 import re
 import random
+import uuid
 from datetime import datetime, timezone
 from world_state_manager import (
     update_world_state,
@@ -71,6 +72,26 @@ def _memory_mode() -> str:
     return os.environ.get("MEMORY_MODE", "legacy").strip().lower()
 
 
+def _memory_namespace(world_state: dict) -> str:
+    """Namespace estável por save — viaja com o world_state em save/load."""
+    ns = world_state.get("_memory_namespace")
+    if isinstance(ns, str) and ns.strip():
+        return ns
+    ns = uuid.uuid4().hex
+    world_state["_memory_namespace"] = ns
+    return ns
+
+
+def _memory_dir_for(world_state: dict) -> str:
+    """Dir de memória isolado por save: memory/{namespace} (absoluto).
+    Evita que a memória de um jogador vaze para outro no app web.
+    Absoluto porque o WAL do MemoryWriter junta memory_dir + file path,
+    o que só colapsa corretamente com paths absolutos.
+    Base configurável via MEMORY_BASE_DIR (default 'memory')."""
+    base = os.environ.get("MEMORY_BASE_DIR", "memory")
+    return os.path.abspath(os.path.join(base, _memory_namespace(world_state)))
+
+
 def _ensure_memory_session_id(world_state: dict) -> str:
     sid = world_state.get("_memory_session_id")
     if isinstance(sid, str) and sid.strip():
@@ -106,8 +127,9 @@ def _build_turn_context(world_state: dict, game_context: dict) -> TurnContext | 
 
     campaign_locais = game_context.get("locais", {}) if isinstance(game_context, dict) else {}
     session_id = _ensure_memory_session_id(world_state)
+    mem_dir = _memory_dir_for(world_state)
     writer = MemoryWriter(
-        memory_dir="memory",
+        memory_dir=mem_dir,
         campaign_locais=campaign_locais if isinstance(campaign_locais, dict) else {},
         session_id=session_id,
     )
@@ -120,7 +142,7 @@ def _build_turn_context(world_state: dict, game_context: dict) -> TurnContext | 
     for npc_id, signature in improvised + others:
         writer.create_npc_topic_if_missing(npc_id, signature, world_state)
 
-    loader = MemoryLoader(memory_dir="memory")
+    loader = MemoryLoader(memory_dir=mem_dir)
     return loader.load_turn_context(world_state)
 
 def _flatten_scene_map(elements) -> list[str]:
@@ -965,20 +987,15 @@ def _build_layered_memory_block(turn_ctx: TurnContext) -> str:
 
 
 def _call_gm_api(
-    deepseek_key: str | None,
     openai_key: str | None,
     system_content: str,
     user_content: str,
     roll_result: dict | None,
     world_state: dict,
 ) -> str:
-    """Chama a API do Mestre (DeepSeek ou OpenAI) e retorna a narrativa gerada."""
-    if deepseek_key:
-        client = OpenAI(api_key=deepseek_key, base_url="https://api.deepseek.com")
-        model  = os.environ.get('DEEPSEEK_MODEL_MESTRE', 'deepseek-chat')
-    else:
-        client = OpenAI(api_key=openai_key)
-        model  = os.environ.get('OPENAI_MODEL_MESTRE') or os.environ.get('OPENAI_MODEL', 'gpt-4o-mini')
+    """Chama a API do Mestre (OpenAI) e retorna a narrativa gerada."""
+    client = OpenAI(api_key=openai_key)
+    model  = os.environ.get('OPENAI_MODEL_MESTRE') or os.environ.get('OPENAI_MODEL', 'gpt-4o-mini')
 
     mood = world_state.get("narration_mood", "normal")
     is_critical = bool(roll_result and (roll_result.get("critical") or roll_result.get("fumble")))
@@ -1007,10 +1024,9 @@ def get_gm_narrative(
     roll_result: dict | None = None,
     turn_ctx: TurnContext | None = None,
 ) -> str:
-    deepseek_key = os.environ.get('DEEPSEEK_API_KEY')
-    openai_key   = os.environ.get('OPENAI_API_KEY')
-    if not deepseek_key and not openai_key:
-        print("ERRO: nenhuma chave de API configurada (DEEPSEEK_API_KEY ou OPENAI_API_KEY)")
+    openai_key = os.environ.get('OPENAI_API_KEY')
+    if not openai_key:
+        print("ERRO: OPENAI_API_KEY não configurada")
         return "O Mestre do Jogo não consegue se conectar aos planos astrais. (API Key não configurada). O que você faz?"
 
     campaign = get_current_campaign()
@@ -1099,7 +1115,7 @@ Gatilhos Narrativos Ativos: {json.dumps(game_context.get('gatilhos', []), indent
 {player_action}{memory_block}"""
 
     try:
-        return _call_gm_api(deepseek_key, openai_key, system_content, user_content, roll_result, world_state)
+        return _call_gm_api(openai_key, system_content, user_content, roll_result, world_state)
     except Exception as e:
         return "O Mestre do Jogo sente uma perturbação na Força... Tente novamente. O que você faz?"
 

@@ -18,7 +18,6 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from dotenv import load_dotenv
-import os as _os
 
 load_dotenv()
 
@@ -31,7 +30,6 @@ logging.basicConfig(
 # Google Cloud: suporte a credenciais via variável de ambiente (Railway/cloud)
 _google_creds_json = os.environ.get("GOOGLE_CREDENTIALS_JSON")
 if _google_creds_json:
-    import tempfile
     import atexit
     _tmp = tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False)
     _tmp.write(_google_creds_json)
@@ -55,6 +53,8 @@ from game import (
     PAUSE_BEAT_PROMPT_SECONDS,
     start_resurrection_limbo,
     resolve_resurrection_offering,
+    _build_turn_context,
+    validate_player_action,
 )
 
 app = FastAPI(title="Ressoar")
@@ -267,31 +267,22 @@ def _get_error_sfx() -> str | None:
     return url
 
 
-# Sons de dados (buscados uma vez e cacheados)
-_sfx_dice_url:     str | None = None
-_sfx_critical_url: str | None = None
-_sfx_fumble_url:   str | None = None
+# Sons de dados (buscados uma vez e cacheados por slot)
+_dice_sfx_cache: dict[str, str | None] = {}
+_DICE_SFX_QUERIES = {
+    "dice":     "dice rolling tabletop wooden",
+    "critical": "fanfare triumph short brass",
+    "fumble":   "dark sting dissonant low bass",
+}
 
-def _get_dice_sfx() -> str | None:
-    global _sfx_dice_url
-    if _sfx_dice_url:
-        return _sfx_dice_url
-    _sfx_dice_url = _search_freesound("dice rolling tabletop wooden")
-    return _sfx_dice_url
+def _get_dice_sfx_slot(slot: str) -> str | None:
+    if slot not in _dice_sfx_cache:
+        _dice_sfx_cache[slot] = _search_freesound(_DICE_SFX_QUERIES[slot])
+    return _dice_sfx_cache[slot]
 
-def _get_critical_sfx() -> str | None:
-    global _sfx_critical_url
-    if _sfx_critical_url:
-        return _sfx_critical_url
-    _sfx_critical_url = _search_freesound("fanfare triumph short brass")
-    return _sfx_critical_url
-
-def _get_fumble_sfx() -> str | None:
-    global _sfx_fumble_url
-    if _sfx_fumble_url:
-        return _sfx_fumble_url
-    _sfx_fumble_url = _search_freesound("dark sting dissonant low bass")
-    return _sfx_fumble_url
+def _get_dice_sfx() -> str | None:     return _get_dice_sfx_slot("dice")
+def _get_critical_sfx() -> str | None: return _get_dice_sfx_slot("critical")
+def _get_fumble_sfx() -> str | None:   return _get_dice_sfx_slot("fumble")
 
 
 # ─── Ambient por ato ──────────────────────────────────────────────────────────
@@ -659,8 +650,8 @@ def get_menu_assets():
 def get_config():
     """Expõe a Clerk Publishable Key para o frontend (é uma chave pública)."""
     return {
-        "clerk_publishable_key": _os.environ.get("CLERK_PUBLISHABLE_KEY", ""),
-        "clerk_frontend_api": _os.environ.get(
+        "clerk_publishable_key": os.environ.get("CLERK_PUBLISHABLE_KEY", ""),
+        "clerk_frontend_api": os.environ.get(
             "CLERK_FRONTEND_API",
             "https://definite-firefly-91.clerk.accounts.dev",
         ),
@@ -746,7 +737,8 @@ def start_game(req: StartRequest):
     game_context = load_game_context_for_act(current_act, world_state)
     game_context["gatilhos"] = []
 
-    opening_raw = get_gm_narrative(world_state, "Iniciou a aventura", game_context)
+    opening_turn_ctx = _build_turn_context(world_state, game_context)
+    opening_raw = get_gm_narrative(world_state, "Iniciou a aventura", game_context, turn_ctx=opening_turn_ctx)
     opening_clean, world_state = clean_and_process_ai_response(opening_raw, world_state)
     world_state = update_world_state(world_state, "Iniciou a aventura", opening_raw)
     world_state["recent_narrations"] = [opening_clean[:300]]
@@ -859,8 +851,18 @@ def take_action(req: ActionRequest):
             "valid": True,
         }
 
-    # Processa ação no motor do jogo
+    # Guardrail: rejeita ação fisicamente impossível antes de chamar o GM
     character = world_state.get("player_character", {})
+    is_valid, validation_message = validate_player_action(action, character, world_state)
+    if not is_valid:
+        return {
+            "narrative": validation_message,
+            "audio": to_audio_response(validation_message, "master"),
+            "state": _state_summary(world_state),
+            "valid": False,
+        }
+
+    # Processa ação no motor do jogo
     current_act = character.get("current_act", 1)
     game_context = load_game_context_for_act(current_act, world_state)
     bootstrap_location_triggers(world_state, game_context.get("locais", {}))
@@ -877,7 +879,8 @@ def take_action(req: ActionRequest):
     action_with_trigger = f"{action}\n[Gatilho]: {trigger_desc}" if trigger_desc else action
     game_context["gatilhos"] = [trigger_desc] if trigger_desc else []
 
-    gm_response = get_gm_narrative(world_state, action_with_trigger, game_context, roll_result)
+    turn_ctx = _build_turn_context(world_state, game_context)
+    gm_response = get_gm_narrative(world_state, action_with_trigger, game_context, roll_result, turn_ctx=turn_ctx)
     cleaned_narrative, world_state = clean_and_process_ai_response(gm_response, world_state)
 
     # Arquivista (update_world_state) e TTS rodam em paralelo — maior ganho de latência
@@ -927,7 +930,7 @@ def take_action(req: ActionRequest):
 
     recent = world_state.get("recent_narrations", [])
     recent.append(cleaned_narrative[:500])
-    world_state["recent_narrations"] = recent[-5:]
+    world_state["recent_narrations"] = recent[-15:]  # janela maior reduz alucinação de continuidade
 
     tutorial_turn = world_state.get("tutorial_turn", 0)
     if tutorial_turn > 0:
