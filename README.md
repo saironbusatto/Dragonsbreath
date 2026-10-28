@@ -1,3 +1,5 @@
+**English** · [Português (BR)](README.pt-BR.md)
+
 # Ressoar Platform
 
 Interactive storytelling platform with generative AI, neural voice narration and contextual sound effects. Two game modes: open-world RPG and Interactive Tales based on classic literature.
