@@ -1103,6 +1103,7 @@ REGRA: Saídas não listadas acima NÃO existem — nunca invente passagens ause
 
 --- ESTADO ATUAL DO MUNDO ---
 {json.dumps(without_engine_keys(world_state), indent=2, ensure_ascii=False)}
+{gm_tags.build_world_memory_block(world_state)}
 
 --- CONTEXTO DO JOGO ---
 NPCs presentes: {json.dumps(game_context.get('npcs', {}), indent=2, ensure_ascii=False)}

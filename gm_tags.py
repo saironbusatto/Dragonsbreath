@@ -196,6 +196,50 @@ def _invalid(*_, **__):
 HANDLERS = {"HP": _hp, "ITEM": _item, "COND": _cond, "FATO": _fact, "FLAG": _flag, "MODO": _mode, "INVALID": _invalid}
 
 
+RECENT_FACTS = 5
+MAX_FACTS_IN_PROMPT = 15
+
+
+def _scene_npc_names(ws: dict) -> list[str]:
+    names = []
+    for key in ("important_npcs_in_scene", "scene_npc_signatures"):
+        for npc_id, data in (ws.get(key) or {}).items():
+            names.append(npc_id.replace("_", " "))
+            if isinstance(data, dict) and data.get("nome"):
+                names.append(data["nome"])
+    return [_norm(n) for n in names if n]
+
+
+def _relevant_facts(state: dict) -> list[dict]:
+    """Fatos ativos da sala atual, dos NPCs em cena e os mais recentes (o resto volta quando voltar a importar)."""
+    ws = state.get("world_state") or {}
+    here = ws.get("current_location_key", "")
+    npcs = _scene_npc_names(ws)
+    active = [f for f in state.get("facts", []) if f.get("active")]
+    recent = {id(f) for f in active[-RECENT_FACTS:]}
+    chosen = [f for f in active
+              if id(f) in recent or f.get("location_key") == here or any(n in _norm(f["text"]) for n in npcs)]
+    return chosen[-MAX_FACTS_IN_PROMPT:]
+
+
+def build_world_memory_block(state: dict) -> str:
+    """Bloco do prompt do Mestre com as flags da campanha e os fatos que importam agora."""
+    flags = state.get("flags") or {}
+    facts = _relevant_facts(state)
+    if not any(flags.values()) and not facts:
+        return ""
+    # ponytail: todas as flags entram; filtrar por região quando a campanha tiver centenas
+    lines = ["", "--- MEMÓRIA DO MUNDO (registrada pelo motor; é a verdade) ---"]
+    if any(flags.values()):
+        lines.append("FLAGS DA CAMPANHA:")
+        lines += [f"- {name}: {'sim' if value else 'não'}" for group in flags.values() for name, value in group.items()]
+    if facts:
+        total = sum(1 for f in state.get("facts", []) if f.get("active"))
+        lines.append(f"FATOS LEMBRADOS ({len(facts)} de {total}):")
+        lines += [f"- [{f.get('location_key') or '?'}] {f['text']}" for f in facts]
+    return "\n".join(lines) + "\n"
+
+
 def apply(state: dict, tags: list[dict], roll_success: bool = False) -> tuple[dict, list[dict], list[dict]]:
     """Aplica as tags em ordem; uma tag recusada não altera nada."""
     current = copy.deepcopy(state)

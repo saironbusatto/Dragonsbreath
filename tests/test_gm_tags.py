@@ -142,3 +142,42 @@ def test_archivist_cannot_change_the_sheet():
         new = update_world_state(state, "olho", "nada")
     assert new["player_character"] == state["player_character"]
     assert new["flags"] == state["flags"] and new["facts"] == state["facts"]
+
+
+def _memory_state(n_old=0):
+    facts = [{"text": f"fato antigo {i}", "location_key": "area_1", "active": True} for i in range(n_old)]
+    facts += [
+        {"text": "A cortina queimou", "location_key": "area_5", "active": True},
+        {"text": "Rose confia no grupo", "location_key": "area_20", "active": True},
+        {"text": "A porta foi trancada", "location_key": "area_5", "active": False},
+    ]
+    return {
+        "world_state": {"current_location_key": "area_5", "important_npcs_in_scene": {"rose_ghost": {"nome": "Rose"}}},
+        "flags": {"death_house": {"portcullis_37_raised": False, "sacrifice_made": True}},
+        "facts": facts,
+    }
+
+
+def test_memory_block_lists_flags_and_relevant_active_facts():
+    block = gm_tags.build_world_memory_block(_memory_state(n_old=20))
+    assert "portcullis_37_raised: não" in block and "sacrifice_made: sim" in block
+    assert "A cortina queimou" in block           # sala atual
+    assert "Rose confia no grupo" in block        # NPC em cena
+    assert "A porta foi trancada" not in block    # desfeito
+    assert "fato antigo 0" not in block           # antigo, de outra sala
+    assert "fato antigo 19" in block              # recente
+
+
+def test_memory_block_is_empty_without_flags_or_facts():
+    assert gm_tags.build_world_memory_block({"world_state": {}}) == ""
+
+
+def test_gm_prompt_gets_world_memory_block(monkeypatch):
+    import game
+    from unittest.mock import patch
+    monkeypatch.setenv("OPENAI_API_KEY", "sk-test")
+    sent = {}
+    state = {**_memory_state(), "player_character": {"name": "Aldric"}}
+    with patch.object(game, "_call_gm_api", side_effect=lambda k, s, u, *a, **kw: sent.setdefault("user", u)):
+        game.get_gm_narrative(state, "olho", {"locais": {}})
+    assert "A cortina queimou" in sent["user"] and '"facts"' not in sent["user"]
