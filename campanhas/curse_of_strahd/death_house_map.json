@@ -81,7 +81,8 @@
         "oeste": "area_1a_entrada",
         "norte": "area_2b_sala_estar",
         "leste": "area_3_sala_jantar_terreo",
-        "escada_acima": "area_6_corredor_2o_andar"
+        "escada_acima": "area_6_corredor_2o_andar",
+        "oeste_quarto_criados": "area_5_quarto_criados"
       },
       "itens": [],
       "npcs": [],
@@ -327,9 +328,10 @@
       "descricao_curta": "Balcão 3º andar. Armadura animada. Lambris sinistros.",
       "saidas": {
         "escada_abaixo": "area_6_corredor_2o_andar",
-        "oeste": "area_12a_suíte_principal",
+        "oeste": "area_12a_suite_principal",
         "norte": "area_15a_quarto_baba",
-        "porta_secreta_oeste": "area_16_corredor_sotao"
+        "porta_secreta_oeste": "area_16_corredor_sotao",
+        "sul": "area_14_deposito_3o_andar"
       },
       "itens": [],
       "npcs": [
@@ -521,7 +523,8 @@
         "escada_abaixo_sul": "area_15a_quarto_baba",
         "norte_trancado": "area_20_quarto_criancas",
         "leste": "area_17_quarto_sobressalente_1",
-        "sul": "area_19_quarto_sobressalente_2"
+        "sul": "area_19_quarto_sobressalente_2",
+        "sul_deposito": "area_18_deposito_restos_baba"
       },
       "itens": [
         {"id": "cadeado_porta_20", "nome": "Cadeado da porta do quarto das crianças", "descricao": "Trancado por fora. Chave na área 8. DC 15 para arrombar."}
@@ -670,7 +673,8 @@
       "saidas": {
         "acima": "area_21_escada_secreta_espiral",
         "sul_bifurcacao_oeste": "area_24_aposentos_iniciantes_culto",
-        "sul_bifurcacao_leste": "area_23_criptas_familia"
+        "sul_bifurcacao_leste": "area_23_criptas_familia",
+        "sul": "area_29_encontro_fantasmas"
       },
       "itens": [],
       "npcs": [],
@@ -928,7 +932,9 @@
         "norte": "area_22_acesso_dungeon",
         "sul": "area_35_relicario",
         "leste": "area_26_poco_espigoes_oculto",
-        "oeste": "area_30_escada_descida"
+        "oeste": "area_30_escada_descida",
+        "sul_santuario": "area_31_santuario_darklord",
+        "sul_lideres_culto": "area_33_sala_lideres_culto"
       },
       "itens": [],
       "npcs": [
