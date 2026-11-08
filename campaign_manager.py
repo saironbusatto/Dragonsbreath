@@ -1,6 +1,8 @@
+import contextvars
 import importlib.util
 import json
 import os
+from contextlib import contextmanager
 
 FEATURED_CAMPAIGN_ID = "curse_of_strahd"
 
@@ -12,10 +14,33 @@ def load_config() -> dict:
     except (FileNotFoundError, json.JSONDecodeError):
         return {"current_campaign": "lamento_do_bardo", "campaigns": {}}
 
+# Campanha da sessão em curso (web). Sem escopo, vale a campanha global do config.json (CLI).
+_session_campaign: contextvars.ContextVar[str | None] = contextvars.ContextVar("session_campaign", default=None)
+
+
+@contextmanager
+def campaign_scope(campaign_id: str | None):
+    """Faz get_current_campaign() devolver campaign_id dentro do bloco, sem tocar no config.json."""
+    token = _session_campaign.set(campaign_id)
+    try:
+        yield
+    finally:
+        _session_campaign.reset(token)
+
+
+def submit_in_context(pool, fn, *args, **kwargs):
+    """pool.submit que leva o contexto atual (campanha da sessão) para a thread do pool."""
+    return pool.submit(contextvars.copy_context().run, fn, *args, **kwargs)
+
+
+def campaign_exists(campaign_id: str) -> bool:
+    return campaign_id in load_config().get('campaigns', {})
+
+
 def get_current_campaign() -> dict:
-    """Retorna os dados da campanha atual."""
+    """Retorna os dados da campanha da sessão (se houver escopo) ou da campanha global."""
     config = load_config()
-    current_name = config.get('current_campaign', 'lamento_do_bardo')
+    current_name = _session_campaign.get() or config.get('current_campaign', 'lamento_do_bardo')
     return config.get('campaigns', {}).get(current_name, {})
 
 def load_campaign_data(filepath: str) -> dict:

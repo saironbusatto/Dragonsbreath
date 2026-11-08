@@ -37,7 +37,7 @@ if _google_creds_json:
     os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = _tmp.name
     atexit.register(os.unlink, _tmp.name)
 
-from campaign_manager import list_available_campaigns, switch_campaign
+from campaign_manager import list_available_campaigns, campaign_exists, campaign_scope, submit_in_context
 from world_state_manager import create_initial_world_state, update_world_state
 from database import init_db, list_saves, get_save, upsert_save, delete_save
 from auth import get_current_user, get_optional_user
@@ -699,6 +699,7 @@ def load_save(save_id: int, current_user: dict = Depends(get_current_user)):
         raise HTTPException(404, "Save não encontrado")
 
     world_state = _json.loads(save["world_state"])
+    world_state.setdefault("campaign_id", save["campaign_id"])
     new_session_id = str(uuid.uuid4())
     sessions[new_session_id] = world_state
     session_user[new_session_id] = uid
@@ -726,10 +727,17 @@ def remove_save(save_id: int, current_user: dict = Depends(get_current_user)):
 def start_game(req: StartRequest):
     if not req.player_name.strip():
         raise HTTPException(400, "Nome não pode ser vazio")
+    if not campaign_exists(req.campaign_id):
+        raise HTTPException(400, "Campanha desconhecida")
+    # Escopo por sessão: nunca troca a campanha global (config.json) de outros jogadores.
+    with campaign_scope(req.campaign_id):
+        return _start_game(req)
 
-    switch_campaign(req.campaign_id)
+
+def _start_game(req: StartRequest) -> dict:
     world_state = create_initial_world_state(req.player_name.strip(), req.player_class)
     world_state["game_mode"] = "rpg"
+    world_state["campaign_id"] = req.campaign_id
     if req.tutorial:
         world_state["tutorial_turn"] = 3
 
@@ -769,9 +777,9 @@ def start_game(req: StartRequest):
     pause_segments = world_state.get("pause_beat_segments", [])
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=3) as pool:
-        future_tts     = pool.submit(build_audio_payload, opening_clean, "master", tts_speed, pause_segments)
-        future_ambient = pool.submit(_get_ambient_for_act, current_act)
-        future_intro   = pool.submit(_get_intro_music)
+        future_tts     = submit_in_context(pool, build_audio_payload, opening_clean, "master", tts_speed, pause_segments)
+        future_ambient = submit_in_context(pool, _get_ambient_for_act, current_act)
+        future_intro   = submit_in_context(pool, _get_intro_music)
         audio, audio_timeline = future_tts.result()
         ambient_url           = future_ambient.result()
         intro_music_url       = future_intro.result()
@@ -799,7 +807,13 @@ def take_action(req: ActionRequest):
     world_state = sessions.get(req.session_id)
     if world_state is None:
         raise HTTPException(404, "Sessão não encontrada. Inicie um novo jogo.")
+    # Saves antigos não têm campaign_id: cai no mapa da sessão e, por fim, na campanha global.
+    campaign_id = world_state.get("campaign_id") or session_campaign.get(req.session_id)
+    with campaign_scope(campaign_id):
+        return _take_action(req, world_state)
 
+
+def _take_action(req: ActionRequest, world_state: dict) -> dict:
     action = req.action.strip()
     if not action:
         raise HTTPException(400, "Ação não pode ser vazia")
@@ -903,8 +917,8 @@ def take_action(req: ActionRequest):
         return build_audio_payload(cleaned_narrative, "master", tts_speed_pre, pause_segments=pause_segments_pre)
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=2) as pool:
-        future_ws  = pool.submit(update_world_state, world_state, action_with_trigger, gm_response)
-        future_tts = pool.submit(_build_tts)
+        future_ws  = submit_in_context(pool, update_world_state, world_state, action_with_trigger, gm_response)
+        future_tts = submit_in_context(pool, _build_tts)
         world_state        = future_ws.result()
         audio, audio_timeline = future_tts.result()
 
