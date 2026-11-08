@@ -98,6 +98,16 @@ def test_death_house_enemies_have_initial_status():
     assert not missing, f"inimigos sem status_inicial: {missing}"
 
 
+def test_death_house_rooms_have_floor_and_ambient_description(locais):
+    floors = {"terreo", "segundo", "terceiro", "sotao", "dungeon"}
+    rooms = {k: v for k, v in locais.items() if k.startswith("area_")}
+    bad = [
+        k for k, v in rooms.items()
+        if v.get("andar") not in floors or not v.get("ambient_descricao")
+    ]
+    assert len(rooms) == 57 and not bad, f"salas sem andar/ambient_descricao: {bad}"
+
+
 def test_secret_stairs_have_no_shortcuts(locais):
     entries = {s: d for s, d, t in _edges(locais) if t == SECRET_STAIRS}
     assert set(entries) <= SECRET_STAIRS_ENTRIES, f"atalho para a escada secreta: {set(entries) - SECRET_STAIRS_ENTRIES}"
