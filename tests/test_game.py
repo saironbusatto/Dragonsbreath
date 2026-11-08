@@ -256,7 +256,7 @@ class TestGetItemSlots:
         assert isinstance(result, int)
 
     def test_returns_1_on_exception(self):
-        with patch("game.get_campaign_files", side_effect=Exception("error")):
+        with patch("game.get_campaign_files", side_effect=FileNotFoundError("error")):
             result = game.get_item_slots("item")
         assert result == 1
 
