@@ -174,12 +174,14 @@
       "dificuldade_descoberta": "fácil",
       "ato_aparicao": 1,
       "home_location": "area_11_balcao_3o_andar",
+      "allowed_rooms": ["area_11_balcao_3o_andar"],
       "aparencia_facil": "Uma armadura negra completa de placa, de pé no canto da varanda como uma peça decorativa. Vazia por dentro. Estática — até não ser mais.",
       "verdade_oculta": "Construto animado pela magia residual do culto Durst. Não possui mente, apenas missão: eliminar intrusos.",
       "combate": {
         "hp": 33,
         "ca": 18,
         "gatilho": ["aproximacao_1_5m", "dano_recebido"],
+        "status_inicial": "inativo",
         "ataques": [
           "Multiataques: 2 socos por rodada",
           "Soco: +4 para acertar, alcance 1,5m, 1d6+2 contusão"
@@ -211,12 +213,14 @@
       "dificuldade_descoberta": "difícil",
       "ato_aparicao": 1,
       "home_location": "area_14_deposito_3o_andar",
+      "allowed_rooms": ["area_14_deposito_3o_andar"],
       "aparencia_facil": "Uma vassoura comum encostada na parede do depósito. Parece inofensiva, empoeirada, esquecida.",
       "verdade_oculta": "Construto Pequeno animado por magia de criação doméstica corrompida. Aparência falsa — parece vassoura normal quando imóvel. Ataca qualquer um que a agarre ou tente usá-la.",
       "combate": {
         "hp": 17,
         "ca": 15,
         "gatilho": ["agarrada_ou_montada"],
+        "status_inicial": "inativa",
         "ataques": [
           "Cabo de vassoura: +5 para acertar, alcance 1,5m, 1d4+3 contusão",
           "Pode atacar 2 vezes por rodada"
@@ -248,18 +252,20 @@
       "dificuldade_descoberta": "médio",
       "ato_aparicao": 1,
       "home_location": "area_15a_quarto_baba",
+      "allowed_rooms": ["area_15a_quarto_baba", "area_15b_quarto_bebe", "area_18_deposito_restos_baba"],
       "aparencia_facil": "Uma figura feminina jovem, pálida até a transparência, esquelética, com a boca aberta num grito que não emite som. Os olhos são dois buracos negros.",
       "verdade_oculta": "Espectro da babá dos Durst, morta a serviço da casa. Manifesta-se ao abrir a porta do berçário. Não fala, não negocia, não pode ser persuadida — ataca por compulsão sobrenatural.",
       "combate": {
         "hp": 22,
         "ca": 12,
-        "gatilho": ["abertura_porta_15b"],
+        "gatilho": ["abertura_porta_15b", "perturbacao_restos_18"],
+        "status_inicial": "latente",
         "ataques": [
           "Drenagem de Vida: +4 para acertar, alcance 1,5m, 3d6 necrótico. O HP máximo do alvo é reduzido na quantidade do dano sofrido até um descanso longo."
         ],
         "resistencias": ["ácido", "fogo", "raio", "trovão", "contusão/perfurante/cortante não-mágico"],
         "imunidades": ["frio", "necrótico", "veneno", "encantamento", "exaustão", "agarrado", "paralisado", "petrificado", "prostrado", "envenenado"],
-        "comportamento": "Manifesta-se quando a porta do berçário (area_15b) é aberta. Ataca o intruso mais próximo e continua enquanto houver alvos na área. Não persegue além dos quartos 15a/15b."
+        "comportamento": "Manifesta-se quando a porta do berçário (area_15b) é aberta. Ataca o intruso mais próximo e continua enquanto houver alvos na área. Não persegue além dos quartos 15a/15b. Também se manifesta na área 18 se alguém perturbar os restos da babá e ela ainda não tiver sido derrotada."
       },
       "assinatura_narrativa": {
         "aliases": ["babá fantasma", "espectro do berçário", "figura pálida"],
@@ -284,12 +290,14 @@
       "dificuldade_descoberta": "médio",
       "ato_aparicao": 1,
       "home_location": "area_20_quarto_criancas",
+      "allowed_rooms": ["area_20_quarto_criancas"],
       "aparencia_facil": "Forma translúcida de uma menina de 10 anos, ainda vestida como quando morreu — mas agora os olhos carregam décadas de solidão e desespero.",
       "verdade_oculta": "O verdadeiro espírito de Rose, morta de inanição trancada no sótão pelos pais. Leal e Boa. Luta apenas em legítima defesa. Teme profundamente o abandono — tentará possuir quem tentar partir.",
       "combate": {
         "hp": 35,
         "ca": 11,
         "gatilho": ["perturbacao_bau", "perturbacao_casinha"],
+        "status_inicial": "latente",
         "ataques": [
           "Toque Consumidor: +5 para acertar, alcance 1,5m, 4d6+3 necrótico",
           "Possessão (Recarrega no 6): alvo humanóide a até 1,5m, CD 13 Carisma ou fica possuído. Rose some e controla o corpo. Dura até o alvo chegar a 0 HP ou ser expulso por magia."
@@ -321,12 +329,14 @@
       "dificuldade_descoberta": "médio",
       "ato_aparicao": 1,
       "home_location": "area_20_quarto_criancas",
+      "allowed_rooms": ["area_20_quarto_criancas"],
       "aparencia_facil": "Forma translúcida de um menino de 7 anos, ainda segurando o boneco de pelúcia — agora transparente como ele. Olhos grandes e úmidos, expressão de puro terror.",
       "verdade_oculta": "O verdadeiro espírito de Thorn, morto de inanição junto com a irmã. Leal e Bom. Quase não age por conta própria — segue Rose. Luta apenas em legítima defesa extrema.",
       "combate": {
         "hp": 35,
         "ca": 11,
         "gatilho": ["perturbacao_bau", "perturbacao_casinha"],
+        "status_inicial": "latente",
         "ataques": [
           "Toque Consumidor: +5 para acertar, alcance 1,5m, 4d6+3 necrótico",
           "Possessão (Recarrega no 6): alvo humanóide a até 1,5m, CD 13 Carisma ou fica possuído."
@@ -358,12 +368,15 @@
       "dificuldade_descoberta": "difícil",
       "ato_aparicao": 1,
       "home_location": "area_28_despensa_dungeon",
+      "allowed_rooms": ["area_28_despensa_dungeon"],
       "aparencia_facil": "Algo desliza na pedra no escuro da alcova. O cheiro azedo piora. Então os tentáculos saem.",
       "verdade_oculta": "Aberração que se instalou na despensa do dungeon. Predador oportunista — rasteja para atacar o primeiro que entrar a 1,5m. Mimetismo de pedra: Percepção Passiva menor que 12 é surpreendida.",
       "combate": {
         "hp": 27,
         "ca": 14,
         "gatilho": ["aproximacao_1_5m"],
+        "status_inicial": "à espreita",
+        "loot_pos_morte": "nenhum",
         "ataques": [
           "Multiataques: tentáculos + bico",
           "Tentáculos: +4 para acertar, alcance 1,5m, 2d6+2 perfurante",
@@ -396,12 +409,15 @@
       "dificuldade_descoberta": "difícil",
       "ato_aparicao": 1,
       "home_location": "area_29_encontro_fantasmas",
+      "allowed_rooms": ["area_29_encontro_fantasmas"],
       "aparencia_facil": "O chão do cruzamento explode em quatro pontos simultaneamente. Mãos saem primeiro — depois rostos com bocas abertas demais.",
       "verdade_oculta": "Quatro ex-membros do culto Durst transformados em ghouls após décadas enterrados. Emergem apenas quando alguém alcança o centro do cruzamento. Lutam até serem destruídos.",
       "combate": {
         "hp": 22,
         "ca": 12,
         "gatilho": ["personagem_no_centro_cruzamento"],
+        "status_inicial": "subterrâneo",
+        "loot_pos_morte": "nenhum — trapos podres",
         "ataques": [
           "Garras: +2 para acertar, alcance 1,5m, 2d6+2 cortante. CD 10 Constituição ou paralisado por 1 minuto (não afeta mortos-vivos nem elfos).",
           "Mordida (apenas em alvos incapacitados): +2 para acertar, alcance 1,5m, 2d6+2 perfurante"
@@ -434,12 +450,14 @@
       "dificuldade_descoberta": "difícil",
       "ato_aparicao": 1,
       "home_location": "area_33_sala_lideres_culto",
+      "allowed_rooms": ["area_33_sala_lideres_culto"],
       "aparencia_facil": "Uma porta de madeira comum no canto sudoeste da sala. Madeira escura, maçaneta de ferro, absolutamente normal.",
       "verdade_oculta": "Mimic padrão disfarçado de porta. Aparência falsa perfeita enquanto imóvel. Ao ser tocado/aberto, agarra o personagem com pseudópode e revela sua natureza.",
       "combate": {
         "hp": 58,
         "ca": 12,
         "gatilho": ["toque_porta_sudoeste", "dano_recebido"],
+        "status_inicial": "disfarçado",
         "ataques": [
           "Pseudópode: +5 para acertar, alcance 1,5m, 1d8+3 contusão + Adesivo (veja abaixo)",
           "Mordida: +5 para acertar, alcance 1,5m, 1d8+3 perfurante",
@@ -472,12 +490,15 @@
       "dificuldade_descoberta": "médio",
       "ato_aparicao": 1,
       "home_location": "area_34_aposentos_lideres_culto",
+      "allowed_rooms": ["area_34_aposentos_lideres_culto"],
       "aparencia_facil": "Duas formas humanas emergem das paredes de terra — vestindo túnicas negras esfarrapadas. Rostos familiares de retratos que talvez o jogador tenha visto. O cheiro é insuportável.",
       "verdade_oculta": "Os próprios pais Durst — Gustav e Elisabeth — como ghasts. Irrompem das paredes se qualquer item for retirado do baú (footlocker). A podridão que foram em vida, agora literal.",
       "combate": {
         "hp": 36,
         "ca": 13,
         "gatilho": ["remocao_item_bau"],
+        "status_inicial": "ocultos_na_parede",
+        "loot_pos_morte": "mantos pretos esfarrapados",
         "ataques": [
           "Mordida: +3 para acertar, alcance 1,5m, 2d8+1 perfurante",
           "Garras: +5 para acertar, alcance 1,5m, 2d6+3 cortante. CD 10 Constituição ou paralisado por 1 minuto."
@@ -510,12 +531,14 @@
       "dificuldade_descoberta": "médio",
       "ato_aparicao": 1,
       "home_location": "area_38_camara_ritual",
+      "allowed_rooms": ["area_38_camara_ritual", "area_22_acesso_dungeon", "area_23_criptas_familia", "area_23a_cripta_vazia", "area_23b_cripta_walter", "area_23c_cripta_gustav", "area_23d_cripta_elisabeth", "area_23e_cripta_rose", "area_23f_cripta_thorn", "area_24_aposentos_iniciantes_culto", "area_25_poco_quartos_cultistas", "area_25a", "area_25b", "area_25c", "area_25d", "area_25e", "area_26_poco_espigoes_oculto", "area_27_refeitorio_dungeon", "area_28_despensa_dungeon", "area_29_encontro_fantasmas", "area_30_escada_descida", "area_31_santuario_darklord", "area_32_alcapao_oculto_dungeon", "area_33_sala_lideres_culto", "area_34_aposentos_lideres_culto", "area_35_relicario", "area_36_prisao", "area_37_portcullis"],
       "aparencia_facil": "Uma montanha de raízes, lama e matéria vegetal podre na alcova oeste. Parece apenas um monte de detritos — até não parecer.",
       "verdade_oculta": "Lorghoth, criatura convocada e mantida adormecida pelo culto como arma final. Desperta se for atacado diretamente ou se o jogador recusar o sacrifício no altar. Boss final da Death House.",
       "combate": {
         "hp": 136,
         "ca": 15,
         "gatilho": ["recusa_sacrificio", "ataque_direto"],
+        "status_inicial": "adormecida",
         "ataques": [
           "Multiataques: 2 socos por rodada",
           "Soco: +8 para acertar, alcance 1,5m, 2d8+5 contusão",
@@ -550,6 +573,8 @@
       "dificuldade_descoberta": "fácil",
       "ato_aparicao": 1,
       "home_location": "area_31_santuario_darklord",
+      "allowed_rooms": ["area_31_santuario_darklord"],
+      "nota_ia": "NUNCA mover Strahd real para esta sala. Esta é apenas sua efígie.",
       "aparencia_facil": "Uma sombra alta e fria emana da estátua de madeira pintada no santuário — forma vagamente humana com olhos de âmbar que parecem seguir cada movimento.",
       "verdade_oculta": "NÃO é Strahd real. É uma projeção do fanatismo do culto Durst — energia residual de décadas de adoração sombria impregnada na estátua. Não age com inteligência própria, apenas reage a profanações.",
       "assinatura_narrativa": {

@@ -71,6 +71,33 @@ def test_every_enemy_has_structured_trigger():
     assert enemies and not bad, f"combate sem gatilho estruturado: {bad}"
 
 
+def test_death_house_npcs_have_valid_allowed_rooms(locais):
+    npcs = json.loads((LOCAIS_PATH.parent / "npcs.json").read_text(encoding="utf-8"))["npcs"]
+    # Obrigatório para inimigos da Death House; validado em qualquer NPC que o declare.
+    checked = {
+        k: v for k, v in npcs.items()
+        if "allowed_rooms" in v
+        or (isinstance(v.get("combate"), dict) and v.get("home_location", "").startswith("area_"))
+    }
+    bad = {
+        k: v.get("allowed_rooms") for k, v in checked.items()
+        if not v.get("allowed_rooms")
+        or v["home_location"] not in v["allowed_rooms"]
+        or any(r not in locais for r in v["allowed_rooms"])
+    }
+    assert checked and not bad, f"allowed_rooms inválido: {bad}"
+
+
+def test_death_house_enemies_have_initial_status():
+    npcs = json.loads((LOCAIS_PATH.parent / "npcs.json").read_text(encoding="utf-8"))["npcs"]
+    missing = [
+        k for k, v in npcs.items()
+        if isinstance(v.get("combate"), dict) and v.get("home_location", "").startswith("area_")
+        and not v["combate"].get("status_inicial")
+    ]
+    assert not missing, f"inimigos sem status_inicial: {missing}"
+
+
 def test_secret_stairs_have_no_shortcuts(locais):
     entries = {s: d for s, d, t in _edges(locais) if t == SECRET_STAIRS}
     assert set(entries) <= SECRET_STAIRS_ENTRIES, f"atalho para a escada secreta: {set(entries) - SECRET_STAIRS_ENTRIES}"
