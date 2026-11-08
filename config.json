@@ -222,6 +222,20 @@
         "initial_description": "O personagem estava viajando por uma estrada de terra comum quando o ar esfriou subitamente. Uma névoa espessa, cinzenta e antinatural rastejou pelo chão e engoliu a floresta, bloqueando a luz do sol e qualquer caminho de volta. A névoa parece viva e empurra o personagem inexoravelmente para frente, forçando-o a continuar andando pela velha Estrada de Svalich até chegar à sombria Vila de Baróvia.",
         "initial_quest": "Descobrir onde está e encontrar uma saída — ou um propósito — nesta terra amaldiçoada",
         "initial_location": "estrada_svalich",
+        "initial_flags": {
+          "death_house": {
+            "secret_stairs_21_revealed": false,
+            "trapdoor_32_opened": false,
+            "strahd_letter_found": false,
+            "dollhouse_secret_found": false,
+            "rose_remains_laid_to_rest": false,
+            "thorn_remains_laid_to_rest": false,
+            "sacrifice_made": false,
+            "cult_denied": false,
+            "lorghoth_awakened": false,
+            "portcullis_37_raised": false
+          }
+        },
         "initial_triggers": {
           "estrada_svalich": [
             "nevoa_engole"

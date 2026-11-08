@@ -108,6 +108,23 @@ def test_death_house_rooms_have_floor_and_ambient_description(locais):
     assert len(rooms) == 57 and not bad, f"salas sem andar/ambient_descricao: {bad}"
 
 
+def test_death_house_initial_flags(locais):
+    import re
+
+    config = json.loads((LOCAIS_PATH.parents[2] / "config.json").read_text(encoding="utf-8"))
+    flags = config["campaigns"]["curse_of_strahd"]["world_template"]["initial_flags"]["death_house"]
+    assert len(flags) == 10 and all(v is False for v in flags.values())
+
+    conditions = [
+        seg.get("condicao", "")
+        for loc in locais.values()
+        for seg in (loc.get("segredo_oculto") or {}).get("segredos", [])
+    ]
+    referenced = {tok for c in conditions for tok in re.findall(r"[a-z0-9]+(?:_[a-z0-9]+)+", c)}
+    unknown = referenced - set(flags)
+    assert referenced and not unknown, f"condições citam flags inexistentes: {unknown}"
+
+
 def test_secret_stairs_have_no_shortcuts(locais):
     entries = {s: d for s, d, t in _edges(locais) if t == SECRET_STAIRS}
     assert set(entries) <= SECRET_STAIRS_ENTRIES, f"atalho para a escada secreta: {set(entries) - SECRET_STAIRS_ENTRIES}"
