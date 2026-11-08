@@ -1,0 +1,409 @@
+{
+  "inspection": {
+    "autosave": null,
+    "response": {
+      "audio": "AUDIO<Você vê o po>",
+      "inspection": true,
+      "narrative": "Você vê o portão e névoa.",
+      "state": {
+        "alignment": "neutro",
+        "class": "Bardo",
+        "death_count": 0,
+        "hp": 20,
+        "inventory": [
+          "Alaúde de Madeira",
+          "Adaga de Ferro"
+        ],
+        "location": "umbraton",
+        "max_hp": 20,
+        "max_slots": 10,
+        "name": "Aldric",
+        "resurrection_flaws": []
+      },
+      "valid": true
+    },
+    "session_state": {
+      "campaign_id": "lamento_do_bardo",
+      "game_mode": "rpg",
+      "player_character": {
+        "alignment": "neutro",
+        "class": "Bardo",
+        "current_act": 1,
+        "death_count": 0,
+        "inventory": [
+          "Alaúde de Madeira",
+          "Adaga de Ferro"
+        ],
+        "max_slots": 10,
+        "name": "Aldric",
+        "resurrection_flaws": [],
+        "status": {
+          "hp": 20,
+          "max_hp": 20
+        }
+      },
+      "recent_narrations": [
+        "Você chega aos portões."
+      ],
+      "world_state": {
+        "current_location_key": "umbraton",
+        "gatilhos_ativos": {},
+        "gatilhos_usados": {},
+        "immediate_scene_description": "Portões de Umbraton.",
+        "interactable_elements_in_scene": {
+          "chao": [],
+          "containers": {},
+          "npc_itens": {},
+          "npcs": [],
+          "objetos": [
+            "portão"
+          ],
+          "saidas": [
+            "norte"
+          ]
+        }
+      }
+    }
+  },
+  "invalid": {
+    "autosave": null,
+    "response": {
+      "audio": "AUDIO<Como um Bard>",
+      "narrative": "Como um Bardo humano normal, você não pode paro o tempo. Tente uma abordagem mais realista.",
+      "state": {
+        "alignment": "neutro",
+        "class": "Bardo",
+        "death_count": 0,
+        "hp": 20,
+        "inventory": [
+          "Alaúde de Madeira",
+          "Adaga de Ferro"
+        ],
+        "location": "umbraton",
+        "max_hp": 20,
+        "max_slots": 10,
+        "name": "Aldric",
+        "resurrection_flaws": []
+      },
+      "valid": false
+    },
+    "session_state": {
+      "campaign_id": "lamento_do_bardo",
+      "game_mode": "rpg",
+      "player_character": {
+        "alignment": "neutro",
+        "class": "Bardo",
+        "current_act": 1,
+        "death_count": 0,
+        "inventory": [
+          "Alaúde de Madeira",
+          "Adaga de Ferro"
+        ],
+        "max_slots": 10,
+        "name": "Aldric",
+        "resurrection_flaws": [],
+        "status": {
+          "hp": 20,
+          "max_hp": 20
+        }
+      },
+      "recent_narrations": [
+        "Você chega aos portões."
+      ],
+      "world_state": {
+        "current_location_key": "umbraton",
+        "gatilhos_ativos": {},
+        "gatilhos_usados": {},
+        "immediate_scene_description": "Portões de Umbraton.",
+        "interactable_elements_in_scene": {
+          "chao": [],
+          "containers": {},
+          "npc_itens": {},
+          "npcs": [],
+          "objetos": [
+            "portão"
+          ],
+          "saidas": [
+            "norte"
+          ]
+        }
+      }
+    }
+  },
+  "normal": {
+    "autosave": {
+      "campaign_id": "unknown",
+      "character_class": "Bardo",
+      "character_name": "Aldric",
+      "clerk_user_id": "user-123"
+    },
+    "response": {
+      "ambient": null,
+      "audio": "AUDIO<O portão ran>",
+      "audio_timeline": null,
+      "critical_sfx": null,
+      "fumble_sfx": null,
+      "hdywdtd": false,
+      "hdywdtd_prompt": null,
+      "mood": "tense",
+      "narrative": "O portão range. O que você faz?",
+      "resurrection": false,
+      "resurrection_result": null,
+      "roll": null,
+      "roll_sfx": null,
+      "sfx": [
+        {
+          "position": 0.2,
+          "url": "porta.mp3"
+        }
+      ],
+      "state": {
+        "alignment": "neutro",
+        "class": "Bardo",
+        "death_count": 0,
+        "hp": 20,
+        "inventory": [
+          "Alaúde de Madeira",
+          "Adaga de Ferro"
+        ],
+        "location": "umbraton",
+        "max_hp": 20,
+        "max_slots": 10,
+        "name": "Aldric",
+        "resurrection_flaws": []
+      },
+      "trigger_sfx": "corvo.mp3",
+      "tutorial_turn": 0,
+      "valid": true
+    },
+    "session_state": {
+      "campaign_id": "lamento_do_bardo",
+      "consecutive_movement_turns": 0,
+      "game_mode": "rpg",
+      "narration_mood": "tense",
+      "pause_beat_count": 0,
+      "pause_beat_segments": [],
+      "player_character": {
+        "alignment": "neutro",
+        "class": "Bardo",
+        "current_act": 1,
+        "death_count": 0,
+        "inventory": [
+          "Alaúde de Madeira",
+          "Adaga de Ferro"
+        ],
+        "max_slots": 10,
+        "name": "Aldric",
+        "resurrection_flaws": [],
+        "status": {
+          "hp": 20,
+          "max_hp": 20
+        }
+      },
+      "recent_narrations": [
+        "Você chega aos portões.",
+        "O portão range. O que você faz?"
+      ],
+      "world_state": {
+        "current_location_key": "umbraton",
+        "gatilhos_ativos": {},
+        "gatilhos_usados": {},
+        "immediate_scene_description": "Após: abro o portão\n[Gatil",
+        "interactable_elements_in_scene": {
+          "chao": [],
+          "containers": {},
+          "npc_itens": {},
+          "npcs": [],
+          "objetos": [
+            "portão"
+          ],
+          "saidas": [
+            "norte"
+          ]
+        }
+      }
+    }
+  },
+  "resurrection": {
+    "autosave": null,
+    "response": {
+      "audio": "AUDIO<A oferenda é>",
+      "audio_timeline": null,
+      "critical_sfx": null,
+      "fumble_sfx": null,
+      "mood": "sad",
+      "narrative": "A oferenda é aceita.",
+      "resurrection": true,
+      "resurrection_result": "accepted",
+      "roll": null,
+      "roll_sfx": null,
+      "sfx": [],
+      "state": {
+        "alignment": "neutro",
+        "class": "Bardo",
+        "death_count": 0,
+        "hp": 20,
+        "inventory": [
+          "Alaúde de Madeira",
+          "Adaga de Ferro"
+        ],
+        "location": "umbraton",
+        "max_hp": 20,
+        "max_slots": 10,
+        "name": "Aldric",
+        "resurrection_flaws": []
+      },
+      "tutorial_turn": 0,
+      "valid": true
+    },
+    "session_state": {
+      "campaign_id": "lamento_do_bardo",
+      "game_mode": "rpg",
+      "pause_beat_count": 0,
+      "pause_beat_segments": [],
+      "player_character": {
+        "alignment": "neutro",
+        "class": "Bardo",
+        "current_act": 1,
+        "death_count": 0,
+        "inventory": [
+          "Alaúde de Madeira",
+          "Adaga de Ferro"
+        ],
+        "max_slots": 10,
+        "name": "Aldric",
+        "resurrection_flaws": [],
+        "status": {
+          "hp": 20,
+          "max_hp": 20
+        }
+      },
+      "recent_narrations": [
+        "Você chega aos portões."
+      ],
+      "resurrection_state": {
+        "stage": "awaiting_offering"
+      },
+      "world_state": {
+        "current_location_key": "umbraton",
+        "gatilhos_ativos": {},
+        "gatilhos_usados": {},
+        "immediate_scene_description": "Portões de Umbraton.",
+        "interactable_elements_in_scene": {
+          "chao": [],
+          "containers": {},
+          "npc_itens": {},
+          "npcs": [],
+          "objetos": [
+            "portão"
+          ],
+          "saidas": [
+            "norte"
+          ]
+        }
+      }
+    }
+  },
+  "with_roll": {
+    "autosave": {
+      "campaign_id": "unknown",
+      "character_class": "Bardo",
+      "character_name": "Aldric",
+      "clerk_user_id": "user-123"
+    },
+    "response": {
+      "ambient": null,
+      "audio": "AUDIO<O portão ran>",
+      "audio_timeline": null,
+      "critical_sfx": null,
+      "fumble_sfx": null,
+      "hdywdtd": false,
+      "hdywdtd_prompt": null,
+      "mood": "tense",
+      "narrative": "O portão range. O que você faz?",
+      "resurrection": false,
+      "resurrection_result": null,
+      "roll": {
+        "critical": false,
+        "dc": 12,
+        "dice": "1d20",
+        "fumble": false,
+        "modifier": "normal",
+        "roll": 15,
+        "success": true
+      },
+      "roll_sfx": "dado.mp3",
+      "sfx": [
+        {
+          "position": 0.2,
+          "url": "porta.mp3"
+        }
+      ],
+      "state": {
+        "alignment": "neutro",
+        "class": "Bardo",
+        "death_count": 0,
+        "hp": 20,
+        "inventory": [
+          "Alaúde de Madeira",
+          "Adaga de Ferro"
+        ],
+        "location": "umbraton",
+        "max_hp": 20,
+        "max_slots": 10,
+        "name": "Aldric",
+        "resurrection_flaws": []
+      },
+      "trigger_sfx": "corvo.mp3",
+      "tutorial_turn": 0,
+      "valid": true
+    },
+    "session_state": {
+      "campaign_id": "lamento_do_bardo",
+      "consecutive_movement_turns": 0,
+      "game_mode": "rpg",
+      "narration_mood": "tense",
+      "pause_beat_count": 0,
+      "pause_beat_segments": [],
+      "player_character": {
+        "alignment": "neutro",
+        "class": "Bardo",
+        "current_act": 1,
+        "death_count": 0,
+        "inventory": [
+          "Alaúde de Madeira",
+          "Adaga de Ferro"
+        ],
+        "max_slots": 10,
+        "name": "Aldric",
+        "resurrection_flaws": [],
+        "status": {
+          "hp": 20,
+          "max_hp": 20
+        }
+      },
+      "recent_narrations": [
+        "Você chega aos portões.",
+        "O portão range. O que você faz?"
+      ],
+      "world_state": {
+        "current_location_key": "umbraton",
+        "gatilhos_ativos": {},
+        "gatilhos_usados": {},
+        "immediate_scene_description": "Após: escalo o muro\n[Gatil",
+        "interactable_elements_in_scene": {
+          "chao": [],
+          "containers": {},
+          "npc_itens": {},
+          "npcs": [],
+          "objetos": [
+            "portão"
+          ],
+          "saidas": [
+            "norte"
+          ]
+        }
+      }
+    }
+  }
+}
