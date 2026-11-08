@@ -15,6 +15,9 @@ from unittest.mock import MagicMock, patch
 def _isolated_turn_logs(tmp_path, monkeypatch):
     """Nenhum teste grava turn_logs/ no diretório real do projeto."""
     monkeypatch.setenv("TURN_LOG_DIR", str(tmp_path / "turn_logs"))
+    # O .env local liga MEMORY_MODE=layered (carregado ao importar web_api); a suíte parte do default.
+    monkeypatch.setenv("MEMORY_MODE", "legacy")
+    monkeypatch.setenv("MEMORY_BASE_DIR", str(tmp_path / "memory"))
 
 
 # ─── Fixtures: World State ────────────────────────────────────────────────────

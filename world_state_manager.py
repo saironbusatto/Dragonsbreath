@@ -4,6 +4,7 @@ import random
 import re
 import unicodedata
 from openai import OpenAI
+from party import ENGINE_KEYS, without_engine_keys
 from campaign_manager import (
     get_campaign_files,
     get_class_template,
@@ -759,7 +760,7 @@ REGRAS DE ATUALIZAÇÃO:
 
     # USER: o estado atual + o que acabou de acontecer
     archivista_user = f"""JSON DO ESTADO ATUAL:
-{json.dumps(old_state, indent=2, ensure_ascii=False)}
+{json.dumps(without_engine_keys(old_state), indent=2, ensure_ascii=False)}
 
 EVENTOS RECENTES:
 - Ação do jogador: "{player_action}"
@@ -773,6 +774,9 @@ Retorne o JSON atualizado:"""
         if not novo_estado:
             return old_state
         novo_estado = _preserve_runtime_state(old_state, novo_estado)
+        # Chaves do motor não passam pelo Arquivista: sempre as do estado anterior.
+        novo_estado = {**without_engine_keys(novo_estado),
+                       **{k: old_state[k] for k in ENGINE_KEYS if k in old_state}}
         novo_estado = _enforce_critical_npc_locations(novo_estado)
 
         # Bloqueia teleporte inválido: reverte se a transição não existe no grafo de exits

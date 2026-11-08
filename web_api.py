@@ -41,6 +41,7 @@ if _google_creds_json:
     atexit.register(os.unlink, _tmp.name)
 
 import turn_log
+import party
 from campaign_manager import list_available_campaigns, campaign_exists, campaign_scope, submit_in_context
 from world_state_manager import create_initial_world_state, update_world_state
 from database import init_db, list_saves, get_save, upsert_save, delete_save
@@ -703,7 +704,7 @@ def load_save(save_id: int, current_user: dict = Depends(get_current_user)):
     if not save:
         raise HTTPException(404, "Save não encontrado")
 
-    world_state = _json.loads(save["world_state"])
+    world_state = party.ensure_party(_json.loads(save["world_state"]))  # save solo antigo vira grupo de um
     world_state.setdefault("campaign_id", save["campaign_id"])
     new_session_id = str(uuid.uuid4())
     sessions[new_session_id] = world_state
@@ -755,6 +756,7 @@ def _start_game(req: StartRequest) -> dict:
     opening_clean, world_state = clean_and_process_ai_response(opening_raw, world_state)
     world_state = update_world_state(world_state, "Iniciou a aventura", opening_raw)
     world_state["recent_narrations"] = [opening_clean[:300]]
+    world_state = party.ensure_party(world_state)
 
     session_id = str(uuid.uuid4())
     sessions[session_id] = world_state
@@ -854,9 +856,13 @@ def run_turn(world_state: dict, action: str, on_state_committed=None) -> TurnRes
     Cada turno vira uma linha no registro de turnos (turn_log; TURN_LOG=off desliga).
     """
     started = time.perf_counter()
+    world_state = party.ensure_party(world_state)
+    world_state = party.activate(world_state, world_state["party"]["active_member_id"])
     before = copy.deepcopy(world_state) if turn_log.is_enabled() else None
     trace: dict = {"path": "normal"}
-    result = _run_turn(world_state, action, on_state_committed, trace)
+    commit = (lambda ws: on_state_committed(party.commit_active(ws))) if on_state_committed else None
+    turn = _run_turn(world_state, action, commit, trace)
+    result = TurnResult(turn.response, party.commit_active(turn.world_state))
     if before is not None:
         _record_turn(before, result, action, trace, started)
     return result

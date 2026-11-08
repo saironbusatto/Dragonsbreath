@@ -15,6 +15,7 @@ from world_state_manager import (
 )
 from memory_loader import MemoryLoader, TurnContext
 from memory_writer import MemoryWriter
+from party import without_engine_keys
 from kairos_session import generate_session_reentry
 from campaign_manager import (
     get_campaign_files,
@@ -1100,7 +1101,7 @@ REGRA: O Mestre NUNCA move NPCs para fora de suas allowed_rooms sem evento narra
 REGRA: Saídas não listadas acima NÃO existem — nunca invente passagens ausentes.
 
 --- ESTADO ATUAL DO MUNDO ---
-{json.dumps(world_state, indent=2, ensure_ascii=False)}
+{json.dumps(without_engine_keys(world_state), indent=2, ensure_ascii=False)}
 
 --- CONTEXTO DO JOGO ---
 NPCs presentes: {json.dumps(game_context.get('npcs', {}), indent=2, ensure_ascii=False)}

@@ -26,6 +26,34 @@
       "_memory_namespace": "ns-teste",
       "campaign_id": "lamento_do_bardo",
       "game_mode": "rpg",
+      "party": {
+        "active_member_id": "p1",
+        "members": [
+          {
+            "character": {
+              "alignment": "neutro",
+              "class": "Bardo",
+              "current_act": 1,
+              "death_count": 0,
+              "inventory": [
+                "Alaúde de Madeira",
+                "Adaga de Ferro"
+              ],
+              "max_slots": 10,
+              "name": "Aldric",
+              "resurrection_flaws": [],
+              "status": {
+                "hp": 20,
+                "max_hp": 20
+              }
+            },
+            "connected": true,
+            "id": "p1",
+            "location_key": "umbraton",
+            "nickname": "Aldric"
+          }
+        ]
+      },
       "player_character": {
         "alignment": "neutro",
         "class": "Bardo",
@@ -92,6 +120,34 @@
       "_memory_namespace": "ns-teste",
       "campaign_id": "lamento_do_bardo",
       "game_mode": "rpg",
+      "party": {
+        "active_member_id": "p1",
+        "members": [
+          {
+            "character": {
+              "alignment": "neutro",
+              "class": "Bardo",
+              "current_act": 1,
+              "death_count": 0,
+              "inventory": [
+                "Alaúde de Madeira",
+                "Adaga de Ferro"
+              ],
+              "max_slots": 10,
+              "name": "Aldric",
+              "resurrection_flaws": [],
+              "status": {
+                "hp": 20,
+                "max_hp": 20
+              }
+            },
+            "connected": true,
+            "id": "p1",
+            "location_key": "umbraton",
+            "nickname": "Aldric"
+          }
+        ]
+      },
       "player_character": {
         "alignment": "neutro",
         "class": "Bardo",
@@ -184,6 +240,34 @@
       "consecutive_movement_turns": 0,
       "game_mode": "rpg",
       "narration_mood": "tense",
+      "party": {
+        "active_member_id": "p1",
+        "members": [
+          {
+            "character": {
+              "alignment": "neutro",
+              "class": "Bardo",
+              "current_act": 1,
+              "death_count": 0,
+              "inventory": [
+                "Alaúde de Madeira",
+                "Adaga de Ferro"
+              ],
+              "max_slots": 10,
+              "name": "Aldric",
+              "resurrection_flaws": [],
+              "status": {
+                "hp": 20,
+                "max_hp": 20
+              }
+            },
+            "connected": true,
+            "id": "p1",
+            "location_key": "umbraton",
+            "nickname": "Aldric"
+          }
+        ]
+      },
       "pause_beat_count": 0,
       "pause_beat_segments": [],
       "player_character": {
@@ -263,6 +347,34 @@
       "_memory_namespace": "ns-teste",
       "campaign_id": "lamento_do_bardo",
       "game_mode": "rpg",
+      "party": {
+        "active_member_id": "p1",
+        "members": [
+          {
+            "character": {
+              "alignment": "neutro",
+              "class": "Bardo",
+              "current_act": 1,
+              "death_count": 0,
+              "inventory": [
+                "Alaúde de Madeira",
+                "Adaga de Ferro"
+              ],
+              "max_slots": 10,
+              "name": "Aldric",
+              "resurrection_flaws": [],
+              "status": {
+                "hp": 20,
+                "max_hp": 20
+              }
+            },
+            "connected": true,
+            "id": "p1",
+            "location_key": "umbraton",
+            "nickname": "Aldric"
+          }
+        ]
+      },
       "pause_beat_count": 0,
       "pause_beat_segments": [],
       "player_character": {
@@ -368,6 +480,34 @@
       "consecutive_movement_turns": 0,
       "game_mode": "rpg",
       "narration_mood": "tense",
+      "party": {
+        "active_member_id": "p1",
+        "members": [
+          {
+            "character": {
+              "alignment": "neutro",
+              "class": "Bardo",
+              "current_act": 1,
+              "death_count": 0,
+              "inventory": [
+                "Alaúde de Madeira",
+                "Adaga de Ferro"
+              ],
+              "max_slots": 10,
+              "name": "Aldric",
+              "resurrection_flaws": [],
+              "status": {
+                "hp": 20,
+                "max_hp": 20
+              }
+            },
+            "connected": true,
+            "id": "p1",
+            "location_key": "umbraton",
+            "nickname": "Aldric"
+          }
+        ]
+      },
       "pause_beat_count": 0,
       "pause_beat_segments": [],
       "player_character": {
