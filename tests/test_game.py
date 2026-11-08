@@ -724,11 +724,12 @@ class TestFmtSceneNpcsForGm:
         assert "fazendo agora" in result
 
     # Caso 8: instrução de auditoria presente no prompt final do Mestre
-    def test_audit_instruction_in_gm_system_prompt(self, world_state_rpg):
+    def test_audit_instruction_in_gm_system_prompt(self, world_state_rpg, monkeypatch):
         """
         Verifica que a instrução de auditoria pré-resposta está presente
         no system_content gerado por get_gm_narrative.
         """
+        monkeypatch.setenv("OPENAI_API_KEY", "sk-test")  # sem a chave, get_gm_narrative retorna antes do prompt
         world_state_rpg["world_state"]["interactable_elements_in_scene"] = {
             "objetos": [], "npcs": [], "npc_itens": {},
             "containers": {}, "saidas": [], "chao": []
