@@ -45,3 +45,7 @@ Thumbs.db
 # Claude Code local config e banco de dados de runtime
 .claude/
 ressoar.db
+
+# Dados locais de jogo (por save) — nunca versionar
+memory/
+turn_logs/

@@ -16,6 +16,7 @@ import pytest
 SNAPSHOT = Path(__file__).resolve().parent / "snapshots" / "action_responses.json"
 
 BASE_STATE = {
+    "_memory_namespace": "ns-teste",  # fixo: senão o namespace seria um uuid aleatório
     "campaign_id": "lamento_do_bardo",
     "game_mode": "rpg",
     "player_character": {

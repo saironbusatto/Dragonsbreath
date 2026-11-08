@@ -9,6 +9,14 @@ import pytest
 from unittest.mock import MagicMock, patch
 
 
+# ─── Isolamento global ────────────────────────────────────────────────────────
+
+@pytest.fixture(autouse=True)
+def _isolated_turn_logs(tmp_path, monkeypatch):
+    """Nenhum teste grava turn_logs/ no diretório real do projeto."""
+    monkeypatch.setenv("TURN_LOG_DIR", str(tmp_path / "turn_logs"))
+
+
 # ─── Fixtures: World State ────────────────────────────────────────────────────
 
 @pytest.fixture

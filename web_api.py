@@ -10,6 +10,8 @@ import random
 import tempfile
 import logging
 import concurrent.futures
+import copy
+import time
 from typing import NamedTuple
 import requests as http_requests
 
@@ -38,11 +40,13 @@ if _google_creds_json:
     os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = _tmp.name
     atexit.register(os.unlink, _tmp.name)
 
+import turn_log
 from campaign_manager import list_available_campaigns, campaign_exists, campaign_scope, submit_in_context
 from world_state_manager import create_initial_world_state, update_world_state
 from database import init_db, list_saves, get_save, upsert_save, delete_save
 from auth import get_current_user, get_optional_user
 from game import (
+    _memory_namespace,
     get_gm_narrative,
     clean_and_process_ai_response,
     load_game_context_for_act,
@@ -847,11 +851,53 @@ def run_turn(world_state: dict, action: str, on_state_committed=None) -> TurnRes
 
     Chamar dentro de campaign_scope() da sessão. on_state_committed(world_state)
     é chamado quando o estado do turno está consolidado (usado para auto-save).
+    Cada turno vira uma linha no registro de turnos (turn_log; TURN_LOG=off desliga).
     """
+    started = time.perf_counter()
+    before = copy.deepcopy(world_state) if turn_log.is_enabled() else None
+    trace: dict = {"path": "normal"}
+    result = _run_turn(world_state, action, on_state_committed, trace)
+    if before is not None:
+        _record_turn(before, result, action, trace, started)
+    return result
+
+
+def _ms(since: float) -> int:
+    return int((time.perf_counter() - since) * 1000)
+
+
+def _timed(fn, trace: dict, key: str):
+    """Envolve fn para registrar sua duração em trace["timings_ms"][key] (seguro entre threads: chaves distintas)."""
+    def wrapper(*args, **kwargs):
+        t = time.perf_counter()
+        try:
+            return fn(*args, **kwargs)
+        finally:
+            trace.setdefault("timings_ms", {})[key] = _ms(t)
+    return wrapper
+
+
+def _record_turn(before: dict, result: "TurnResult", action: str, trace: dict, started: float) -> None:
+    pc = before.get("player_character", {})
+    turn_log.log_turn(_memory_namespace(result.world_state), {
+        "path": trace["path"],
+        "action": action,
+        "character": {"name": pc.get("name"), "class": pc.get("class")},
+        "gm_raw": trace.get("gm_raw"),
+        "narrative": result.response.get("narrative"),
+        "roll": trace.get("roll"),
+        "state_before": before,
+        "state_diff": turn_log.state_diff(before, result.world_state),
+        "timings_ms": {**trace.get("timings_ms", {}), "total_ms": _ms(started)},
+    })
+
+
+def _run_turn(world_state: dict, action: str, on_state_committed, trace: dict) -> TurnResult:
 
     resurrection_state = world_state.get("resurrection_state", {})
     if isinstance(resurrection_state, dict) and resurrection_state.get("stage") == "awaiting_offering":
         result = resolve_resurrection_offering(world_state, action)
+        trace.update(path="resurrection", roll=result.get("roll"))
         roll_data = result.get("roll") or {}
         narrative = result["narrative"]
         mood = world_state.get("narration_mood", result.get("mood", "sad"))
@@ -885,6 +931,7 @@ def run_turn(world_state: dict, action: str, on_state_committed=None) -> TurnRes
 
     # HUD Narrativo — Agente "Olhos do Jogador" (não avança o tempo do jogo)
     if is_inspection_action(action):
+        trace["path"] = "inspection"
         narrative = get_player_eyes_response(action, world_state)
         logger.debug(f"[OLHOS] {narrative[:80]!r}...")
         return TurnResult({
@@ -899,6 +946,7 @@ def run_turn(world_state: dict, action: str, on_state_committed=None) -> TurnRes
     character = world_state.get("player_character", {})
     is_valid, validation_message = validate_player_action(action, character, world_state)
     if not is_valid:
+        trace["path"] = "invalid"
         return TurnResult({
             "narrative": validation_message,
             "audio": to_audio_response(validation_message, "master"),
@@ -924,7 +972,10 @@ def run_turn(world_state: dict, action: str, on_state_committed=None) -> TurnRes
     game_context["gatilhos"] = [trigger_desc] if trigger_desc else []
 
     turn_ctx = _build_turn_context(world_state, game_context)
-    gm_response = get_gm_narrative(world_state, action_with_trigger, game_context, roll_result, turn_ctx=turn_ctx)
+    gm_response = _timed(get_gm_narrative, trace, "gm_ms")(
+        world_state, action_with_trigger, game_context, roll_result, turn_ctx=turn_ctx
+    )
+    trace.update(roll=roll_result, gm_raw=gm_response)
     cleaned_narrative, world_state = clean_and_process_ai_response(gm_response, world_state)
 
     # Arquivista (update_world_state) e TTS rodam em paralelo — maior ganho de latência
@@ -947,8 +998,8 @@ def run_turn(world_state: dict, action: str, on_state_committed=None) -> TurnRes
         return build_audio_payload(cleaned_narrative, "master", tts_speed_pre, pause_segments=pause_segments_pre)
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=2) as pool:
-        future_ws  = submit_in_context(pool, update_world_state, world_state, action_with_trigger, gm_response)
-        future_tts = submit_in_context(pool, _build_tts)
+        future_ws  = submit_in_context(pool, _timed(update_world_state, trace, "archivist_ms"), world_state, action_with_trigger, gm_response)
+        future_tts = submit_in_context(pool, _timed(_build_tts, trace, "tts_ms"))
         world_state        = future_ws.result()
         audio, audio_timeline = future_tts.result()
 

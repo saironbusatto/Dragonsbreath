@@ -23,6 +23,7 @@
       "valid": true
     },
     "session_state": {
+      "_memory_namespace": "ns-teste",
       "campaign_id": "lamento_do_bardo",
       "game_mode": "rpg",
       "player_character": {
@@ -88,6 +89,7 @@
       "valid": false
     },
     "session_state": {
+      "_memory_namespace": "ns-teste",
       "campaign_id": "lamento_do_bardo",
       "game_mode": "rpg",
       "player_character": {
@@ -177,6 +179,7 @@
       "valid": true
     },
     "session_state": {
+      "_memory_namespace": "ns-teste",
       "campaign_id": "lamento_do_bardo",
       "consecutive_movement_turns": 0,
       "game_mode": "rpg",
@@ -257,6 +260,7 @@
       "valid": true
     },
     "session_state": {
+      "_memory_namespace": "ns-teste",
       "campaign_id": "lamento_do_bardo",
       "game_mode": "rpg",
       "pause_beat_count": 0,
@@ -359,6 +363,7 @@
       "valid": true
     },
     "session_state": {
+      "_memory_namespace": "ns-teste",
       "campaign_id": "lamento_do_bardo",
       "consecutive_movement_turns": 0,
       "game_mode": "rpg",
