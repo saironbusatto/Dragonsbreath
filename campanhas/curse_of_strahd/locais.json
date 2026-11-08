@@ -426,13 +426,15 @@
         "oeste": "area_1a_entrada",
         "norte": "area_2b_sala_estar",
         "leste": "area_3_sala_jantar_terreo",
-        "escada_acima": "area_6_corredor_2o_andar"
+        "escada_acima": "area_6_corredor_2o_andar",
+        "oeste_quarto_criados": "area_5_quarto_criados"
       },
       "exits_semanticos": {
         "oeste": "A porta da entrada — névoa da rua e portão de ferro.",
         "norte": "Cheiro de cinzas mortas e couro velho — sala com lareira.",
         "leste": "Talheres enferrujados visíveis por entre as portas — sala de jantar.",
-        "escada_acima": "Degraus de mármore vermelho sobem rangendo rumo ao 2º andar."
+        "escada_acima": "Degraus de mármore vermelho sobem rangendo rumo ao 2º andar.",
+        "oeste_quarto_criados": "Porta estreita dos fundos — quarto dos criados, beliches de madeira tosca."
       },
       "ambient_url": "madeira_rangendo.mp3",
       "npcs_residentes": [],
@@ -1046,14 +1048,16 @@
         "escada_abaixo_sul": "area_15a_quarto_baba",
         "norte_trancado": "area_20_quarto_criancas",
         "leste": "area_17_quarto_sobressalente_1",
-        "sul": "area_19_quarto_sobressalente_2"
+        "sul": "area_19_quarto_sobressalente_2",
+        "sul_deposito": "area_18_deposito_restos_baba"
       },
       "exits_semanticos": {
         "escada_abaixo_oeste": "Escadaria desce ao balcão do 3º andar — armadura.",
         "escada_abaixo_sul": "Escadaria desce ao quarto da babá.",
         "norte_trancado": "Porta com cadeado — choro infantil por baixo. Trancada por fora.",
         "leste": "Quarto — corrente de vento e algo na janela.",
-        "sul": "Quarto vazio — teias e silêncio."
+        "sul": "Quarto vazio — teias e silêncio.",
+        "sul_deposito": "Depósito — móveis cobertos por lençóis brancos empoeirados."
       },
       "ambient_url": "vento_sotao.mp3",
       "npcs_residentes": [],
@@ -1219,12 +1223,14 @@
       "exits": {
         "acima": "area_21_escada_secreta_espiral",
         "sul_bifurcacao_oeste": "area_24_aposentos_iniciantes_culto",
-        "sul_bifurcacao_leste": "area_23_criptas_familia"
+        "sul_bifurcacao_leste": "area_23_criptas_familia",
+        "sul": "area_29_encontro_fantasmas"
       },
       "exits_semanticos": {
         "acima": "Escadaria espiral sobe ao sótão.",
         "sul_bifurcacao_oeste": "Túnel à oeste — cheiro de suor e fanatismo velho.",
-        "sul_bifurcacao_leste": "Túnel à leste — silêncio de pedra antiga e argila."
+        "sul_bifurcacao_leste": "Túnel à leste — silêncio de pedra antiga e argila.",
+        "sul": "Corredor ao sul — cruzamento de túneis, canto fantasma mais alto."
       },
       "ambient_url": "dungeon_gotejamento_canto_distante.mp3",
       "npcs_residentes": [],
@@ -1620,13 +1626,17 @@
         "norte": "area_22_acesso_dungeon",
         "sul": "area_35_relicario",
         "leste": "area_26_poco_espigoes_oculto",
-        "oeste": "area_30_escada_descida"
+        "oeste": "area_30_escada_descida",
+        "sul_santuario": "area_31_santuario_darklord",
+        "sul_lideres_culto": "area_33_sala_lideres_culto"
       },
       "exits_semanticos": {
         "norte": "Acesso ao dungeon — escadaria espiral.",
         "sul": "Canto espectral intenso — relicário.",
         "leste": "Corredor estreito — cuidado onde pisa.",
-        "oeste": "Escadaria desce — canto ainda mais forte abaixo."
+        "oeste": "Escadaria desce — canto ainda mais forte abaixo.",
+        "sul_santuario": "Passagem para uma câmara de esqueletos em grilhões — santuário.",
+        "sul_lideres_culto": "Porta para uma sala com lustre e mesa central — aposentos do culto."
       },
       "ambient_url": "dungeon_canto_fantasma_mais_alto.mp3",
       "npcs_residentes": ["ghouls_4x"],
