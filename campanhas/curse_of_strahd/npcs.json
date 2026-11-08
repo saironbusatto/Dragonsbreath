@@ -179,6 +179,7 @@
       "combate": {
         "hp": 33,
         "ca": 18,
+        "gatilho": ["aproximacao_1_5m", "dano_recebido"],
         "ataques": [
           "Multiataques: 2 socos por rodada",
           "Soco: +4 para acertar, alcance 1,5m, 1d6+2 contusão"
@@ -215,6 +216,7 @@
       "combate": {
         "hp": 17,
         "ca": 15,
+        "gatilho": ["agarrada_ou_montada"],
         "ataques": [
           "Cabo de vassoura: +5 para acertar, alcance 1,5m, 1d4+3 contusão",
           "Pode atacar 2 vezes por rodada"
@@ -251,6 +253,7 @@
       "combate": {
         "hp": 22,
         "ca": 12,
+        "gatilho": ["abertura_porta_15b"],
         "ataques": [
           "Drenagem de Vida: +4 para acertar, alcance 1,5m, 3d6 necrótico. O HP máximo do alvo é reduzido na quantidade do dano sofrido até um descanso longo."
         ],
@@ -286,6 +289,7 @@
       "combate": {
         "hp": 35,
         "ca": 11,
+        "gatilho": ["perturbacao_bau", "perturbacao_casinha"],
         "ataques": [
           "Toque Consumidor: +5 para acertar, alcance 1,5m, 4d6+3 necrótico",
           "Possessão (Recarrega no 6): alvo humanóide a até 1,5m, CD 13 Carisma ou fica possuído. Rose some e controla o corpo. Dura até o alvo chegar a 0 HP ou ser expulso por magia."
@@ -322,6 +326,7 @@
       "combate": {
         "hp": 35,
         "ca": 11,
+        "gatilho": ["perturbacao_bau", "perturbacao_casinha"],
         "ataques": [
           "Toque Consumidor: +5 para acertar, alcance 1,5m, 4d6+3 necrótico",
           "Possessão (Recarrega no 6): alvo humanóide a até 1,5m, CD 13 Carisma ou fica possuído."
@@ -358,6 +363,7 @@
       "combate": {
         "hp": 27,
         "ca": 14,
+        "gatilho": ["aproximacao_1_5m"],
         "ataques": [
           "Multiataques: tentáculos + bico",
           "Tentáculos: +4 para acertar, alcance 1,5m, 2d6+2 perfurante",
@@ -395,6 +401,7 @@
       "combate": {
         "hp": 22,
         "ca": 12,
+        "gatilho": ["personagem_no_centro_cruzamento"],
         "ataques": [
           "Garras: +2 para acertar, alcance 1,5m, 2d6+2 cortante. CD 10 Constituição ou paralisado por 1 minuto (não afeta mortos-vivos nem elfos).",
           "Mordida (apenas em alvos incapacitados): +2 para acertar, alcance 1,5m, 2d6+2 perfurante"
@@ -432,6 +439,7 @@
       "combate": {
         "hp": 58,
         "ca": 12,
+        "gatilho": ["toque_porta_sudoeste", "dano_recebido"],
         "ataques": [
           "Pseudópode: +5 para acertar, alcance 1,5m, 1d8+3 contusão + Adesivo (veja abaixo)",
           "Mordida: +5 para acertar, alcance 1,5m, 1d8+3 perfurante",
@@ -469,6 +477,7 @@
       "combate": {
         "hp": 36,
         "ca": 13,
+        "gatilho": ["remocao_item_bau"],
         "ataques": [
           "Mordida: +3 para acertar, alcance 1,5m, 2d8+1 perfurante",
           "Garras: +5 para acertar, alcance 1,5m, 2d6+3 cortante. CD 10 Constituição ou paralisado por 1 minuto."
@@ -506,6 +515,7 @@
       "combate": {
         "hp": 136,
         "ca": 15,
+        "gatilho": ["recusa_sacrificio", "ataque_direto"],
         "ataques": [
           "Multiataques: 2 socos por rodada",
           "Soco: +8 para acertar, alcance 1,5m, 2d8+5 contusão",
