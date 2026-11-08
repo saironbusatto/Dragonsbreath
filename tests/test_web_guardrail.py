@@ -37,7 +37,7 @@ def test_normal_action_reaches_gm():
          patch.object(web_api, "build_audio_payload", return_value=(None, None)), \
          patch("web_api.get_gm_narrative", return_value="Você abre a porta.") as mock_gm, \
          patch("web_api.update_world_state", side_effect=lambda ws, *a, **k: ws), \
-         patch("web_api.clean_and_process_ai_response", side_effect=lambda raw, ws: (raw, ws)):
+         patch("web_api.clean_and_process_ai_response", side_effect=lambda raw, ws, *a: (raw, ws)):
         r = client.post("/api/action", json={"session_id": sid, "action": "abro a porta"})
     assert r.status_code == 200
     assert r.json().get("valid") is True

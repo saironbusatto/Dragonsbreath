@@ -70,7 +70,7 @@ def _run_case(name: str) -> dict:
     patches = [
         patch.object(web_api, "get_gm_narrative", return_value="O portão range. O que você faz? [MOOD:tense]"),
         patch.object(web_api, "clean_and_process_ai_response",
-                     side_effect=lambda raw, ws: (raw.replace(" [MOOD:tense]", ""), {**ws, "narration_mood": "tense"})),
+                     side_effect=lambda raw, ws, *a: (raw.replace(" [MOOD:tense]", ""), {**ws, "narration_mood": "tense"})),
         patch.object(web_api, "update_world_state", side_effect=_archivist),
         patch.object(web_api, "build_audio_payload", side_effect=lambda text, *a, **k: (f"AUDIO<{text[:12]}>", None)),
         patch.object(web_api, "to_audio_response", side_effect=lambda text, *a, **k: f"AUDIO<{text[:12]}>"),

@@ -66,7 +66,7 @@ def _web_mocks(web_api, seen: list):
     return [
         patch.object(web_api, "get_gm_narrative", side_effect=gm),
         patch.object(web_api, "update_world_state", side_effect=archivist),
-        patch.object(web_api, "clean_and_process_ai_response", side_effect=lambda raw, ws: (raw, ws)),
+        patch.object(web_api, "clean_and_process_ai_response", side_effect=lambda raw, ws, *a: (raw, ws)),
         patch.object(web_api, "build_audio_payload", return_value=(None, None)),
         patch.object(web_api, "to_audio_response", return_value=None),
         patch.object(web_api, "_get_ambient_for_act", return_value=None),

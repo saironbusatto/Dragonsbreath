@@ -1,3 +1,4 @@
+import copy
 import json
 import os
 import random
@@ -726,7 +727,7 @@ REGRAS DE ATUALIZAÇÃO:
 3. Adicione/remova NPCs em 'important_npcs_in_scene' conforme necessário.
 4. Atualize 'active_quests' se missões foram iniciadas ou completadas.
 5. Mantenha 'recent_events_summary' com os 3-4 eventos mais recentes.
-6. Atualize inventário e status do personagem se necessário.
+6. NÃO altere player_character (ficha, inventário, HP): o motor cuida disso.
 7. MAPA SEMÂNTICO DA CENA: Preencha 'interactable_elements_in_scene' dentro de 'world_state' como um dicionário com estas chaves exatas:
    - "objetos": lista de objetos standalone presentes (ex: ["vela", "balcão", "livro"])
    - "npcs": lista de personagens/criaturas presentes (ex: ["taverneiro", "figura encapuzada"])
@@ -777,6 +778,9 @@ Retorne o JSON atualizado:"""
         # Chaves do motor não passam pelo Arquivista: sempre as do estado anterior.
         novo_estado = {**without_engine_keys(novo_estado),
                        **{k: old_state[k] for k in ENGINE_KEYS if k in old_state}}
+        # A ficha só muda por tag do Mestre (gm_tags): o Arquivista lê, mas não altera.
+        if "player_character" in old_state:
+            novo_estado["player_character"] = old_state["player_character"]
         novo_estado = _enforce_critical_npc_locations(novo_estado)
 
         # Bloqueia teleporte inválido: reverte se a transição não existe no grafo de exits
@@ -863,7 +867,9 @@ def create_initial_world_state(character_name: str, player_class: str | None = N
             ],
             "gatilhos_ativos": world_template.get("initial_triggers", {}),
             "gatilhos_usados": {loc: [] for loc in world_template.get("initial_triggers", {}).keys()}
-        }
+        },
+        "flags": copy.deepcopy(world_template.get("initial_flags", {})),
+        "facts": [],
     }
     return ensure_npc_signature_memory(_ensure_player_resurrection_fields(state))
 

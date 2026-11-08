@@ -42,7 +42,8 @@ if _google_creds_json:
 
 import turn_log
 import party
-from campaign_manager import list_available_campaigns, campaign_exists, campaign_scope, submit_in_context
+from campaign_manager import list_available_campaigns, campaign_exists, campaign_scope, submit_in_context, get_world_template
+import gm_tags
 from world_state_manager import create_initial_world_state, update_world_state
 from database import init_db, list_saves, get_save, upsert_save, delete_save
 from auth import get_current_user, get_optional_user
@@ -754,6 +755,8 @@ def _start_game(req: StartRequest) -> dict:
     opening_turn_ctx = _build_turn_context(world_state, game_context)
     opening_raw = get_gm_narrative(world_state, "Iniciou a aventura", game_context, turn_ctx=opening_turn_ctx)
     opening_clean, world_state = clean_and_process_ai_response(opening_raw, world_state)
+    world_state.pop("_sheet_events", None)
+    world_state.pop("_tags_rejected", None)
     world_state = update_world_state(world_state, "Iniciou a aventura", opening_raw)
     world_state["recent_narrations"] = [opening_clean[:300]]
     world_state = party.ensure_party(world_state)
@@ -857,6 +860,7 @@ def run_turn(world_state: dict, action: str, on_state_committed=None) -> TurnRes
     """
     started = time.perf_counter()
     world_state = party.ensure_party(world_state)
+    world_state = gm_tags.ensure_flags(world_state, get_world_template().get("initial_flags", {}))
     world_state = party.activate(world_state, world_state["party"]["active_member_id"])
     before = copy.deepcopy(world_state) if turn_log.is_enabled() else None
     trace: dict = {"path": "normal"}
@@ -892,6 +896,7 @@ def _record_turn(before: dict, result: "TurnResult", action: str, trace: dict, s
         "gm_raw": trace.get("gm_raw"),
         "narrative": result.response.get("narrative"),
         "roll": trace.get("roll"),
+        "tags_rejected": trace.get("tags_rejected", []),
         "state_before": before,
         "state_diff": turn_log.state_diff(before, result.world_state),
         "timings_ms": {**trace.get("timings_ms", {}), "total_ms": _ms(started)},
@@ -982,7 +987,9 @@ def _run_turn(world_state: dict, action: str, on_state_committed, trace: dict) -
         world_state, action_with_trigger, game_context, roll_result, turn_ctx=turn_ctx
     )
     trace.update(roll=roll_result, gm_raw=gm_response)
-    cleaned_narrative, world_state = clean_and_process_ai_response(gm_response, world_state)
+    cleaned_narrative, world_state = clean_and_process_ai_response(gm_response, world_state, roll_result)
+    sheet_events = world_state.pop("_sheet_events", [])
+    trace["tags_rejected"] = world_state.pop("_tags_rejected", [])
 
     # Arquivista (update_world_state) e TTS rodam em paralelo — maior ganho de latência
     mood_pre      = world_state.get("narration_mood", "normal")
@@ -1075,6 +1082,7 @@ def _run_turn(world_state: dict, action: str, on_state_committed, trace: dict) -
         "state": _state_summary(world_state),
         "valid": True,
         "tutorial_turn": world_state.get("tutorial_turn", 0),
+        "sheet_events": sheet_events,
     }, world_state)
 
 

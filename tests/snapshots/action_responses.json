@@ -25,6 +25,8 @@
     "session_state": {
       "_memory_namespace": "ns-teste",
       "campaign_id": "lamento_do_bardo",
+      "facts": [],
+      "flags": {},
       "game_mode": "rpg",
       "party": {
         "active_member_id": "p1",
@@ -119,6 +121,8 @@
     "session_state": {
       "_memory_namespace": "ns-teste",
       "campaign_id": "lamento_do_bardo",
+      "facts": [],
+      "flags": {},
       "game_mode": "rpg",
       "party": {
         "active_member_id": "p1",
@@ -215,6 +219,7 @@
           "url": "porta.mp3"
         }
       ],
+      "sheet_events": [],
       "state": {
         "alignment": "neutro",
         "class": "Bardo",
@@ -238,6 +243,8 @@
       "_memory_namespace": "ns-teste",
       "campaign_id": "lamento_do_bardo",
       "consecutive_movement_turns": 0,
+      "facts": [],
+      "flags": {},
       "game_mode": "rpg",
       "narration_mood": "tense",
       "party": {
@@ -346,6 +353,8 @@
     "session_state": {
       "_memory_namespace": "ns-teste",
       "campaign_id": "lamento_do_bardo",
+      "facts": [],
+      "flags": {},
       "game_mode": "rpg",
       "party": {
         "active_member_id": "p1",
@@ -455,6 +464,7 @@
           "url": "porta.mp3"
         }
       ],
+      "sheet_events": [],
       "state": {
         "alignment": "neutro",
         "class": "Bardo",
@@ -478,6 +488,8 @@
       "_memory_namespace": "ns-teste",
       "campaign_id": "lamento_do_bardo",
       "consecutive_movement_turns": 0,
+      "facts": [],
+      "flags": {},
       "game_mode": "rpg",
       "narration_mood": "tense",
       "party": {

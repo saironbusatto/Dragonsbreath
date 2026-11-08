@@ -8,7 +8,7 @@ Todas as funções devolvem um estado novo; a entrada não é alterada.
 """
 import copy
 
-ENGINE_KEYS = ("party",)
+ENGINE_KEYS = ("party", "flags", "facts")  # só o motor escreve (gm_tags); o Mestre recebe por bloco próprio
 FIRST_MEMBER_ID = "p1"
 
 

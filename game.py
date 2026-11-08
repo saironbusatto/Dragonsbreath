@@ -16,6 +16,7 @@ from world_state_manager import (
 from memory_loader import MemoryLoader, TurnContext
 from memory_writer import MemoryWriter
 from party import without_engine_keys
+import gm_tags
 from kairos_session import generate_session_reentry
 from campaign_manager import (
     get_campaign_files,
@@ -1173,9 +1174,15 @@ def load_world_data_for_act(current_act: int) -> tuple[dict, dict, dict]:
 
     return active_npcs, active_items, {'locais': locais_publicos, 'locais_segredos': locais_segredos}
 
-def clean_and_process_ai_response(response_text: str, world_state: dict) -> tuple[str, dict]:
+def clean_and_process_ai_response(response_text: str, world_state: dict, roll_result: dict | None = None) -> tuple[str, dict]:
+    """Limpa a narração do Mestre e aplica suas tags.
+
+    Mudanças de ficha/fatos/flags passam por gm_tags (conferidas pelo motor); os eventos
+    aplicados e as tags recusadas ficam em world_state["_sheet_events"] / ["_tags_rejected"]
+    para quem chamou retirar.
+    """
+    narrative, engine_tags = gm_tags.extract(response_text)
     character = world_state.get('player_character', {})
-    narrative = response_text
     ws = world_state.setdefault("world_state", {})
     pacing_state = _get_emotional_pacing_state(world_state)
 
@@ -1231,35 +1238,6 @@ def clean_and_process_ai_response(response_text: str, world_state: dict) -> tupl
             pass
         narrative = narrative.replace(act_match.group(0), '').strip()
 
-    inv_match = re.search(r'\[INVENTORY_UPDATE\]\s*(\{.*?\})', narrative, re.DOTALL)
-    if inv_match:
-        try:
-            update_data = json.loads(inv_match.group(1))
-            if 'add' in update_data:
-                character.setdefault('inventory', []).extend(update_data['add'])
-            if 'remove' in update_data:
-                for item in update_data['remove']:
-                    if item in character.get('inventory', []):
-                        character['inventory'].remove(item)
-        except json.JSONDecodeError:
-            pass
-        narrative = narrative.replace(inv_match.group(0), '').strip()
-    
-    status_match = re.search(r'\[STATUS_UPDATE\]\s*(\{.*?\})', narrative, re.DOTALL)
-    if status_match:
-        try:
-            update_data = json.loads(status_match.group(1))
-            if 'hp_change' in update_data:
-                hp_change = int(update_data['hp_change'])
-                status = character.setdefault('status', {'hp': 20, 'max_hp': 20})
-                current_hp = status.get('hp', 20)
-                max_hp = status.get('max_hp', 20)
-                new_hp = max(0, min(current_hp + hp_change, max_hp))
-                character['status']['hp'] = new_hp
-        except (json.JSONDecodeError, ValueError, KeyError):
-            pass
-        narrative = narrative.replace(status_match.group(0), '').strip()
-
     if world_state.get("hdywdtd_pending"):
         narrative = re.sub(r'(?i)o que você faz\??\s*$', '', narrative).strip()
 
@@ -1288,6 +1266,11 @@ def clean_and_process_ai_response(response_text: str, world_state: dict) -> tupl
     
     narrative = re.sub(r'\n{3,}', '\n\n', narrative).strip()
     world_state['player_character'] = character
+    world_state, events, rejected = gm_tags.apply(
+        world_state, engine_tags, roll_success=bool(roll_result and roll_result.get("success"))
+    )
+    world_state["_sheet_events"] = events
+    world_state["_tags_rejected"] = rejected
     return narrative, world_state
 
 def bootstrap_location_triggers(world_state: dict, locais_definidos: dict) -> bool:
@@ -1796,6 +1779,8 @@ def new_game_loop(world_state: dict, save_filepath: str, game_context: dict):
         
         # Processa resposta
         cleaned_response, world_state = clean_and_process_ai_response(gm_response, world_state)
+        world_state.pop("_sheet_events", None)
+        world_state.pop("_tags_rejected", None)
         limbo_started, limbo_narrative = start_resurrection_limbo(world_state)
         if limbo_started:
             cleaned_response = limbo_narrative
@@ -2019,6 +2004,8 @@ def iniciar_modo_rpg(existing_world_state: dict = None, save_filepath: str = 'es
             turn_ctx=opening_turn_ctx,
         )
         cleaned_opening, world_state = clean_and_process_ai_response(opening_scene, world_state)
+        world_state.pop("_sheet_events", None)
+        world_state.pop("_tags_rejected", None)
         print(f"\n{cleaned_opening}\n")
 
         # Efeitos sonoros contextuais para a cena de abertura
