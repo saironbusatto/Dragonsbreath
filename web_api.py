@@ -10,6 +10,7 @@ import random
 import tempfile
 import logging
 import concurrent.futures
+from typing import NamedTuple
 import requests as http_requests
 
 logger = logging.getLogger(__name__)
@@ -809,14 +810,44 @@ def take_action(req: ActionRequest):
         raise HTTPException(404, "Sessão não encontrada. Inicie um novo jogo.")
     # Saves antigos não têm campaign_id: cai no mapa da sessão e, por fim, na campanha global.
     campaign_id = world_state.get("campaign_id") or session_campaign.get(req.session_id)
-    with campaign_scope(campaign_id):
-        return _take_action(req, world_state)
-
-
-def _take_action(req: ActionRequest, world_state: dict) -> dict:
     action = req.action.strip()
     if not action:
         raise HTTPException(400, "Ação não pode ser vazia")
+    with campaign_scope(campaign_id):
+        result = run_turn(world_state, action, on_state_committed=lambda ws: _autosave(req.session_id, ws))
+    sessions[req.session_id] = result.world_state
+    return result.response
+
+
+def _autosave(session_id: str, world_state: dict) -> None:
+    """Auto-save para usuários autenticados via Clerk; falha nunca derruba o turno."""
+    uid = session_user.get(session_id)
+    if not uid:
+        return
+    try:
+        pc = world_state.get("player_character", {})
+        upsert_save(
+            clerk_user_id=uid,
+            character_name=pc.get("name", "?"),
+            character_class=pc.get("class", "Aventureiro"),
+            campaign_id=session_campaign.get(session_id, "unknown"),
+            world_state=world_state,
+        )
+    except Exception as _e:
+        logger.error(f"[SAVE] Auto-save falhou: {_e}")
+
+
+class TurnResult(NamedTuple):
+    response: dict      # payload JSON do turno (mesmo formato de /api/action)
+    world_state: dict   # estado após o turno — quem chama guarda na sessão/mesa
+
+
+def run_turn(world_state: dict, action: str, on_state_committed=None) -> TurnResult:
+    """Executa um turno completo para uma ação já validada como não vazia.
+
+    Chamar dentro de campaign_scope() da sessão. on_state_committed(world_state)
+    é chamado quando o estado do turno está consolidado (usado para auto-save).
+    """
 
     resurrection_state = world_state.get("resurrection_state", {})
     if isinstance(resurrection_state, dict) and resurrection_state.get("stage") == "awaiting_offering":
@@ -834,9 +865,8 @@ def _take_action(req: ActionRequest, world_state: dict) -> dict:
         )
         world_state["pause_beat_segments"] = []
         world_state["pause_beat_count"] = 0
-        sessions[req.session_id] = world_state
 
-        return {
+        return TurnResult({
             "narrative": narrative,
             "audio": audio,
             "audio_timeline": audio_timeline,
@@ -851,30 +881,30 @@ def _take_action(req: ActionRequest, world_state: dict) -> dict:
             "valid": bool(result.get("ok", False)),
             "state": _state_summary(world_state),
             "tutorial_turn": world_state.get("tutorial_turn", 0),
-        }
+        }, world_state)
 
     # HUD Narrativo — Agente "Olhos do Jogador" (não avança o tempo do jogo)
     if is_inspection_action(action):
         narrative = get_player_eyes_response(action, world_state)
         logger.debug(f"[OLHOS] {narrative[:80]!r}...")
-        return {
+        return TurnResult({
             "narrative": narrative,
             "audio": to_audio_response(narrative, "narrator"),
             "state": _state_summary(world_state),
             "inspection": True,
             "valid": True,
-        }
+        }, world_state)
 
     # Guardrail: rejeita ação fisicamente impossível antes de chamar o GM
     character = world_state.get("player_character", {})
     is_valid, validation_message = validate_player_action(action, character, world_state)
     if not is_valid:
-        return {
+        return TurnResult({
             "narrative": validation_message,
             "audio": to_audio_response(validation_message, "master"),
             "state": _state_summary(world_state),
             "valid": False,
-        }
+        }, world_state)
 
     # Processa ação no motor do jogo
     current_act = character.get("current_act", 1)
@@ -950,22 +980,8 @@ def _take_action(req: ActionRequest, world_state: dict) -> dict:
     if tutorial_turn > 0:
         world_state["tutorial_turn"] = tutorial_turn - 1
 
-    sessions[req.session_id] = world_state
-
-    # Auto-save para usuários autenticados via Clerk
-    uid = session_user.get(req.session_id)
-    if uid:
-        try:
-            pc = world_state.get("player_character", {})
-            upsert_save(
-                clerk_user_id=uid,
-                character_name=pc.get("name", "?"),
-                character_class=pc.get("class", "Aventureiro"),
-                campaign_id=session_campaign.get(req.session_id, "unknown"),
-                world_state=world_state,
-            )
-        except Exception as _e:
-            logger.error(f"[SAVE] Auto-save falhou: {_e}")
+    if on_state_committed:
+        on_state_committed(world_state)
 
     new_act = world_state.get("player_character", {}).get("current_act", 1)
     ambient_url = _get_ambient_for_act(new_act) if new_act != current_act else None
@@ -983,7 +999,7 @@ def _take_action(req: ActionRequest, world_state: dict) -> dict:
     else:
         sfx = detect_sfx_list(cleaned_narrative)
 
-    return {
+    return TurnResult({
         "narrative": cleaned_narrative,
         "audio": audio,
         "audio_timeline": audio_timeline,
@@ -1002,7 +1018,7 @@ def _take_action(req: ActionRequest, world_state: dict) -> dict:
         "state": _state_summary(world_state),
         "valid": True,
         "tutorial_turn": world_state.get("tutorial_turn", 0),
-    }
+    }, world_state)
 
 
 @app.get("/api/state/{session_id}")
