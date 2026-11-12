@@ -160,14 +160,23 @@ def _cond(state, body, events, **_):
     events.append({"type": "cond_remove", "target": sheet.get("name"), "condition": current})
 
 
-def _fact(state, body, events, **_):
-    text = " ".join(body.split())
-    location = (state.get("world_state") or {}).get("current_location_key", "")
+def _add_fact(state: dict, text: str, location: str, entities: list[str] | None = None) -> bool:
+    """Grava um fato ativo; False se já existe (mesmo texto normalizado na mesma sala)."""
+    text = " ".join(text.split())
     facts = state.setdefault("facts", [])
-    if any(f.get("active") and f.get("location_key") == location and _norm(f["text"]) == _norm(text) for f in facts):
+    if not text or any(f.get("active") and f.get("location_key") == location and _norm(f["text"]) == _norm(text)
+                       for f in facts):
+        return False
+    facts.append({"text": text, "location_key": location, "active": True,
+                  "entities": list(entities or []), "turn": state.get("turn", 0)})
+    return True
+
+
+def _fact(state, body, events, **_):
+    location = (state.get("world_state") or {}).get("current_location_key", "")
+    if not _add_fact(state, body, location):
         raise _Rejected("fato repetido")
-    facts.append({"text": text, "location_key": location, "active": True})
-    events.append({"type": "fact", "text": text})
+    events.append({"type": "fact", "text": " ".join(body.split())})
 
 
 def _flag(state, body, events, roll_success=False, **_):
@@ -238,6 +247,69 @@ def build_world_memory_block(state: dict) -> str:
         lines.append(f"FATOS LEMBRADOS ({len(facts)} de {total}):")
         lines += [f"- [{f.get('location_key') or '?'}] {f['text']}" for f in facts]
     return "\n".join(lines) + "\n"
+
+
+PENDING_KINDS = ("hp", "item", "cond")
+TRANSIENT_KEYS = ("_sheet_events", "_tags_rejected", "_pending_ignored", "_secret_leaks")
+
+
+def pop_transient(state: dict) -> dict:
+    """Retira do estado o que só vale para este turno (eventos, recusas, pendências ignoradas, vazamentos)."""
+    return {key.lstrip("_"): state.pop(key, []) for key in TRANSIENT_KEYS}
+
+
+def _dicts(value) -> list[dict]:
+    return [v for v in value if isinstance(v, dict)] if isinstance(value, list) else []
+
+
+def _strs(value) -> list[str]:
+    return [v for v in value if isinstance(v, str)] if isinstance(value, list) else []
+
+
+def apply_review(state: dict, review, location_key: str) -> tuple[dict, list[dict]]:
+    """Aplica a conferência do Arquivista (saída de modelo: tudo validado).
+
+    Fatos do mundo entram direto; mudança de ficha sem tag vira pendência para o Mestre
+    resolver no próximo turno (a ficha não muda aqui). Devolve (estado, segredos de NPC vazados).
+    """
+    new = copy.deepcopy(state)
+    review = review if isinstance(review, dict) else {}
+    for fact in _dicts(review.get("fatos_novos")):
+        if isinstance(fact.get("texto"), str):
+            _add_fact(new, fact["texto"], location_key, _strs(fact.get("entidades")))
+    undone = {_norm(t) for t in _strs(review.get("fatos_desfeitos"))}
+    new["facts"] = [{**f, "active": False} if f.get("active") and _norm(f["text"]) in undone else f
+                    for f in new.get("facts", [])]
+    new["pending"] = [
+        {"tipo": p["tipo"], "alvo": p["alvo"], "descricao": str(p.get("descricao", ""))[:200], "turn": new.get("turn", 0)}
+        for p in _dicts(review.get("ficha_sem_tag"))
+        if p.get("tipo") in PENDING_KINDS and isinstance(p.get("alvo"), str)
+    ]
+    leaks = [{"npc": str(s.get("npc", "")), "segredo": str(s.get("segredo", ""))}
+             for s in _dicts(review.get("segredos_revelados"))]
+    return new, leaks
+
+
+def build_pending_block(state: dict) -> str:
+    """Cobrança ao Mestre das mudanças de ficha que a narração anterior sugeriu sem tag."""
+    pending = state.get("pending") or []
+    if not pending:
+        return ""
+    lines = ["", "--- PENDÊNCIAS DO TURNO ANTERIOR (a narração sugeriu, mas faltou a tag) ---"]
+    lines += [f"- {p['alvo']}: {p['descricao']} → escreva a tag [{p['tipo'].upper()}:...] agora ou corrija na narração"
+              for p in pending]
+    return "\n".join(lines) + "\n"
+
+
+def settle_pending(state: dict, events: list[dict]) -> tuple[dict, list[dict]]:
+    """A cobrança vale um turno: resolvida se houve evento do mesmo tipo no mesmo alvo; o resto é ignorado."""
+    done = {(e["type"].split("_")[0], _norm(str(e.get("target", "")))) for e in events}
+
+    def resolved(p: dict) -> bool:
+        sheet = _find(state, p["alvo"])
+        return (p["tipo"], _norm(sheet.get("name", "") if sheet else p["alvo"])) in done
+
+    return {**state, "pending": []}, [p for p in state.get("pending", []) if not resolved(p)]
 
 
 def apply(state: dict, tags: list[dict], roll_success: bool = False) -> tuple[dict, list[dict], list[dict]]:

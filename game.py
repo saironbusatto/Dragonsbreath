@@ -1103,7 +1103,7 @@ REGRA: Saídas não listadas acima NÃO existem — nunca invente passagens ause
 
 --- ESTADO ATUAL DO MUNDO ---
 {json.dumps(without_engine_keys(world_state), indent=2, ensure_ascii=False)}
-{gm_tags.build_world_memory_block(world_state)}
+{gm_tags.build_world_memory_block(world_state)}{gm_tags.build_pending_block(world_state)}
 
 --- CONTEXTO DO JOGO ---
 NPCs presentes: {json.dumps(game_context.get('npcs', {}), indent=2, ensure_ascii=False)}
@@ -1179,10 +1179,11 @@ def clean_and_process_ai_response(response_text: str, world_state: dict, roll_re
     """Limpa a narração do Mestre e aplica suas tags.
 
     Mudanças de ficha/fatos/flags passam por gm_tags (conferidas pelo motor); os eventos
-    aplicados e as tags recusadas ficam em world_state["_sheet_events"] / ["_tags_rejected"]
+    aplicados, as tags recusadas e as pendências ignoradas ficam em chaves transitórias
     para quem chamou retirar.
     """
     narrative, engine_tags = gm_tags.extract(response_text)
+    world_state["turn"] = world_state.get("turn", 0) + 1
     character = world_state.get('player_character', {})
     ws = world_state.setdefault("world_state", {})
     pacing_state = _get_emotional_pacing_state(world_state)
@@ -1270,8 +1271,10 @@ def clean_and_process_ai_response(response_text: str, world_state: dict, roll_re
     world_state, events, rejected = gm_tags.apply(
         world_state, engine_tags, roll_success=bool(roll_result and roll_result.get("success"))
     )
+    world_state, ignored = gm_tags.settle_pending(world_state, events)
     world_state["_sheet_events"] = events
     world_state["_tags_rejected"] = rejected
+    world_state["_pending_ignored"] = ignored
     return narrative, world_state
 
 def bootstrap_location_triggers(world_state: dict, locais_definidos: dict) -> bool:
@@ -1780,8 +1783,7 @@ def new_game_loop(world_state: dict, save_filepath: str, game_context: dict):
         
         # Processa resposta
         cleaned_response, world_state = clean_and_process_ai_response(gm_response, world_state)
-        world_state.pop("_sheet_events", None)
-        world_state.pop("_tags_rejected", None)
+        gm_tags.pop_transient(world_state)
         limbo_started, limbo_narrative = start_resurrection_limbo(world_state)
         if limbo_started:
             cleaned_response = limbo_narrative
@@ -1816,6 +1818,7 @@ def new_game_loop(world_state: dict, save_filepath: str, game_context: dict):
         old_location = world_state.get("world_state", {}).get("current_location_key")
         gatilho_para_arquivista = f"(Evento ambiental: {gatilho_escolhido})" if gatilho_escolhido else ""
         world_state = update_world_state(world_state, f"{player_action} {gatilho_para_arquivista}", gm_response)
+        gm_tags.pop_transient(world_state)
         sync_act_with_location(world_state)
 
         # Hook de viagem: detecta mudança de local e calcula encontros
@@ -2005,8 +2008,7 @@ def iniciar_modo_rpg(existing_world_state: dict = None, save_filepath: str = 'es
             turn_ctx=opening_turn_ctx,
         )
         cleaned_opening, world_state = clean_and_process_ai_response(opening_scene, world_state)
-        world_state.pop("_sheet_events", None)
-        world_state.pop("_tags_rejected", None)
+        gm_tags.pop_transient(world_state)
         print(f"\n{cleaned_opening}\n")
 
         # Efeitos sonoros contextuais para a cena de abertura
@@ -2019,6 +2021,7 @@ def iniciar_modo_rpg(existing_world_state: dict = None, save_filepath: str = 'es
             play_chime()
 
         world_state = update_world_state(world_state, "Iniciou a aventura", opening_scene)
+        gm_tags.pop_transient(world_state)
 
     # Inicia o loop de jogo RPG (mantém toda a funcionalidade existente)
     game_context = load_game_context_for_act(current_act, world_state)

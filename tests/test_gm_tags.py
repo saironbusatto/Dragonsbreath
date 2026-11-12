@@ -93,7 +93,8 @@ def test_conditions_add_and_remove():
 
 def test_fact_is_stored_with_room_and_deduplicated():
     _, new, _, rejected = _run("[FATO:A cortina do quarto queimou] [FATO:a  cortina do QUARTO queimou]")
-    assert new["facts"] == [{"text": "A cortina do quarto queimou", "location_key": "area_5", "active": True}]
+    assert new["facts"] == [{"text": "A cortina do quarto queimou", "location_key": "area_5", "active": True,
+                             "entities": [], "turn": 0}]
     assert rejected[0]["reason"] == "fato repetido"
 
 
@@ -140,7 +141,8 @@ def test_archivist_cannot_change_the_sheet():
     hacked = {**state, "player_character": {**state["player_character"], "inventory": ["Item fantasma"]}}
     with patch("world_state_manager.get_openai_response_archivista", return_value=json.dumps(party.without_engine_keys(hacked))):
         new = update_world_state(state, "olho", "nada")
-    assert new["player_character"] == state["player_character"]
+    pc = state["player_character"]
+    assert {k: new["player_character"][k] for k in pc} == pc  # só ganha campos padrão de ressurreição
     assert new["flags"] == state["flags"] and new["facts"] == state["facts"]
 
 

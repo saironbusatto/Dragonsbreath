@@ -5,7 +5,8 @@ import random
 import re
 import unicodedata
 from openai import OpenAI
-from party import ENGINE_KEYS, without_engine_keys
+import gm_tags
+from party import ENGINE_KEYS, party_names, without_engine_keys
 from campaign_manager import (
     get_campaign_files,
     get_class_template,
@@ -757,11 +758,20 @@ REGRAS DE ATUALIZAÇÃO:
      - "improvised": true
    NÃO espere o jogador interagir — formalize no MESMO turno que o Mestre introduziu o NPC.
    Se o campo scene_npc_signatures já contiver uma entrada para esse NPC com "improvised": true,
-   substitua-a por uma versão completa mantendo o mesmo id."""
+   substitua-a por uma versão completa mantendo o mesmo id.
+10. CONFERÊNCIA: adicione no nível raiz a chave "conferencia" (use [] onde não houver nada):
+   - "fatos_novos": [{"texto": "mudança duradoura do mundo que a narração estabeleceu", "entidades": ["NPCs/objetos envolvidos"]}]
+     Ex: {"texto": "a cortina do quarto 5 queimou", "entidades": ["cortina"]}. Só o que dura; não repita a MEMÓRIA DO MUNDO.
+   - "fatos_desfeitos": ["texto de um fato da MEMÓRIA DO MUNDO que deixou de valer"]
+   - "ficha_sem_tag": [{"tipo": "hp" | "item" | "cond", "alvo": "nome do personagem do GRUPO", "descricao": "o que a narração sugeriu"}]
+     Só quando a narração mudou HP, item ou condição de alguém do grupo SEM a tag [HP:], [ITEM:] ou [COND:] correspondente.
+   - "segredos_revelados": [{"npc": "nome", "segredo": "o que foi dito"}] — quando a narração disse com todas as letras um segredo de NPC."""
 
     # USER: o estado atual + o que acabou de acontecer
     archivista_user = f"""JSON DO ESTADO ATUAL:
 {json.dumps(without_engine_keys(old_state), indent=2, ensure_ascii=False)}
+{gm_tags.build_world_memory_block(old_state)}
+GRUPO: {", ".join(party_names(old_state)) or "-"}
 
 EVENTOS RECENTES:
 - Ação do jogador: "{player_action}"
@@ -774,6 +784,7 @@ Retorne o JSON atualizado:"""
         novo_estado = json.loads(response)
         if not novo_estado:
             return old_state
+        review = novo_estado.pop("conferencia", None)
         novo_estado = _preserve_runtime_state(old_state, novo_estado)
         # Chaves do motor não passam pelo Arquivista: sempre as do estado anterior.
         novo_estado = {**without_engine_keys(novo_estado),
@@ -781,6 +792,10 @@ Retorne o JSON atualizado:"""
         # A ficha só muda por tag do Mestre (gm_tags): o Arquivista lê, mas não altera.
         if "player_character" in old_state:
             novo_estado["player_character"] = old_state["player_character"]
+        # Conferência: fatos entram onde a ação aconteceu (sala de antes); ficha vira pendência.
+        old_room = old_state.get("world_state", {}).get("current_location_key", "")
+        novo_estado, leaks = gm_tags.apply_review(novo_estado, review, old_room)
+        novo_estado["_secret_leaks"] = leaks
         novo_estado = _enforce_critical_npc_locations(novo_estado)
 
         # Bloqueia teleporte inválido: reverte se a transição não existe no grafo de exits

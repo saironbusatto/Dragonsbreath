@@ -8,12 +8,18 @@ Todas as funções devolvem um estado novo; a entrada não é alterada.
 """
 import copy
 
-ENGINE_KEYS = ("party", "flags", "facts")  # só o motor escreve (gm_tags); o Mestre recebe por bloco próprio
+ENGINE_KEYS = ("party", "flags", "facts", "turn", "pending")  # só o motor escreve (gm_tags); o Mestre recebe por bloco próprio
 FIRST_MEMBER_ID = "p1"
 
 
 def without_engine_keys(state: dict) -> dict:
     return {k: v for k, v in state.items() if k not in ENGINE_KEYS}
+
+
+def party_names(state: dict) -> list[str]:
+    """Nomes dos personagens do grupo (para quem só vê o estado sem as chaves do motor)."""
+    members = (state.get("party") or {}).get("members", [])
+    return [m["character"].get("name", "") for m in members if m.get("character", {}).get("name")]
 
 
 def _location(state: dict) -> str:

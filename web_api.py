@@ -755,9 +755,9 @@ def _start_game(req: StartRequest) -> dict:
     opening_turn_ctx = _build_turn_context(world_state, game_context)
     opening_raw = get_gm_narrative(world_state, "Iniciou a aventura", game_context, turn_ctx=opening_turn_ctx)
     opening_clean, world_state = clean_and_process_ai_response(opening_raw, world_state)
-    world_state.pop("_sheet_events", None)
-    world_state.pop("_tags_rejected", None)
+    gm_tags.pop_transient(world_state)
     world_state = update_world_state(world_state, "Iniciou a aventura", opening_raw)
+    gm_tags.pop_transient(world_state)
     world_state["recent_narrations"] = [opening_clean[:300]]
     world_state = party.ensure_party(world_state)
 
@@ -897,6 +897,8 @@ def _record_turn(before: dict, result: "TurnResult", action: str, trace: dict, s
         "narrative": result.response.get("narrative"),
         "roll": trace.get("roll"),
         "tags_rejected": trace.get("tags_rejected", []),
+        "pending_ignored": trace.get("pending_ignored", []),
+        "secret_leaks": trace.get("secret_leaks", []),
         "state_before": before,
         "state_diff": turn_log.state_diff(before, result.world_state),
         "timings_ms": {**trace.get("timings_ms", {}), "total_ms": _ms(started)},
@@ -988,8 +990,10 @@ def _run_turn(world_state: dict, action: str, on_state_committed, trace: dict) -
     )
     trace.update(roll=roll_result, gm_raw=gm_response)
     cleaned_narrative, world_state = clean_and_process_ai_response(gm_response, world_state, roll_result)
-    sheet_events = world_state.pop("_sheet_events", [])
-    trace["tags_rejected"] = world_state.pop("_tags_rejected", [])
+    turn_notes = gm_tags.pop_transient(world_state)
+    sheet_events = turn_notes["sheet_events"]
+    trace["tags_rejected"] = turn_notes["tags_rejected"]
+    trace["pending_ignored"] = turn_notes["pending_ignored"]
 
     # Arquivista (update_world_state) e TTS rodam em paralelo — maior ganho de latência
     mood_pre      = world_state.get("narration_mood", "normal")
@@ -1014,6 +1018,7 @@ def _run_turn(world_state: dict, action: str, on_state_committed, trace: dict) -
         future_ws  = submit_in_context(pool, _timed(update_world_state, trace, "archivist_ms"), world_state, action_with_trigger, gm_response)
         future_tts = submit_in_context(pool, _timed(_build_tts, trace, "tts_ms"))
         world_state        = future_ws.result()
+        trace["secret_leaks"] = gm_tags.pop_transient(world_state)["secret_leaks"]
         audio, audio_timeline = future_tts.result()
 
     # Contador de movimento sem mudança de local (A3 — travel events)
