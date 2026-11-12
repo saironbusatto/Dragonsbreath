@@ -49,7 +49,7 @@ CASES = {
 }
 
 
-def _archivist(ws, action, gm):
+def _archivist(ws, action, gm, *_):
     new = copy.deepcopy(ws)
     new["world_state"]["immediate_scene_description"] = f"Após: {action[:20]}"
     return new

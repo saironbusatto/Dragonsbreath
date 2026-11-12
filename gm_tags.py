@@ -250,6 +250,9 @@ def build_world_memory_block(state: dict) -> str:
 
 
 PENDING_KINDS = ("hp", "item", "cond")
+MAX_REVIEW_ITEMS = 5   # por turno, de cada lista da conferência
+MAX_REVIEW_TEXT = 200
+MAX_NAME = 60
 TRANSIENT_KEYS = ("_sheet_events", "_tags_rejected", "_pending_ignored", "_secret_leaks")
 
 
@@ -266,27 +269,50 @@ def _strs(value) -> list[str]:
     return [v for v in value if isinstance(v, str)] if isinstance(value, list) else []
 
 
-def apply_review(state: dict, review, location_key: str) -> tuple[dict, list[dict]]:
-    """Aplica a conferência do Arquivista (saída de modelo: tudo validado).
+def _cut(value, size: int = MAX_REVIEW_TEXT) -> str:
+    return " ".join(str(value).split())[:size]
+
+
+def _changed(events: list[dict]) -> set[tuple[str, str]]:
+    """(tipo, personagem) de cada mudança de ficha aplicada: hp, item ou cond."""
+    return {(e["type"].split("_")[0], _norm(str(e.get("target", "")))) for e in events}
+
+
+def _sheet_name(state: dict, name: str) -> str:
+    sheet = _find(state, name)
+    return _norm(sheet.get("name", "") if sheet else name)
+
+
+def apply_review(state: dict, review, location_key: str, applied_events: list[dict] | None = None) -> tuple[dict, list[dict]]:
+    """Aplica a conferência do Arquivista (saída de modelo: validada e limitada em tamanho).
 
     Fatos do mundo entram direto; mudança de ficha sem tag vira pendência para o Mestre
-    resolver no próximo turno (a ficha não muda aqui). Devolve (estado, segredos de NPC vazados).
+    resolver no próximo turno (a ficha não muda aqui). O que o motor já aplicou neste turno
+    (`applied_events`) nunca vira pendência: cobrar de novo aplicaria em dobro.
+    Devolve (estado, segredos de NPC vazados).
     """
     new = copy.deepcopy(state)
     review = review if isinstance(review, dict) else {}
-    for fact in _dicts(review.get("fatos_novos")):
+    for fact in _dicts(review.get("fatos_novos"))[:MAX_REVIEW_ITEMS]:
         if isinstance(fact.get("texto"), str):
-            _add_fact(new, fact["texto"], location_key, _strs(fact.get("entidades")))
+            entities = [_cut(e, MAX_NAME) for e in _strs(fact.get("entidades"))[:MAX_REVIEW_ITEMS]]
+            _add_fact(new, _cut(fact["texto"]), location_key, entities)
     undone = {_norm(t) for t in _strs(review.get("fatos_desfeitos"))}
-    new["facts"] = [{**f, "active": False} if f.get("active") and _norm(f["text"]) in undone else f
-                    for f in new.get("facts", [])]
+    new["facts"] = [
+        {**f, "active": False}
+        if f.get("active") and f.get("location_key") == location_key and _norm(f["text"]) in undone else f
+        for f in new.get("facts", [])
+    ]
+    already = _changed(applied_events or [])
     new["pending"] = [
-        {"tipo": p["tipo"], "alvo": p["alvo"], "descricao": str(p.get("descricao", ""))[:200], "turn": new.get("turn", 0)}
+        {"tipo": p["tipo"], "alvo": _cut(p["alvo"], MAX_NAME), "descricao": _cut(p.get("descricao", "")),
+         "turn": new.get("turn", 0)}
         for p in _dicts(review.get("ficha_sem_tag"))
         if p.get("tipo") in PENDING_KINDS and isinstance(p.get("alvo"), str)
-    ]
-    leaks = [{"npc": str(s.get("npc", "")), "segredo": str(s.get("segredo", ""))}
-             for s in _dicts(review.get("segredos_revelados"))]
+        and (p["tipo"], _sheet_name(new, p["alvo"])) not in already
+    ][:MAX_REVIEW_ITEMS]
+    leaks = [{"npc": _cut(s.get("npc", ""), MAX_NAME), "segredo": _cut(s.get("segredo", ""))}
+             for s in _dicts(review.get("segredos_revelados"))[:MAX_REVIEW_ITEMS]]
     return new, leaks
 
 
@@ -303,13 +329,9 @@ def build_pending_block(state: dict) -> str:
 
 def settle_pending(state: dict, events: list[dict]) -> tuple[dict, list[dict]]:
     """A cobrança vale um turno: resolvida se houve evento do mesmo tipo no mesmo alvo; o resto é ignorado."""
-    done = {(e["type"].split("_")[0], _norm(str(e.get("target", "")))) for e in events}
-
-    def resolved(p: dict) -> bool:
-        sheet = _find(state, p["alvo"])
-        return (p["tipo"], _norm(sheet.get("name", "") if sheet else p["alvo"])) in done
-
-    return {**state, "pending": []}, [p for p in state.get("pending", []) if not resolved(p)]
+    done = _changed(events)
+    ignored = [p for p in state.get("pending", []) if (p["tipo"], _sheet_name(state, p["alvo"])) not in done]
+    return {**state, "pending": []}, ignored
 
 
 def apply(state: dict, tags: list[dict], roll_success: bool = False) -> tuple[dict, list[dict], list[dict]]:

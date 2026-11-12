@@ -711,9 +711,11 @@ def _enforce_critical_npc_locations(novo_estado: dict) -> dict:
     return novo_estado
 
 
-def update_world_state(old_state: dict, player_action: str, gm_response: str) -> dict:
+def update_world_state(old_state: dict, player_action: str, gm_response: str,
+                       sheet_events: list[dict] | None = None) -> dict:
     """
     Usa a IA Arquivista para atualizar o estado do mundo baseado nos eventos recentes.
+    `sheet_events`: mudanças de ficha que o motor já aplicou neste turno (não viram pendência).
     """
     # Atualização silenciosa do estado
     
@@ -764,7 +766,9 @@ REGRAS DE ATUALIZAÇÃO:
      Ex: {"texto": "a cortina do quarto 5 queimou", "entidades": ["cortina"]}. Só o que dura; não repita a MEMÓRIA DO MUNDO.
    - "fatos_desfeitos": ["texto de um fato da MEMÓRIA DO MUNDO que deixou de valer"]
    - "ficha_sem_tag": [{"tipo": "hp" | "item" | "cond", "alvo": "nome do personagem do GRUPO", "descricao": "o que a narração sugeriu"}]
-     Só quando a narração mudou HP, item ou condição de alguém do grupo SEM a tag [HP:], [ITEM:] ou [COND:] correspondente.
+     Só quando a narração mudou HP, item ou condição de alguém do grupo SEM tag correspondente na resposta do Mestre.
+     Contam como tag: [HP:], [ITEM:], [COND:] e as antigas [STATUS_UPDATE] e [INVENTORY_UPDATE].
+     NUNCA liste o que já está em "MUDANÇAS DE FICHA JÁ APLICADAS".
    - "segredos_revelados": [{"npc": "nome", "segredo": "o que foi dito"}] — quando a narração disse com todas as letras um segredo de NPC."""
 
     # USER: o estado atual + o que acabou de acontecer
@@ -772,6 +776,7 @@ REGRAS DE ATUALIZAÇÃO:
 {json.dumps(without_engine_keys(old_state), indent=2, ensure_ascii=False)}
 {gm_tags.build_world_memory_block(old_state)}
 GRUPO: {", ".join(party_names(old_state)) or "-"}
+MUDANÇAS DE FICHA JÁ APLICADAS PELO MOTOR NESTE TURNO: {json.dumps(sheet_events or [], ensure_ascii=False)}
 
 EVENTOS RECENTES:
 - Ação do jogador: "{player_action}"
@@ -782,8 +787,8 @@ Retorne o JSON atualizado:"""
     try:
         response = get_openai_response_archivista(archivista_system, archivista_user)
         novo_estado = json.loads(response)
-        if not novo_estado:
-            return old_state
+        if not isinstance(novo_estado, dict) or not novo_estado:
+            return old_state  # resposta vazia ou que não é um objeto: mantém o estado anterior
         review = novo_estado.pop("conferencia", None)
         novo_estado = _preserve_runtime_state(old_state, novo_estado)
         # Chaves do motor não passam pelo Arquivista: sempre as do estado anterior.
@@ -794,7 +799,7 @@ Retorne o JSON atualizado:"""
             novo_estado["player_character"] = old_state["player_character"]
         # Conferência: fatos entram onde a ação aconteceu (sala de antes); ficha vira pendência.
         old_room = old_state.get("world_state", {}).get("current_location_key", "")
-        novo_estado, leaks = gm_tags.apply_review(novo_estado, review, old_room)
+        novo_estado, leaks = gm_tags.apply_review(novo_estado, review, old_room, sheet_events)
         novo_estado["_secret_leaks"] = leaks
         novo_estado = _enforce_critical_npc_locations(novo_estado)
 

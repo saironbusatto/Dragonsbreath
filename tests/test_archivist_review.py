@@ -92,3 +92,59 @@ def test_archivist_sees_facts_and_group_and_engine_applies_its_review():
     assert [f["text"] for f in new["facts"] if f["active"]] == ["A cortina queimou"]
     assert new["pending"][0]["alvo"] == "Mira"
     assert gm_tags.pop_transient(new)["secret_leaks"] == [{"npc": "Rose", "segredo": "está morta"}]
+
+
+# --- auditoria do 4a ---
+
+def test_pending_is_dropped_when_engine_already_applied_that_change_this_turn():
+    """Dano já aplicado (tag antiga ou nova) não pode ser cobrado de novo: evitaria dano em dobro."""
+    import game
+    _, s = game.clean_and_process_ai_response('A garra rasga. [STATUS_UPDATE] {"hp_change": -4}', _state())
+    events = gm_tags.pop_transient(s)["sheet_events"]
+    review = {"ficha_sem_tag": [{"tipo": "hp", "alvo": "Aldric", "descricao": "garra causou dano"},
+                                {"tipo": "cond", "alvo": "Aldric", "descricao": "ficou sangrando"}]}
+    new, _ = gm_tags.apply_review(s, review, "area_5", events)
+    assert [p["tipo"] for p in new["pending"]] == ["cond"]
+
+
+def test_archivist_is_told_what_was_applied_and_review_is_filtered_end_to_end():
+    s = _state()
+    events = [{"type": "hp", "target": "Mira", "before": 10, "after": 6}]
+    sent = {}
+
+    def fake_archivist(system, user):
+        sent["system"], sent["user"] = system, user
+        return json.dumps({**party.without_engine_keys(s),
+                           "conferencia": {"ficha_sem_tag": [{"tipo": "hp", "alvo": "Mi", "descricao": "corte"}]}})
+
+    with patch("world_state_manager.get_openai_response_archivista", side_effect=fake_archivist):
+        new = update_world_state(s, "ataco", "golpe", events)
+    assert "STATUS_UPDATE" in sent["system"]          # tags antigas também contam como tag
+    assert '"after": 6' in sent["user"]               # o Arquivista vê o que o motor já aplicou
+    assert new["pending"] == []                       # apelido "Mi" = Mira, já aplicado
+
+
+def test_review_from_the_model_is_capped_in_size_and_count():
+    big = "x" * 5000
+    review = {"fatos_novos": [{"texto": f"{big} {i}", "entidades": [big] * 50} for i in range(40)],
+              "ficha_sem_tag": [{"tipo": "hp", "alvo": big, "descricao": big}] * 30,
+              "segredos_revelados": [{"npc": big, "segredo": big}] * 30}
+    new, leaks = gm_tags.apply_review(_state(), review, "area_5")
+    assert len(new["facts"]) <= gm_tags.MAX_REVIEW_ITEMS and len(new["pending"]) <= gm_tags.MAX_REVIEW_ITEMS
+    assert len(leaks) <= gm_tags.MAX_REVIEW_ITEMS
+    assert len(gm_tags.build_pending_block(new)) < 3000 and len(gm_tags.build_world_memory_block(new)) < 3000
+    assert len(json.dumps(leaks)) < 3000
+
+
+def test_undone_fact_only_affects_the_room_where_it_happened():
+    s = _state(facts=[{"text": "A porta está trancada", "location_key": "area_1", "active": True},
+                      {"text": "A porta está trancada", "location_key": "area_5", "active": True}])
+    new, _ = gm_tags.apply_review(s, {"fatos_desfeitos": ["A porta está trancada"]}, "area_5")
+    assert {f["location_key"]: f["active"] for f in new["facts"]} == {"area_1": True, "area_5": False}
+
+
+def test_archivist_reply_that_is_not_a_json_object_keeps_previous_state():
+    s = _state()
+    for reply in ("[1]", '"oi"', "42", "null"):
+        with patch("world_state_manager.get_openai_response_archivista", return_value=reply):
+            assert update_world_state(s, "olho", "nada") == s

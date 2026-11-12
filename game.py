@@ -1783,7 +1783,7 @@ def new_game_loop(world_state: dict, save_filepath: str, game_context: dict):
         
         # Processa resposta
         cleaned_response, world_state = clean_and_process_ai_response(gm_response, world_state)
-        gm_tags.pop_transient(world_state)
+        sheet_events = gm_tags.pop_transient(world_state)["sheet_events"]
         limbo_started, limbo_narrative = start_resurrection_limbo(world_state)
         if limbo_started:
             cleaned_response = limbo_narrative
@@ -1817,7 +1817,7 @@ def new_game_loop(world_state: dict, save_filepath: str, game_context: dict):
         # Atualização do estado do mundo com gatilho incluído
         old_location = world_state.get("world_state", {}).get("current_location_key")
         gatilho_para_arquivista = f"(Evento ambiental: {gatilho_escolhido})" if gatilho_escolhido else ""
-        world_state = update_world_state(world_state, f"{player_action} {gatilho_para_arquivista}", gm_response)
+        world_state = update_world_state(world_state, f"{player_action} {gatilho_para_arquivista}", gm_response, sheet_events)
         gm_tags.pop_transient(world_state)
         sync_act_with_location(world_state)
 
@@ -2008,7 +2008,7 @@ def iniciar_modo_rpg(existing_world_state: dict = None, save_filepath: str = 'es
             turn_ctx=opening_turn_ctx,
         )
         cleaned_opening, world_state = clean_and_process_ai_response(opening_scene, world_state)
-        gm_tags.pop_transient(world_state)
+        opening_events = gm_tags.pop_transient(world_state)["sheet_events"]
         print(f"\n{cleaned_opening}\n")
 
         # Efeitos sonoros contextuais para a cena de abertura
@@ -2020,7 +2020,7 @@ def iniciar_modo_rpg(existing_world_state: dict = None, save_filepath: str = 'es
             # Toca o chime após a narração inicial para indicar que o jogador pode começar
             play_chime()
 
-        world_state = update_world_state(world_state, "Iniciou a aventura", opening_scene)
+        world_state = update_world_state(world_state, "Iniciou a aventura", opening_scene, opening_events)
         gm_tags.pop_transient(world_state)
 
     # Inicia o loop de jogo RPG (mantém toda a funcionalidade existente)

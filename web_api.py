@@ -755,8 +755,8 @@ def _start_game(req: StartRequest) -> dict:
     opening_turn_ctx = _build_turn_context(world_state, game_context)
     opening_raw = get_gm_narrative(world_state, "Iniciou a aventura", game_context, turn_ctx=opening_turn_ctx)
     opening_clean, world_state = clean_and_process_ai_response(opening_raw, world_state)
-    gm_tags.pop_transient(world_state)
-    world_state = update_world_state(world_state, "Iniciou a aventura", opening_raw)
+    opening_events = gm_tags.pop_transient(world_state)["sheet_events"]
+    world_state = update_world_state(world_state, "Iniciou a aventura", opening_raw, opening_events)
     gm_tags.pop_transient(world_state)
     world_state["recent_narrations"] = [opening_clean[:300]]
     world_state = party.ensure_party(world_state)
@@ -1015,7 +1015,7 @@ def _run_turn(world_state: dict, action: str, on_state_committed, trace: dict) -
         return build_audio_payload(cleaned_narrative, "master", tts_speed_pre, pause_segments=pause_segments_pre)
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=2) as pool:
-        future_ws  = submit_in_context(pool, _timed(update_world_state, trace, "archivist_ms"), world_state, action_with_trigger, gm_response)
+        future_ws  = submit_in_context(pool, _timed(update_world_state, trace, "archivist_ms"), world_state, action_with_trigger, gm_response, sheet_events)
         future_tts = submit_in_context(pool, _timed(_build_tts, trace, "tts_ms"))
         world_state        = future_ws.result()
         trace["secret_leaks"] = gm_tags.pop_transient(world_state)["secret_leaks"]
