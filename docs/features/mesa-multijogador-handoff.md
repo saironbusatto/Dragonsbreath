@@ -1,6 +1,6 @@
 # Handoff — mesa multijogador, etapa 2 (motor de grupo)
 
-Atualizado em 2026-11-08. **Próxima tarefa: passo 4a (Arquivista conferente).** Comece por ele sem refazer o grilling: as decisões abaixo já foram aprovadas pelo usuário.
+Atualizado em 2026-11-08. **4a feito (`b5a0755`). Próxima tarefa: passo 4b (catálogo com categorias); mostre o formato ao usuário antes do 4c.** Comece por ele sem refazer o grilling: as decisões abaixo já foram aprovadas pelo usuário.
 
 ## Como trabalhar com o usuário
 
@@ -85,7 +85,7 @@ Pontos do código:
 
 ## Plano do passo 4 (aceito)
 
-1. **4a – Arquivista conferente (PRÓXIMO).** O Arquivista devolve, numa chave raiz extra (por exemplo `conferencia`), que o motor retira com `pop` antes de guardar o estado:
+1. **4a – Arquivista conferente (FEITO, `b5a0755`).** O Arquivista devolve, numa chave raiz extra (por exemplo `conferencia`), que o motor retira com `pop` antes de guardar o estado:
    - fatos novos, com entidades envolvidas;
    - fatos desfeitos;
    - mudanças de ficha que a narração sugeriu sem tag;
