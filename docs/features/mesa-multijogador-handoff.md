@@ -1,6 +1,6 @@
 # Handoff — mesa multijogador, etapa 2 (motor de grupo)
 
-Atualizado em 2026-11-08. **4a feito (`b5a0755`). Próxima tarefa: passo 4b (catálogo com categorias); mostre o formato ao usuário antes do 4c.** Comece por ele sem refazer o grilling: as decisões abaixo já foram aprovadas pelo usuário.
+Atualizado em 2026-11-08. **4a feito (`b5a0755`). 4b feito (`ae846d2` formato e validação em `item_catalog.py`; `975b663` motor confere a cena). Próxima tarefa: passo 4c (rascunho do catálogo da Death House para o usuário revisar).** Comece por ele sem refazer o grilling: as decisões abaixo já foram aprovadas pelo usuário.
 
 ## Como trabalhar com o usuário
 
@@ -109,3 +109,13 @@ Depois: passo 5 (modos livre e de turnos), passo 6 (combate escalado), passo 7 (
 Dados de hoje:
 - Curse of Strahd: 22 de 80 salas têm `itens_fixos` com id; nenhum item do catálogo tem categoria; NPCs sem itens.
 - Lamento do Bardo (a campanha ativa) e exemplo_fantasia: sem itens nas salas.
+
+## Estado depois do 4b (2026-11-12)
+
+- **Q35:** item definido uma vez no catálogo (`itens_comuns.json` / `itens_magicos.json`, com `categoria`, `apelidos`, `livre` e os campos da categoria). Salas usam `itens: [{id, qtd, escondido: {dificuldade, local, pista}}]` e NPCs usam `itens: [ids]`.
+- **Q36:** item largado fica no chão da sala; `consumivel` é gasto e some.
+- `item_catalog.load()` valida a campanha com `catalogo_estrito: true` (nenhuma tem ainda). `item_catalog.scene()` monta o que está ao alcance e `gm_tags.apply(..., scene=)` confere. O saldo de itens por sala e por NPC fica em `world_state["stock"]`, chave do motor.
+- Correções da auditoria do 4a em `cdd6470`: pendência já aplicada não é cobrada (evita dano em dobro), limites de tamanho, fato desfeito só na sala, resposta não-objeto do Arquivista.
+- **Falta no 4b, para tratar junto do 4c:** o prompt do Mestre ainda lista `itens_fixos` (campo antigo) e não os itens ao alcance do campo novo `itens`. Sem isso, o Mestre de uma campanha estrita não sabe o que pode entregar.
+- **Depende do passo 6:** saque só com inimigo a 0 de HP e roubo com rolagem. Hoje o motor só confere que o NPC em cena tem o item.
+- **Em aberto da auditoria:** fatos parecidos com textos diferentes se acumulam; não há teste de ponta a ponta de `/api/action` até `turn_logs/`; o Arquivista real não foi testado com a regra 10.
