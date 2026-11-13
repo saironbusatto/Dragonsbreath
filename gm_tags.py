@@ -92,8 +92,13 @@ def _target(state: dict, name: str) -> dict:
     return sheet
 
 
-def _owned(sheet: dict, item: str) -> str | None:
-    return next((i for i in sheet.get("inventory", []) if _norm(i) == _norm(item)), None)
+def _owned(sheet: dict, item: str, scene: dict | None = None) -> str | None:
+    """Item da ficha pelo nome; com catálogo, também pelo id ou apelido."""
+    names = {_norm(item)}
+    known = _scene_item(scene, item) if scene else None
+    if known:
+        names |= set(known[1]["names"])
+    return next((i for i in sheet.get("inventory", []) if _norm(i) in names), None)
 
 
 def _check_space(sheet: dict) -> None:
@@ -112,11 +117,78 @@ def _hp(state, body, events, **_):
     events.append({"type": "hp", "target": sheet.get("name"), "before": before, "after": status["hp"]})
 
 
-def _item(state, body, events, **_):
+def _where(state: dict, sheet: dict) -> str:
+    """Sala onde está o dono da ficha (o ativo usa a sala atual; os outros, a do membro)."""
+    if sheet is state.get("player_character"):
+        return (state.get("world_state") or {}).get("current_location_key", "")
+    members = (state.get("party") or {}).get("members", [])
+    return next((m.get("location_key", "") for m in members if m.get("character") is sheet), "")
+
+
+def _scene_item(scene: dict, name: str) -> tuple[str, dict] | None:
+    key = _norm(name)
+    return next(((item_id, item) for item_id, item in scene["items"].items() if key in item["names"]), None)
+
+
+def _catalog_item(scene: dict, name: str) -> tuple[str, dict]:
+    found = _scene_item(scene, name)
+    if found is None:
+        raise _Rejected("item fora do catálogo")
+    return found
+
+
+def _stock_move(state: dict, source: str, item_id: str, delta: int) -> None:
+    """Saldo do que saiu (-) ou foi deixado (+) em cada sala/NPC, sobre o que a campanha define."""
+    stock = state.setdefault("stock", {}).setdefault(source, {})
+    stock[item_id] = stock.get(item_id, 0) + delta
+
+
+def _on_hand(state: dict, defined: dict, source: str, item_id: str) -> int:
+    return defined.get(item_id, 0) + state.get("stock", {}).get(source, {}).get(item_id, 0)
+
+
+def _scene_npc(scene: dict, name: str) -> dict:
+    npc = next((n for n in scene["npcs"] if _norm(name) in n["names"]), None)
+    if npc is None:
+        raise _Rejected("alvo desconhecido")
+    return npc
+
+
+def _take_from_npc(state, scene, npc_name, receiver_name, item_name, events) -> None:
+    npc, receiver = _scene_npc(scene, npc_name), _target(state, receiver_name)
+    item_id, item = _catalog_item(scene, item_name)
+    has = _on_hand(state, npc["items"], npc["key"], item_id) > 0
+    if not has and not item["livre"]:
+        raise _Rejected("npc não tem o item")
+    _check_space(receiver)
+    receiver.setdefault("inventory", []).append(item["nome"])
+    if has:
+        _stock_move(state, npc["key"], item_id, -1)
+    events.append({"type": "item_add", "target": receiver.get("name"), "item": item["nome"]})
+
+
+def _give_to_npc(state, scene, giver, npc_name, item_name, events) -> None:
+    npc, owned = _scene_npc(scene, npc_name), _owned(giver, item_name, scene)
+    if owned is None:
+        raise _Rejected("não tem o item")
+    giver["inventory"].remove(owned)
+    known = _scene_item(scene, owned)
+    if known:
+        _stock_move(state, npc["key"], known[0], +1)
+    events.append({"type": "item_remove", "target": giver.get("name"), "item": owned})
+
+
+def _item(state, body, events, scene=None, **_):
+    """Com `scene` (catálogo estrito) só entra o que está na sala ou com um NPC em cena."""
     transfer = re.fullmatch(r"\s*(.*?)\s*>\s*(.+?)\s*:\s*(.+?)\s*", body)
     if transfer:
-        giver, receiver = _target(state, transfer.group(1)), _target(state, transfer.group(2))
-        item = _owned(giver, transfer.group(3))
+        giver_name, receiver_name, item_name = transfer.groups()
+        if scene and _find(state, giver_name) is None:
+            return _take_from_npc(state, scene, giver_name, receiver_name, item_name, events)
+        if scene and _find(state, receiver_name) is None:
+            return _give_to_npc(state, scene, _target(state, giver_name), receiver_name, item_name, events)
+        giver, receiver = _target(state, giver_name), _target(state, receiver_name)
+        item = _owned(giver, item_name, scene)
         if item is None:
             raise _Rejected("não tem o item")
         _check_space(receiver)
@@ -129,15 +201,27 @@ def _item(state, body, events, **_):
     if not m:
         raise _Rejected("formato inválido")
     sheet = _target(state, m.group(1))
+    room = _where(state, sheet)
     if m.group(2) == "+":
+        name = m.group(3)
+        if scene:
+            item_id, item = _catalog_item(scene, name)
+            if _on_hand(state, scene["rooms"].get(room, {}), room, item_id) <= 0:
+                raise _Rejected("item não está na cena")
+            name = item["nome"]
         _check_space(sheet)
-        sheet.setdefault("inventory", []).append(m.group(3))
-        events.append({"type": "item_add", "target": sheet.get("name"), "item": m.group(3)})
+        if scene:
+            _stock_move(state, room, item_id, -1)
+        sheet.setdefault("inventory", []).append(name)
+        events.append({"type": "item_add", "target": sheet.get("name"), "item": name})
         return
-    item = _owned(sheet, m.group(3))
+    item = _owned(sheet, m.group(3), scene)
     if item is None:
         raise _Rejected("não tem o item")
     sheet["inventory"].remove(item)
+    known = _scene_item(scene, item) if scene else None
+    if known and not known[1]["consumivel"]:
+        _stock_move(state, room, known[0], +1)  # largado: fica no chão da sala; consumível é gasto
     events.append({"type": "item_remove", "target": sheet.get("name"), "item": item})
 
 
@@ -334,15 +418,16 @@ def settle_pending(state: dict, events: list[dict]) -> tuple[dict, list[dict]]:
     return {**state, "pending": []}, ignored
 
 
-def apply(state: dict, tags: list[dict], roll_success: bool = False) -> tuple[dict, list[dict], list[dict]]:
-    """Aplica as tags em ordem; uma tag recusada não altera nada."""
+def apply(state: dict, tags: list[dict], roll_success: bool = False,
+          scene: dict | None = None) -> tuple[dict, list[dict], list[dict]]:
+    """Aplica as tags em ordem; uma tag recusada não altera nada. `scene` vem de item_catalog.scene()."""
     current = copy.deepcopy(state)
     events: list[dict] = []
     rejected: list[dict] = []
     for tag in tags:
         attempt, tag_events = copy.deepcopy(current), []
         try:
-            HANDLERS[tag["kind"]](attempt, tag["body"], tag_events, roll_success=roll_success)
+            HANDLERS[tag["kind"]](attempt, tag["body"], tag_events, roll_success=roll_success, scene=scene)
         except _Rejected as why:
             rejected.append({"tag": tag["raw"], "reason": str(why)})
             continue

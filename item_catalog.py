@@ -5,6 +5,7 @@ locais.json) e NPCs (`itens` em npcs.json) só apontam para o id. Campanha com
 `catalogo_estrito: true` no config.json não carrega se o catálogo estiver inválido;
 as outras carregam do jeito que estão (o motor aceita e registra).
 """
+from collections import Counter
 from dataclasses import dataclass, field
 
 from campaign_manager import get_current_campaign, load_campaign_data
@@ -39,11 +40,42 @@ class Catalog:
     def find(self, name: str) -> str | None:
         """Id do item a partir do id, nome ou apelido (sem acento nem maiúscula)."""
         key = _norm(name)
-        for item_id, item in self.items.items():
-            names = [item_id, item_id.replace("_", " "), item.get("nome", ""), *item.get("apelidos", [])]
-            if key in {_norm(n) for n in names if isinstance(n, str)}:
-                return item_id
+        return next((item_id for item_id, item in self.items.items() if key in _names(item_id, item)), None)
+
+
+def _names(item_id: str, item: dict) -> set[str]:
+    names = [item_id, item_id.replace("_", " "), item.get("nome", ""), *item.get("apelidos", [])]
+    return {_norm(n) for n in names if isinstance(n, str) and n}
+
+
+def _visible_items(local) -> dict[str, int]:
+    """Itens à vista na sala (os escondidos só entram quando forem revelados)."""
+    entries = (local.get("itens") or []) if isinstance(local, dict) else []
+    return {e["id"]: e.get("qtd", 1) for e in entries if isinstance(e, dict) and "id" in e and not e.get("escondido")}
+
+
+def scene(state: dict, catalog: Catalog) -> dict | None:
+    """O que existe ao alcance do grupo neste turno, para o motor conferir [ITEM]. None = catálogo frouxo."""
+    if not catalog.strict:
         return None
+    ws = state.get("world_state") or {}
+    members = (state.get("party") or {}).get("members", [])
+    rooms = {ws.get("current_location_key", "")} | {m.get("location_key", "") for m in members}
+    npcs = []
+    for group in ("important_npcs_in_scene", "scene_npc_signatures"):
+        for npc_id, data in (ws.get(group) or {}).items():
+            definition = catalog.npcs.get(npc_id) if isinstance(catalog.npcs.get(npc_id), dict) else {}
+            shown = data.get("nome", "") if isinstance(data, dict) else ""
+            names = {_norm(n) for n in (npc_id, npc_id.replace("_", " "), definition.get("nome", ""), shown) if n}
+            npcs.append({"key": f"npc:{npc_id}", "names": sorted(names),
+                         "items": dict(Counter(definition.get("itens") or []))})
+    return {
+        "items": {item_id: {"nome": item.get("nome", item_id), "consumivel": item.get("categoria") == "consumivel",
+                            "livre": bool(item.get("livre")), "names": sorted(_names(item_id, item))}
+                  for item_id, item in catalog.items.items() if isinstance(item, dict)},
+        "rooms": {key: _visible_items(catalog.locais.get(key)) for key in rooms if key},
+        "npcs": npcs,
+    }
 
 
 def _item_errors(item_id: str, item: dict, categories: dict, flags: set[str]) -> list[str]:

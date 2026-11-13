@@ -17,6 +17,7 @@ from memory_loader import MemoryLoader, TurnContext
 from memory_writer import MemoryWriter
 from party import without_engine_keys
 import gm_tags
+import item_catalog
 from kairos_session import generate_session_reentry
 from campaign_manager import (
     get_campaign_files,
@@ -1269,7 +1270,8 @@ def clean_and_process_ai_response(response_text: str, world_state: dict, roll_re
     narrative = re.sub(r'\n{3,}', '\n\n', narrative).strip()
     world_state['player_character'] = character
     world_state, events, rejected = gm_tags.apply(
-        world_state, engine_tags, roll_success=bool(roll_result and roll_result.get("success"))
+        world_state, engine_tags, roll_success=bool(roll_result and roll_result.get("success")),
+        scene=item_catalog.scene(world_state, item_catalog.load()),  # ponytail: lê o catálogo a cada turno; cachear se pesar
     )
     world_state, ignored = gm_tags.settle_pending(world_state, events)
     world_state["_sheet_events"] = events
